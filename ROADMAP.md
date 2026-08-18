@@ -36,8 +36,9 @@ Documento oficial de acompanhamento das fases e tarefas de engenharia do projeto
 
 ## 📌 Fase 3: Core Business - Módulo de Publicações
 
-- [ ] **Task 3.1:** Migrations para estoque de publicações e pedidos.
-- [ ] **Task 3.2:** Fluxo de solicitação, aprovação e baixa de estoque.
+- [x] **Task 3.1:** Migrations para catálogo (`tb_publicacao`), estoque por congregação (`tb_estoque_publicacao`) e pedidos (`tb_pedido_publicacao`).
+- [x] **Task 3.2:** Controle de estoque multi-tenant e fluxo de pedidos com baixa automática na entrega.
+- [x] **Task 3.3:** Endpoints protegidos por RBAC (`ROLE_ADMIN_GERAL`, `ROLE_ADMIN_CONGREGACAO`, `ROLE_SERVO_PUBLICACOES`).
 
 ---
 
