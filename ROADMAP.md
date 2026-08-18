@@ -20,9 +20,9 @@ Documento oficial de acompanhamento das fases e tarefas de engenharia do projeto
   - [x] Implementação do `JwtService` e `JwtAuthenticationFilter`.
   - [x] Configuração de `SecurityConfig` com senhas em BCrypt.
   - [x] Endpoints `POST /api/v1/auth/login` e `POST /api/v1/auth/register`.
-- [ ] **Task 1.5: CRUD de Congregações & Usuários (Rotas Protegidas)**
-  - [ ] Endpoints protegidos via `Bearer Token`.
-  - [ ] Validação de perfil por anotações `@PreAuthorize`.
+- [x] **Task 1.5: CRUD de Congregações & Usuários (Rotas Protegidas)**
+  - [x] Endpoints protegidos via `Bearer Token`.
+  - [x] Validação de perfil por anotações `@PreAuthorize`.
 
 ---
 
