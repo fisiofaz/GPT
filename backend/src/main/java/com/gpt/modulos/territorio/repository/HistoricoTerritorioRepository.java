@@ -1,0 +1,21 @@
+package com.gpt.modulos.territorio.repository;
+
+import com.gpt.modulos.territorio.model.HistoricoTerritorio;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Optional;
+
+@Repository
+public interface HistoricoTerritorioRepository extends JpaRepository<HistoricoTerritorio, Long> {
+
+    // Buscar o histórico ativo de um território (onde data_devolucao é nula)
+    Optional<HistoricoTerritorio> findByTerritorioIdAndDataDevolucaoIsNull(Long territorioId);
+
+    // Buscar todo o histórico de um território específico
+    List<HistoricoTerritorio> findByTerritorioIdOrderByDataRetiradaDesc(Long territorioId);
+
+    // Buscar histórico de territórios retirados por um publicador específico
+    List<HistoricoTerritorio> findByPublicadorIdOrderByDataRetiradaDesc(Long publicadorId);
+}

@@ -28,9 +28,9 @@ Documento oficial de acompanhamento das fases e tarefas de engenharia do projeto
 
 ## 📌 Fase 2: Core Business - Módulo de Territórios
 
-- [ ] **Task 2.1:** Migrations para tabela `tb_territorio` e tabela de histórico/movimentação.
-- [ ] **Task 2.2:** Regras de negócio de Retirada e Devolução de Territórios.
-- [ ] **Task 2.3:** Relatórios de cobertura e territórios pendentes.
+- [x] **Task 2.1:** Migrations para tabela `tb_territorio` e tabela de histórico/movimentação.
+- [x] **Task 2.2:** Regras de negócio de Retirada e Devolução de Territórios.
+- [x] **Task 2.3:** Relatórios de cobertura e territórios pendentes.
 
 ---
 
