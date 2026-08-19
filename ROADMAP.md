@@ -42,7 +42,33 @@ Documento oficial de acompanhamento das fases e tarefas de engenharia do projeto
 
 ---
 
-## 📌 Fase 4: Frontend (React + Tailwind CSS)
+### 🎨 Fase 4: Frontend (React + TypeScript + Vite + Tailwind CSS)
 
-- [ ] **Task 4.1:** Setup do projeto React e integração com Context API / Zustand para autenticação.
-- [ ] **Task 4.2:** Telas de Login, Gestão de Territórios e Movimentações.
+- [x] **Task 4.1:** Configuração do Tailwind CSS no Vite com `@tailwindcss/vite`
+- [x] **Task 4.2:** Configuração do cliente HTTP (Axios) com interceptores para injeção de Token JWT
+- [x] **Task 4.3:** Gerenciamento de Estado de Autenticação (`AuthContext`, `AuthProvider`, `useAuth`)
+- [x] **Task 4.4:** Tela de Login moderna com Dark Glassmorphism e toggle de visualização de senha
+- [x] **Task 4.5:** Rotas privadas protegidas (`RotaPrivada`)
+- [x] **Task 4.6:** Dashboard inicial moderno com cards de módulos e visão geral
+
+---
+
+## 🚀 Próximas Etapas
+
+### 🗺️ Módulo de Territórios (Sprint Atual)
+
+- [ ] Listagem de Territórios com filtros e busca rápida
+- [ ] Modal de Designação / Retirada de Território para publicadores
+- [ ] Modal de Devolução com histórico de conclusão
+- [ ] Cadastro e edição de novos mapas/territórios
+
+### 📚 Módulo de Publicações
+
+- [ ] Catálogo de Publicações (Bíblias, Livros, Folhetos, Revistas)
+- [ ] Controle de estoque por congregação
+- [ ] Sistema de pedidos e solicitações de publicadores
+
+### 👥 Gestão de Usuários e Congregações
+
+- [ ] Painel do Administrador Geral / Administrador de Congregação
+- [ ] Gestão de permissões por perfil (Servo de Território, Servo de Publicações, Publicador)
