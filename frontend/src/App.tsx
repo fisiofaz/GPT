@@ -4,6 +4,7 @@ import { AuthProvider } from "./context/AuthProvider";
 import { useAuth } from "./context/useAuth";
 import { Login } from "./pages/Login";
 import { Dashboard } from "./pages/Dashboard";
+import { Territorios } from "./pages/Territorios";
 
 const RotaPrivada: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { autenticado } = useAuth();
@@ -21,6 +22,14 @@ export const App: React.FC = () => {
             element={
               <RotaPrivada>
                 <Dashboard />
+              </RotaPrivada>
+            }
+          />
+          <Route
+            path="/territorios"
+            element={
+              <RotaPrivada>
+                <Territorios />
               </RotaPrivada>
             }
           />

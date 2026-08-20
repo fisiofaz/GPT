@@ -53,14 +53,23 @@ Documento oficial de acompanhamento das fases e tarefas de engenharia do projeto
 
 ---
 
+### 🗺️ Módulo de Gestão de Territórios
+
+- [x] Listagem e busca de territórios filtrados por congregação
+- [x] Filtros em tempo real por status (Disponível, Em Uso, Em Atraso)
+- [x] Cadastro de novos territórios com validação de congregação
+- [x] Fluxos de Retirada e Devolução de territórios
+- [x] Modal de Histórico e Linha do Tempo das movimentações
+
+---
+
 ## 🚀 Próximas Etapas
 
-### 🗺️ Módulo de Territórios (Sprint Atual)
+### 👥 Separação de Domínio: Usuários vs Publicadores
 
-- [ ] Listagem de Territórios com filtros e busca rápida
-- [ ] Modal de Designação / Retirada de Território para publicadores
-- [ ] Modal de Devolução com histórico de conclusão
-- [ ] Cadastro e edição de novos mapas/territórios
+- [ ] Modelagem da entidade `Publicador` (ID, Nome, Telefone, Congregação)
+- [ ] Endpoint de listagem de publicadores da congregação
+- [ ] Substituição de entrada manual por Select dinâmico de publicadores nos modais
 
 ### 📚 Módulo de Publicações
 
