@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import {
   LogOut,
@@ -15,6 +16,7 @@ import {
 
 export const Dashboard: React.FC = () => {
   const { usuario, logout } = useAuth();
+  const navigate = useNavigate();
 
   // Formatação amigável das roles
   const formatarRole = (role: string) => {
@@ -186,7 +188,10 @@ export const Dashboard: React.FC = () => {
             </div>
 
             <div className="pt-8 relative z-10">
-              <button className="w-full py-3.5 px-5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2 transition-all cursor-pointer group-hover:gap-3">
+              <button
+                onClick={() => navigate("/territorios")}
+                className="w-full py-3.5 px-5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2 transition-all cursor-pointer group-hover:gap-3"
+              >
                 <span>Gerenciar Territórios</span>
                 <ArrowUpRight className="w-4 h-4" />
               </button>
