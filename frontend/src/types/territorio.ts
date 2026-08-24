@@ -1,6 +1,6 @@
 export type StatusTerritorio =
   | "DISPONIVEL"
-  | "EM_USO"
+  | "EM_TRABALHO"
   | "EM_ATRASO"
   | "TRABALHADO";
 
@@ -13,7 +13,6 @@ export interface Territorio {
   congregacaoId: number;
   congregacaoNome?: string;
   criadoEm?: string;
-  // Campos preenchidos quando em uso ou histórico
   publicadorNome?: string;
   dataRetirada?: string;
   dataPrevisaoDevolucao?: string;
@@ -27,7 +26,7 @@ export interface CriarTerritorioDTO {
 }
 
 export interface MovimentacaoTerritorioDTO {
-  publicadorNome: string;
+  publicadorId: number;
   dataRetirada?: string;
   observacoes?: string;
 }
@@ -35,6 +34,8 @@ export interface MovimentacaoTerritorioDTO {
 export interface HistoricoTerritorio {
   id: number;
   territorioId: number;
+  territorioNumero?: string;
+  territorioNome?: string;
   publicadorId: number;
   publicadorNome?: string;
   dataRetirada: string;
