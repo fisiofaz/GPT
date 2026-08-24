@@ -43,4 +43,13 @@ export const territorioService = {
     );
     return response.data;
   },
+
+  listarHistoricoGeral: async (
+    congregacaoId: number,
+  ): Promise<HistoricoTerritorio[]> => {
+    const response = await api.get<HistoricoTerritorio[]>(
+      `/territorios/congregacao/${congregacaoId}/historico-geral`,
+    );
+    return response.data;
+  },
 };

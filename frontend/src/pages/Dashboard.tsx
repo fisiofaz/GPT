@@ -5,6 +5,7 @@ import {
   LogOut,
   MapPin,
   BookOpen,
+  Users,
   Layers,
   ArrowUpRight,
   CheckCircle2,
@@ -221,6 +222,33 @@ export const Dashboard: React.FC = () => {
             <div className="pt-8 relative z-10">
               <button className="w-full py-3.5 px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 transition-all cursor-pointer group-hover:gap-3">
                 <span>Acessar Publicações</span>
+                <ArrowUpRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+          {/* Card: Publicadores */}
+          <div className="p-8 rounded-3xl bg-slate-900/60 backdrop-blur-xl border border-slate-800 hover:border-slate-700 transition-all duration-300 flex flex-col justify-between group shadow-xl">
+            <div className="space-y-4">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 group-hover:scale-110 transition-transform">
+                <Users className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-white group-hover:text-indigo-300 transition-colors">
+                  Publicadores
+                </h3>
+                <p className="text-sm text-slate-400 mt-2 leading-relaxed">
+                  Gerencie os publicadores ativos da congregação para designação
+                  de mapas e pedidos.
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-6 border-t border-slate-800/80 mt-6">
+              <button
+                onClick={() => navigate("/publicadores")}
+                className="w-full py-3.5 px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 transition-all cursor-pointer"
+              >
+                <span>Gerenciar Publicadores</span>
                 <ArrowUpRight className="w-4 h-4" />
               </button>
             </div>
