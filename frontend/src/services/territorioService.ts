@@ -52,4 +52,19 @@ export const territorioService = {
     );
     return response.data;
   },
+
+  atualizarMapa: async (
+    id: number,
+    poligonoGeojson: string | null,
+  ): Promise<Territorio> => {
+    const response = await api.patch<Territorio>(`/territorios/${id}/mapa`, {
+      poligonoGeojson,
+    });
+    return response.data;
+  },
+
+  buscarPublico: async (id: number): Promise<Territorio> => {
+    const response = await api.get<Territorio>(`/territorios/publico/${id}`);
+    return response.data;
+  },
 };

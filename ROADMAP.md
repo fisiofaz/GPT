@@ -53,13 +53,19 @@ Documento oficial de acompanhamento das fases e tarefas de engenharia do projeto
 
 ---
 
-### 🗺️ Módulo de Gestão de Territórios
+## ✅ Módulo 5: Gestão de Territórios & Publicadores
 
-- [x] Listagem e busca de territórios filtrados por congregação
-- [x] Filtros em tempo real por status (Disponível, Em Uso, Em Atraso)
-- [x] Cadastro de novos territórios com validação de congregação
-- [x] Fluxos de Retirada e Devolução de territórios
-- [x] Modal de Histórico e Linha do Tempo das movimentações
+- [x] **Task 5.1:** Cadastro e gerenciamento de Publicadores por congregação
+- [x] **Task 5.2:** Listagem e busca em tempo real de publicadores
+- [x] **Task 5.3:** Cadastro de Territórios (número, nome/região, descrição)
+- [x] **Task 5.4:** Fluxo de Designação/Retirada associando ao Publicador
+- [x] **Task 5.5:** Fluxo de Devolução com registro de observações
+- [x] **Task 5.6:** Relatório Geral consolidado de designações de mapas (Histórico S-13)
+- [x] **Task 5.7:** Exportação para PDF e Impressão formatada em folha A4 oficial
+  [x] **Task 5.8** Delimitação e desenho interativo de polígonos no mapa (Leaflet & OpenStreetMap)
+- [x] **Task 5.9:** Cartão Digital de Território (S-12) com navegação GPS / Google Maps
+- [x] **Task 5.10:** Mapa Geral Consolidado da Congregação com painel lateral e busca interativa
+- [x] **Task 5.11:** Envio automático do mapa e orientações para o Publicador via WhatsApp
 
 ---
 
@@ -81,3 +87,8 @@ Documento oficial de acompanhamento das fases e tarefas de engenharia do projeto
 
 - [ ] Painel do Administrador Geral / Administrador de Congregação
 - [ ] Gestão de permissões por perfil (Servo de Território, Servo de Publicações, Publicador)
+  
+### Dashboard e Métricas Avançadas
+
+- [ ] Indicadores visuais de cobertura de território no ano de serviço
+- [ ] Histórico de consumo de publicações

@@ -41,10 +41,13 @@ public class SecurityConfig {
                     req.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll();
                     
                     // Libera endpoints de autenticação
-                    req.requestMatchers(HttpMethod.POST, "/auth/login").permitAll();
-                    req.requestMatchers(HttpMethod.POST, "/auth/registrar").permitAll();
-                    req.requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll();
-                    req.requestMatchers(HttpMethod.POST, "/api/v1/auth/registrar").permitAll();
+                    req.requestMatchers(
+                            "/auth/login",
+                            "/auth/registrar",
+                            "/api/v1/auth/**",
+                            "/territorios/publico/**",
+                            "/api/v1/territorios/publico/**"
+                    ).permitAll();
                     
                     // Qualquer outra requisição precisa de autenticação JWT
                     req.anyRequest().authenticated();

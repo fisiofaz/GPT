@@ -18,6 +18,7 @@ public class HistoricoTerritorioResponseDTO {
     private Long id;
     private Long territorioId;
     private String territorioNumero;
+    private String territorioNome;
     private Long publicadorId;
     private String publicadorNome;
     private LocalDateTime dataRetirada;
