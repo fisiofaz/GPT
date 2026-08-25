@@ -1,6 +1,6 @@
 package com.gpt.modulos.territorio.model;
 
-import com.gpt.modulos.usuario.model.Usuario;
+import com.gpt.modulos.publicador.model.Publicador;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -27,7 +27,7 @@ public class HistoricoTerritorio {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "publicador_id", nullable = false)
-    private Usuario publicador;
+    private Publicador publicador;
 
     @CreationTimestamp
     @Column(name = "data_retirada", nullable = false, updatable = false)

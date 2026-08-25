@@ -60,4 +60,26 @@ public class TerritorioController {
     public ResponseEntity<List<HistoricoTerritorioResponseDTO>> listarHistorico(@PathVariable Long id) {
         return ResponseEntity.ok(territorioService.listarHistorico(id));
     }
+    
+    // Listar histórico geral de toda a congregação
+    @GetMapping("/congregacao/{congregacaoId}/historico-geral")
+    public ResponseEntity<List<HistoricoTerritorioResponseDTO>> listarHistoricoGeral(@PathVariable Long congregacaoId) {
+        return ResponseEntity.ok(territorioService.listarHistoricoGeral(congregacaoId));
+    }
+    
+    // Atualizar mapa / polígono do território
+    @PatchMapping("/{id}/mapa")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_ADMIN_CONGREGACAO', 'ROLE_SERVO_TERRITORIO')")
+    public ResponseEntity<TerritorioResponseDTO> atualizarPoligono(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> payload) {
+        String poligonoGeojson = payload != null ? payload.get("poligonoGeojson") : null;
+        return ResponseEntity.ok(territorioService.atualizarPoligono(id, poligonoGeojson));
+    }
+    
+    // Endpoint público para visualização no celular do publicador
+    @GetMapping("/publico/{id}")
+    public ResponseEntity<TerritorioResponseDTO> buscarPublicoPorId(@PathVariable Long id) {
+        return ResponseEntity.ok(territorioService.buscarPorId(id));
+    }
 }

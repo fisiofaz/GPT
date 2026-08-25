@@ -9,6 +9,7 @@ export interface Territorio {
   numero: string;
   nome: string;
   descricao?: string;
+  poligonoGeojson?: string;
   status: StatusTerritorio;
   congregacaoId: number;
   congregacaoNome?: string;
@@ -17,11 +18,11 @@ export interface Territorio {
   dataRetirada?: string;
   dataPrevisaoDevolucao?: string;
 }
-
 export interface CriarTerritorioDTO {
   numero: string;
   nome: string;
   descricao?: string;
+  poligonoGeojson?: string;
   congregacaoId: number;
 }
 
@@ -30,6 +31,7 @@ export interface MovimentacaoTerritorioDTO {
   dataRetirada?: string;
   observacoes?: string;
 }
+
 
 export interface HistoricoTerritorio {
   id: number;

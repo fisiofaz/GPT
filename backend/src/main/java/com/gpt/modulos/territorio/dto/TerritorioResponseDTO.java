@@ -20,6 +20,7 @@ public class TerritorioResponseDTO {
     private String numero;
     private String nome;
     private String descricao;
+    private String poligonoGeojson;
     private StatusTerritorio status;
     private Long congregacaoId;
     private String congregacaoNome;

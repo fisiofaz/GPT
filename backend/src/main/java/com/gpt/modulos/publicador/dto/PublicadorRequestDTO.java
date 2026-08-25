@@ -1,4 +1,4 @@
-package com.gpt.modulos.territorio.dto;
+package com.gpt.modulos.publicador.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -8,19 +8,14 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class TerritorioRequestDTO {
+public class PublicadorRequestDTO {
 
-    @NotBlank(message = "O número do território é obrigatório")
-    @Size(max = 20, message = "O número não pode exceder 20 caracteres")
-    private String numero;
-
-    @NotBlank(message = "O nome/bairro do território é obrigatório")
+    @NotBlank(message = "O nome do publicador é obrigatório")
     @Size(max = 150, message = "O nome não pode exceder 150 caracteres")
     private String nome;
 
-    private String descricao;
-    
-    private String poligonoGeojson;
+    @Size(max = 20, message = "O telefone não pode exceder 20 caracteres")
+    private String telefone;
 
     @NotNull(message = "A congregação é obrigatória")
     private Long congregacaoId;

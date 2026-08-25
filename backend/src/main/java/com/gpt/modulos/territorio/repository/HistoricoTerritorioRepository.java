@@ -2,6 +2,8 @@ package com.gpt.modulos.territorio.repository;
 
 import com.gpt.modulos.territorio.model.HistoricoTerritorio;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -18,4 +20,12 @@ public interface HistoricoTerritorioRepository extends JpaRepository<HistoricoTe
 
     // Buscar histórico de territórios retirados por um publicador específico
     List<HistoricoTerritorio> findByPublicadorIdOrderByDataRetiradaDesc(Long publicadorId);
+    
+ // Consulta otimizada com JOIN FETCH trazendo Território e Publicador
+    @Query("SELECT h FROM HistoricoTerritorio h " +
+           "JOIN FETCH h.territorio t " +
+           "LEFT JOIN FETCH h.publicador p " +
+           "WHERE t.congregacao.id = :congregacaoId " +
+           "ORDER BY h.dataRetirada DESC")
+    List<HistoricoTerritorio> buscarHistoricoGeralPorCongregacao(@Param("congregacaoId") Long congregacaoId);
 }
