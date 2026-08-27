@@ -1,6 +1,9 @@
 package com.gpt.modulos.publicacao.dto;
 
 import com.gpt.modulos.publicacao.model.CategoriaPublicacao;
+import com.gpt.modulos.publicacao.model.FormatoPublicacao;
+import com.gpt.modulos.publicacao.model.IdiomaPublicacao;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
@@ -14,9 +17,11 @@ public record PublicacaoRequestDTO(
 
         @NotNull(message = "A categoria é obrigatória.")
         CategoriaPublicacao categoria,
+        
+        FormatoPublicacao formato,
 
-        String idioma,
-
+        IdiomaPublicacao idioma,
+        
         @PositiveOrZero(message = "A quantidade inicial deve ser zero ou positiva.")
         Integer quantidadeEstoque,
 

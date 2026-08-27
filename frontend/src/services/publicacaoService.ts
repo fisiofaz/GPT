@@ -4,6 +4,7 @@ import type {
   PublicacaoRequest,
   MovimentacaoEstoqueRequest,
   MovimentacaoResponse,
+  CatalogoMestreItem,
 } from "../types/publicacao";
 
 export const publicacaoService = {
@@ -12,6 +13,13 @@ export const publicacaoService = {
   ): Promise<Publicacao[]> => {
     const response = await api.get<Publicacao[]>(
       `/publicacoes/congregacao/${congregacaoId}`,
+    );
+    return response.data;
+  },
+
+  listarCatalogoMestre: async (): Promise<CatalogoMestreItem[]> => {
+    const response = await api.get<CatalogoMestreItem[]>(
+      "/publicacoes/catalogo-mestre",
     );
     return response.data;
   },
@@ -39,5 +47,42 @@ export const publicacaoService = {
       `/publicacoes/congregacao/${congregacaoId}/historico`,
     );
     return response.data;
+  },
+
+  salvarNoCatalogoMestre: async (
+    item: Partial<CatalogoMestreItem>,
+  ): Promise<CatalogoMestreItem> => {
+    const response = await api.post<CatalogoMestreItem>(
+      "/publicacoes/catalogo-mestre",
+      item,
+    );
+    return response.data;
+  },
+
+  atualizar: async (
+    id: number,
+    dto: Partial<PublicacaoRequest>,
+  ): Promise<Publicacao> => {
+    const response = await api.put<Publicacao>(`/publicacoes/${id}`, dto);
+    return response.data;
+  },
+
+  deletar: async (id: number): Promise<void> => {
+    await api.delete(`/publicacoes/${id}`);
+  },
+
+  atualizarCatalogoMestre: async (
+    id: number,
+    item: Partial<CatalogoMestreItem>,
+  ): Promise<CatalogoMestreItem> => {
+    const response = await api.put<CatalogoMestreItem>(
+      `/publicacoes/catalogo-mestre/${id}`,
+      item,
+    );
+    return response.data;
+  },
+
+  deletarCatalogoMestre: async (id: number): Promise<void> => {
+    await api.delete(`/publicacoes/catalogo-mestre/${id}`);
   },
 };
