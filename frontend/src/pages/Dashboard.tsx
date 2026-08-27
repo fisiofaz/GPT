@@ -209,7 +209,7 @@ export const Dashboard: React.FC = () => {
               </div>
               <div>
                 <h3 className="text-2xl font-bold text-white tracking-tight">
-                  Módulo de Publicações
+                  Gestão de Publicações
                 </h3>
                 <p className="text-slate-400 text-sm mt-2 leading-relaxed">
                   Consulte o catálogo unificado, faça pedidos de itens bíblicos,
@@ -220,7 +220,10 @@ export const Dashboard: React.FC = () => {
             </div>
 
             <div className="pt-8 relative z-10">
-              <button className="w-full py-3.5 px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 transition-all cursor-pointer group-hover:gap-3">
+              <button
+                onClick={() => navigate("/publicacoes")}
+                className="w-full py-3.5 px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 transition-all cursor-pointer group-hover:gap-3"
+              >
                 <span>Acessar Publicações</span>
                 <ArrowUpRight className="w-4 h-4" />
               </button>
