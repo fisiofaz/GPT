@@ -3,24 +3,26 @@ package com.gpt.modulos.publicacao.dto;
 import com.gpt.modulos.publicacao.model.CategoriaPublicacao;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
-import lombok.Getter;
-import lombok.Setter;
+import jakarta.validation.constraints.PositiveOrZero;
 
-@Getter
-@Setter
-public class PublicacaoRequestDTO {
+public record PublicacaoRequestDTO(
+        @NotBlank(message = "O código é obrigatório (ex: bi12, th, lff).")
+        String codigo,
 
-    @NotBlank(message = "O código/símbolo é obrigatório")
-    @Size(max = 30, message = "O código não pode exceder 30 caracteres")
-    private String codigo;
+        @NotBlank(message = "O título da publicação é obrigatório.")
+        String titulo,
 
-    @NotBlank(message = "O título é obrigatório")
-    @Size(max = 150, message = "O título não pode exceder 150 caracteres")
-    private String titulo;
+        @NotNull(message = "A categoria é obrigatória.")
+        CategoriaPublicacao categoria,
 
-    @NotNull(message = "A categoria é obrigatória")
-    private CategoriaPublicacao categoria;
+        String idioma,
 
-    private String idioma;
-}
+        @PositiveOrZero(message = "A quantidade inicial deve ser zero ou positiva.")
+        Integer quantidadeEstoque,
+
+        @PositiveOrZero(message = "O estoque mínimo deve ser zero ou positivo.")
+        Integer estoqueMinimo,
+
+        @NotNull(message = "A congregação é obrigatória.")
+        Long congregacaoId
+) {}
