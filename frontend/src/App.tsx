@@ -8,6 +8,7 @@ import { Territorios } from "./pages/Territorios";
 import { Publicadores } from "./pages/Publicadores";
 import { CartaoPublico } from "./pages/CartaoPublico";
 import { Publicacoes } from "./pages/Publicacoes";
+import { CatalogoPublicacoes } from "./pages/CatalogoPublicacoes";
 
 const RotaPrivada: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { autenticado } = useAuth();
@@ -32,7 +33,7 @@ export const App: React.FC = () => {
               </RotaPrivada>
             }
           />
-          
+
           <Route
             path="/dashboard"
             element={
@@ -58,6 +59,13 @@ export const App: React.FC = () => {
                 <Publicacoes />
               </RotaPrivada>
             }
+          />
+
+          <Route 
+            path="/catalogo" 
+            element={
+              <CatalogoPublicacoes />
+            } 
           />
 
           {/* Fallback */}

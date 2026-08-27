@@ -54,7 +54,8 @@ public class PublicacaoService {
                 .codigo(dto.codigo().trim().toUpperCase())
                 .titulo(dto.titulo().trim())
                 .categoria(dto.categoria())
-                .idioma(dto.idioma() != null && !dto.idioma().isBlank() ? dto.idioma().trim() : "Português")
+                .formato(dto.formato() != null ? dto.formato() : FormatoPublicacao.NORMAL)
+                .idioma(dto.idioma() != null ? dto.idioma() : IdiomaPublicacao.PORTUGUES)
                 .quantidadeEstoque(qtdInicial)
                 .estoqueMinimo(estoqueMin)
                 .congregacao(congregacao)
@@ -184,6 +185,7 @@ public class PublicacaoService {
                 p.getCodigo(),
                 p.getTitulo(),
                 p.getCategoria(),
+                p.getFormato(),
                 p.getIdioma(),
                 estoque,
                 minimo,
@@ -193,5 +195,33 @@ public class PublicacaoService {
                 p.getAtivo(),
                 p.getCriadoEm()
         );
+    }
+    
+    @Transactional
+    public PublicacaoResponseDTO atualizar(Long id, PublicacaoRequestDTO dto) {
+        Publicacao publicacao = publicacaoRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Publicação não encontrada com ID: " + id));
+
+        publicacao.setTitulo(dto.titulo().trim());
+        publicacao.setCategoria(dto.categoria());
+        publicacao.setFormato(dto.formato() != null ? dto.formato() : FormatoPublicacao.NORMAL);
+        publicacao.setIdioma(dto.idioma() != null ? dto.idioma() : IdiomaPublicacao.PORTUGUES);
+        
+        if (dto.estoqueMinimo() != null) {
+            publicacao.setEstoqueMinimo(dto.estoqueMinimo());
+        }
+
+        Publicacao atualizada = publicacaoRepository.save(publicacao);
+        return converterParaResponseDTO(atualizada);
+    }
+
+    @Transactional
+    public void deletar(Long id) {
+        Publicacao publicacao = publicacaoRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Publicação não encontrada com ID: " + id));
+        
+        // Soft delete para manter o histórico de movimentações intacto
+        publicacao.setAtivo(false);
+        publicacaoRepository.save(publicacao);
     }
 }

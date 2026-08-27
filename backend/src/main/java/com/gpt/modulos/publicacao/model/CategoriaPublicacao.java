@@ -6,7 +6,8 @@ public enum CategoriaPublicacao {
     BROCHURA,
     REVISTA,
     FOLHETO,
+    TRATADO,
     CARTAO,
-    CONVITES,
+    CONVITE,
     OUTRO
 }

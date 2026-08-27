@@ -33,9 +33,6 @@ public class Publicacao {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
     private CategoriaPublicacao categoria;
-
-    @Column(nullable = false, length = 30)
-    private String idioma;
     
     @Column(name = "quantidade_estoque", nullable = false)
     @Builder.Default
@@ -60,4 +57,15 @@ public class Publicacao {
     @UpdateTimestamp
     @Column(name = "atualizado_em")
     private LocalDateTime atualizadoEm;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(length = 30)
+    @Builder.Default
+    private FormatoPublicacao formato = FormatoPublicacao.NORMAL;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 40)
+    @Builder.Default
+    private IdiomaPublicacao idioma = IdiomaPublicacao.PORTUGUES;
+
 }

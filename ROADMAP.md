@@ -72,12 +72,15 @@ Documento oficial de acompanhamento das fases e tarefas de engenharia do projeto
 ## ✅ Módulo 6: Gestão do Estoque de Publicações & Movimentações
 
 - [x] **Task 6.1:** Modelagem e Migration Flyway (`tb_publicacao` e `tb_movimentacao_estoque`)
-- [x] **Task 6.2:** Catálogo categorizado (Bíblias, Livros, Brochuras, Revistas, Folhetos, Tratados)
-- [x] **Task 6.3:** Controle de estoque por congregação e definição de estoque mínimo
-- [x] **Task 6.4:** Alertas visuais de estoque baixo ou zerado
-- [x] **Task 6.5:** Registro de movimentações: Entradas (remessas Betel), Saídas (balcão/pioneiros) e Inventário
-- [x] **Task 6.6:** Histórico detalhado de movimentações com exportação e impressão
-- [x] **Task 6.7:** Interface frontend com busca em tempo real, filtros por categoria e modais responsivos
+[x] **Task 6.2:** Tabela Mestra Global (`tb_catalogo_mestre`) para modelos oficiais de publicações
+[x] **Task 6.3:** Página dedicada de gerenciamento do Catálogo Geral (`/catalogo`) com CRUD completo
+[x]  **Task 6.4:** Autopreenchimento inteligente por código no cadastro de itens da congregação
+- [x] **Task 6.5:** Catálogo categorizado (Bíblias, Livros, Brochuras, Revistas, Folhetos, Tratados)
+- [x] **Task 6.6** Controle de estoque por congregação e definição de estoque mínimo
+- [x] **Task 6.7:** Alertas visuais de estoque baixo ou zerado
+- [x] **Task 6.8:** Registro de movimentações: Entradas (remessas Betel), Saídas (balcão/pioneiros) e Inventário
+- [x] **Task 6.9:** Histórico detalhado de movimentações com exportação e impressão
+- [x] **Task 6.10:** Interface frontend com busca em tempo real, filtros por categoria e modais responsivos
 
 ---
 

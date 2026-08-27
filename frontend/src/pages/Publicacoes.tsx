@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import {
+  BookMarked,
   BookOpen,
   Search,
   ArrowLeft,
@@ -14,16 +15,47 @@ import {
   X,
   Printer,
   Package,
+  Sparkles,
+  Globe,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { publicacaoService } from "../services/publicacaoService";
 import { publicadorService } from "../services/publicadorService";
 import type {
   Publicacao,
   CategoriaPublicacao,
+  FormatoPublicacao,
+  IdiomaPublicacao,
   TipoMovimentacao,
   MovimentacaoResponse,
+  CatalogoMestreItem,
 } from "../types/publicacao";
 import type { Publicador } from "../types/publicador";
+
+const IDIOMAS_DISPONIVEIS: { valor: IdiomaPublicacao; rotulo: string }[] = [
+  { valor: "PORTUGUES", rotulo: "Português" },
+  { valor: "ESPANHOL", rotulo: "Espanhol" },
+  { valor: "INGLES", rotulo: "Inglês" },
+  { valor: "LIBRAS", rotulo: "Libras (Língua de Sinais)" },
+  {
+    valor: "LINGUA_INDIGENA",
+    rotulo: "Língua Indígena (Guarani, Ticuna, etc.)",
+  },
+  { valor: "ALEMAO", rotulo: "Alemão" },
+  { valor: "CRIOLO_HAITIANO", rotulo: "Crioulo Haitiano" },
+  { valor: "JAPONES", rotulo: "Japonês" },
+  { valor: "OUTRO", rotulo: "Outro Idioma" },
+];
+
+const FORMATOS_DISPONIVEIS: { valor: FormatoPublicacao; rotulo: string }[] = [
+  { valor: "NORMAL", rotulo: "Normal (Padrão)" },
+  { valor: "PEQUENO", rotulo: "Pequeno" },
+  { valor: "GRANDE", rotulo: "Grande (Letra Grande)" },
+  { valor: "BOLSO", rotulo: "Edição de Bolso" },
+  { valor: "BRAILLE", rotulo: "Braille" },
+  { valor: "DIGITAL_MIDIA", rotulo: "Áudio / Mídia Digital" },
+];
 
 export const Publicacoes: React.FC = () => {
   const navigate = useNavigate();
@@ -31,6 +63,9 @@ export const Publicacoes: React.FC = () => {
 
   const [publicacoes, setPublicacoes] = useState<Publicacao[]>([]);
   const [publicadores, setPublicadores] = useState<Publicador[]>([]);
+  const [catalogoMestre, setCatalogoMestre] = useState<CatalogoMestreItem[]>(
+    [],
+  );
   const [carregando, setCarregando] = useState(true);
 
   // Filtros
@@ -44,13 +79,16 @@ export const Publicacoes: React.FC = () => {
   const [modalHistoricoAberto, setModalHistoricoAberto] = useState(false);
   const [publicacaoSelecionada, setPublicacaoSelecionada] =
     useState<Publicacao | null>(null);
+  const [modalEditarAberto, setModalEditarAberto] = useState(false);
+  const [itemEmEdicao, setItemEmEdicao] = useState<Publicacao | null>(null);
 
   // Formulário Novo Item
   const [novoCodigo, setNovoCodigo] = useState("");
   const [novoTitulo, setNovoTitulo] = useState("");
   const [novaCategoria, setNovaCategoria] =
     useState<CategoriaPublicacao>("LIVRO");
-  const [novoIdioma, setNovoIdioma] = useState("Português");
+  const [novoFormato, setNovoFormato] = useState<FormatoPublicacao>("NORMAL");
+  const [novoIdioma, setNovoIdioma] = useState<IdiomaPublicacao>("PORTUGUES");
   const [novaQtdInicial, setNovaQtdInicial] = useState<number>(0);
   const [novoEstoqueMinimo, setNovoEstoqueMinimo] = useState<number>(5);
 
@@ -66,9 +104,8 @@ export const Publicacoes: React.FC = () => {
   const [carregandoHistorico, setCarregandoHistorico] = useState(false);
   const [processando, setProcessando] = useState(false);
 
-  const carregarDados = async () => {
+  const recarregar = async () => {
     if (!usuario?.congregacaoId) return;
-    setCarregando(true);
     try {
       const [pubData, pubsPessoas] = await Promise.all([
         publicacaoService.listarPorCongregacao(usuario.congregacaoId),
@@ -78,27 +115,27 @@ export const Publicacoes: React.FC = () => {
       setPublicadores(pubsPessoas);
     } catch {
       setPublicacoes([]);
-    } finally {
-      setCarregando(false);
     }
   };
 
   useEffect(() => {
     let ativo = true;
 
-    const carregarDados = async () => {
+    const carregarDadosIniciais = async () => {
       if (!usuario?.congregacaoId) {
         setCarregando(false);
         return;
       }
       try {
-        const [pubData, pubsPessoas] = await Promise.all([
+        const [pubData, pubsPessoas, catalogoData] = await Promise.all([
           publicacaoService.listarPorCongregacao(usuario.congregacaoId),
           publicadorService.listarPorCongregacao(usuario.congregacaoId),
+          publicacaoService.listarCatalogoMestre().catch(() => []),
         ]);
         if (ativo) {
           setPublicacoes(pubData);
           setPublicadores(pubsPessoas);
+          setCatalogoMestre(catalogoData);
         }
       } catch {
         if (ativo) {
@@ -110,12 +147,36 @@ export const Publicacoes: React.FC = () => {
         }
       }
     };
-    carregarDados();
+
+    carregarDadosIniciais();
 
     return () => {
       ativo = false;
     };
   }, [usuario?.congregacaoId]);
+
+  // Autopreenchimento ao selecionar um item do catálogo mestre
+  const handleSelecionarModelo = (item: CatalogoMestreItem) => {
+    setNovoCodigo(item.codigo);
+    setNovoTitulo(item.titulo);
+    setNovaCategoria(item.categoria);
+    setNovoFormato(item.formato);
+    setNovoIdioma(item.idioma);
+  };
+
+  // Autopreenchimento ao digitar um código conhecido
+  const handleCodigoChange = (codigoDigitado: string) => {
+    setNovoCodigo(codigoDigitado);
+    const encontrado = catalogoMestre.find(
+      (m) => m.codigo.toLowerCase() === codigoDigitado.trim().toLowerCase(),
+    );
+    if (encontrado) {
+      setNovoTitulo(encontrado.titulo);
+      setNovaCategoria(encontrado.categoria);
+      setNovoFormato(encontrado.formato);
+      setNovoIdioma(encontrado.idioma);
+    }
+  };
 
   const handleCriarItem = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -128,10 +189,11 @@ export const Publicacoes: React.FC = () => {
     setProcessando(true);
     try {
       await publicacaoService.cadastrar({
-        codigo: novoCodigo,
-        titulo: novoTitulo,
+        codigo: novoCodigo.trim(),
+        titulo: novoTitulo.trim(),
         categoria: novaCategoria,
-        idioma: novoIdioma.trim() || "Português",
+        formato: novoFormato,
+        idioma: novoIdioma,
         quantidadeEstoque: Number(novaQtdInicial) || 0,
         estoqueMinimo: Number(novoEstoqueMinimo) || 0,
         congregacaoId: Number(idCongregacao),
@@ -142,7 +204,7 @@ export const Publicacoes: React.FC = () => {
       setNovoTitulo("");
       setNovaQtdInicial(0);
       setNovoEstoqueMinimo(5);
-      await carregarDados();
+      await recarregar();
     } catch (err: unknown) {
       const msg =
         err instanceof Error ? err.message : "Erro ao cadastrar publicação.";
@@ -171,7 +233,7 @@ export const Publicacoes: React.FC = () => {
       setQtdMovimento(1);
       setPublicadorMovimentoId("");
       setObsMovimento("");
-      await carregarDados();
+      await recarregar();
     } catch (err: unknown) {
       const msg =
         err instanceof Error ? err.message : "Erro ao movimentar estoque.";
@@ -209,6 +271,16 @@ export const Publicacoes: React.FC = () => {
     });
   };
 
+  const getRotuloIdioma = (idm?: string) => {
+    const item = IDIOMAS_DISPONIVEIS.find((i) => i.valor === idm);
+    return item ? item.rotulo : idm || "Português";
+  };
+
+  const getRotuloFormato = (fmt?: string) => {
+    const item = FORMATOS_DISPONIVEIS.find((f) => f.valor === fmt);
+    return item ? item.rotulo : fmt || "Normal";
+  };
+
   const getBadgeCategoria = (cat: CategoriaPublicacao) => {
     const styles: Record<CategoriaPublicacao, string> = {
       BIBLIA: "bg-amber-500/10 text-amber-400 border-amber-500/20",
@@ -216,10 +288,12 @@ export const Publicacoes: React.FC = () => {
       BROCHURA: "bg-blue-500/10 text-blue-400 border-blue-500/20",
       REVISTA: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
       FOLHETO: "bg-violet-500/10 text-violet-400 border-violet-500/20",
-      CARTAO: "bg-pink-500/10 text-pink-400 border-pink-500/20",
-      CONVITE: "bg-pink-500/10 text-pink-400 border-pink-500/20",
+      TRATADO: "bg-pink-500/10 text-pink-400 border-pink-500/20",
+      CARTAO: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
+      CONVITE: "bg-rose-500/10 text-rose-400 border-rose-500/20",
       OUTRO: "bg-slate-800 text-slate-300 border-slate-700",
     };
+
     return (
       <span
         className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wide uppercase border ${styles[cat] || styles.OUTRO}`}
@@ -240,6 +314,60 @@ export const Publicacoes: React.FC = () => {
   });
 
   const totalEmAlerta = publicacoes.filter((p) => p.alertaEstoqueBaixo).length;
+
+  const abrirModalEditar = (item: Publicacao) => {
+    setItemEmEdicao(item);
+    setNovoCodigo(item.codigo);
+    setNovoTitulo(item.titulo);
+    setNovaCategoria(item.categoria);
+    setNovoFormato(item.formato);
+    setNovoIdioma(item.idioma);
+    setNovoEstoqueMinimo(item.estoqueMinimo);
+    setModalEditarAberto(true);
+  };
+
+  const handleAtualizarItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!itemEmEdicao || !usuario?.congregacaoId) return;
+
+    setProcessando(true);
+    try {
+      await publicacaoService.atualizar(itemEmEdicao.id, {
+        codigo: novoCodigo.trim(),
+        titulo: novoTitulo.trim(),
+        categoria: novaCategoria,
+        formato: novoFormato,
+        idioma: novoIdioma,
+        estoqueMinimo: Number(novoEstoqueMinimo) || 0,
+        congregacaoId: usuario.congregacaoId,
+      });
+      setModalEditarAberto(false);
+      setItemEmEdicao(null);
+      await recarregar();
+    } catch (err: unknown) {
+      const msg =
+        err instanceof Error ? err.message : "Erro ao atualizar publicação.";
+      alert(msg);
+    } finally {
+      setProcessando(false);
+    }
+  };
+
+  const handleExcluirItem = async (item: Publicacao) => {
+    const confirmou = window.confirm(
+      `Tem certeza que deseja remover "${item.titulo}" do estoque ativo da congregação?`,
+    );
+    if (!confirmou) return;
+
+    try {
+      await publicacaoService.deletar(item.id);
+      await recarregar();
+    } catch (err: unknown) {
+      const msg =
+        err instanceof Error ? err.message : "Erro ao excluir publicação.";
+      alert(msg);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#0b0f19] text-slate-100 font-sans pb-16">
@@ -282,6 +410,14 @@ export const Publicacoes: React.FC = () => {
               <Plus className="w-4 h-4" />
               <span>Novo Item</span>
             </button>
+
+            <button
+              onClick={() => navigate("/catalogo")}
+              className="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl border border-slate-700 flex items-center gap-2 transition-all cursor-pointer"
+            >
+              <BookMarked className="w-4 h-4 text-indigo-400" />
+              <span>Gerenciar Catálogo Geral</span>
+            </button>
           </div>
         </div>
       </header>
@@ -294,7 +430,7 @@ export const Publicacoes: React.FC = () => {
             <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Buscar por código ou título (ex: bi12, Ensinar)..."
+              placeholder="Buscar por código ou título (ex: nwt, lff, th)..."
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 bg-slate-950/60 border border-slate-800 rounded-xl text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
@@ -302,21 +438,28 @@ export const Publicacoes: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto">
-            {["TODOS", "BIBLIA", "LIVRO", "BROCHURA", "REVISTA", "FOLHETO"].map(
-              (cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setFiltroCategoria(cat)}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                    filtroCategoria === cat
-                      ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
-                      : "bg-slate-800/80 text-slate-400 hover:text-slate-200 border border-slate-700/50"
-                  }`}
-                >
-                  {cat === "TODOS" ? "Todos" : cat}
-                </button>
-              ),
-            )}
+            {[
+              "TODOS",
+              "BIBLIA",
+              "LIVRO",
+              "BROCHURA",
+              "REVISTA",
+              "FOLHETO",
+              "CONVITE",
+              "CARTAO",
+            ].map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setFiltroCategoria(cat)}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                  filtroCategoria === cat
+                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
+                    : "bg-slate-800/80 text-slate-400 hover:text-slate-200 border border-slate-700/50"
+                }`}
+              >
+                {cat === "TODOS" ? "Todos" : cat}
+              </button>
+            ))}
 
             <button
               onClick={() => setSomenteEstoqueBaixo(!somenteEstoqueBaixo)}
@@ -364,15 +507,37 @@ export const Publicacoes: React.FC = () => {
                     <span className="px-2.5 py-1 bg-slate-800 border border-slate-700 rounded-lg text-xs font-mono font-bold text-indigo-300">
                       {item.codigo}
                     </span>
-                    {getBadgeCategoria(item.categoria)}
+                    <div className="flex items-center gap-1.5">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700">
+                        {getRotuloFormato(item.formato)}
+                      </span>
+                      {getBadgeCategoria(item.categoria)}
+
+                      {/* Botões de Editar e Deletar */}
+                      <button
+                        onClick={() => abrirModalEditar(item)}
+                        className="p-1 text-slate-400 hover:text-indigo-300 hover:bg-slate-800 rounded-lg transition-all ml-1"
+                        title="Editar publicação"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleExcluirItem(item)}
+                        className="p-1 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-all"
+                        title="Excluir do estoque"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
 
                   <div>
                     <h3 className="text-base font-bold text-white leading-snug">
                       {item.titulo}
                     </h3>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      Idioma: {item.idioma || "Português"}
+                    <p className="text-xs text-slate-400 mt-1 flex items-center gap-1">
+                      <Globe className="w-3.5 h-3.5 text-slate-500" />
+                      <span>{getRotuloIdioma(item.idioma)}</span>
                     </p>
                   </div>
 
@@ -467,7 +632,6 @@ export const Publicacoes: React.FC = () => {
             </div>
 
             <form onSubmit={handleMovimentar} className="space-y-4">
-              {/* Seletor do Tipo de Movimentação */}
               <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
@@ -559,14 +723,14 @@ export const Publicacoes: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setModalMovimentarAberto(false)}
-                  className="w-1/2 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl"
+                  className="w-1/2 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={processando}
-                  className="w-1/2 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl shadow-lg flex items-center justify-center gap-2"
+                  className="w-1/2 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl shadow-lg flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {processando ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -583,7 +747,7 @@ export const Publicacoes: React.FC = () => {
       {/* MODAL: CADASTRAR NOVO ITEM */}
       {modalNovoItemAberto && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <h2 className="text-base font-bold text-white flex items-center gap-2">
                 <Plus className="w-4 h-4 text-indigo-400" />
@@ -597,6 +761,29 @@ export const Publicacoes: React.FC = () => {
               </button>
             </div>
 
+            {/* Sugestões Rápidas do Catálogo Mestre */}
+            {catalogoMestre.length > 0 && (
+              <div className="p-3 bg-slate-950/80 rounded-2xl border border-slate-800/80 space-y-2">
+                <div className="flex items-center gap-1.5 text-[11px] font-semibold text-indigo-400">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Modelos Prontos do Catálogo Oficial</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                  {catalogoMestre.map((item) => (
+                    <button
+                      key={item.codigo}
+                      type="button"
+                      onClick={() => handleSelecionarModelo(item)}
+                      className="px-2.5 py-1 bg-slate-900 hover:bg-indigo-600/30 border border-slate-800 hover:border-indigo-500/50 rounded-lg text-[11px] font-mono text-slate-300 hover:text-indigo-200 transition-all cursor-pointer"
+                      title={item.titulo}
+                    >
+                      {item.codigo}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <form onSubmit={handleCriarItem} className="space-y-3">
               <div className="grid grid-cols-3 gap-3">
                 <div>
@@ -606,9 +793,9 @@ export const Publicacoes: React.FC = () => {
                   <input
                     type="text"
                     required
-                    placeholder="Ex: nwt"
+                    placeholder="Ex: nwt-normal"
                     value={novoCodigo}
-                    onChange={(e) => setNovoCodigo(e.target.value)}
+                    onChange={(e) => handleCodigoChange(e.target.value)}
                     className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
                   />
                 </div>
@@ -629,7 +816,8 @@ export const Publicacoes: React.FC = () => {
                     <option value="BROCHURA">Brochura</option>
                     <option value="REVISTA">Revista</option>
                     <option value="FOLHETO">Folheto</option>
-                    <option value="TRATADO">Tratado</option>
+                    <option value="CONVITE">Convites</option>
+                    <option value="CARTAO">Cartões</option>
                     <option value="OUTRO">Outro</option>
                   </select>
                 </div>
@@ -642,29 +830,57 @@ export const Publicacoes: React.FC = () => {
                 <input
                   type="text"
                   required
-                  placeholder="Ex: Tradução do Novo Mundo"
+                  placeholder="Ex: Tradução do Novo Mundo das Escrituras Sagradas"
                   value={novoTitulo}
                   onChange={(e) => setNovoTitulo(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                    Idioma
+                    Tipo / Formato
                   </label>
-                  <input
-                    type="text"
-                    value={novoIdioma}
-                    onChange={(e) => setNovoIdioma(e.target.value)}
+                  <select
+                    value={novoFormato}
+                    onChange={(e) =>
+                      setNovoFormato(e.target.value as FormatoPublicacao)
+                    }
                     className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
-                  />
+                  >
+                    {FORMATOS_DISPONIVEIS.map((f) => (
+                      <option key={f.valor} value={f.valor}>
+                        {f.rotulo}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                    Qtd. Inicial
+                    Idioma
+                  </label>
+                  <select
+                    value={novoIdioma}
+                    onChange={(e) =>
+                      setNovoIdioma(e.target.value as IdiomaPublicacao)
+                    }
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
+                  >
+                    {IDIOMAS_DISPONIVEIS.map((i) => (
+                      <option key={i.valor} value={i.valor}>
+                        {i.rotulo}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                    Qtd. Inicial em Estoque
                   </label>
                   <input
                     type="number"
@@ -677,7 +893,7 @@ export const Publicacoes: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                    Estoque Mín.
+                    Estoque Mínimo (Alerta)
                   </label>
                   <input
                     type="number"
@@ -695,14 +911,14 @@ export const Publicacoes: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setModalNovoItemAberto(false)}
-                  className="w-1/2 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl"
+                  className="w-1/2 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={processando}
-                  className="w-1/2 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl shadow-lg flex items-center justify-center gap-2"
+                  className="w-1/2 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl shadow-lg flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {processando ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -825,6 +1041,142 @@ export const Publicacoes: React.FC = () => {
                 Fechar
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: EDITAR ITEM */}
+      {modalEditarAberto && itemEmEdicao && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <h2 className="text-base font-bold text-white flex items-center gap-2">
+                <Pencil className="w-4 h-4 text-indigo-400" />
+                Editar Publicação: {itemEmEdicao.codigo}
+              </h2>
+              <button
+                onClick={() => setModalEditarAberto(false)}
+                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAtualizarItem} className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                  Título da Publicação
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={novoTitulo}
+                  onChange={(e) => setNovoTitulo(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                    Categoria
+                  </label>
+                  <select
+                    value={novaCategoria}
+                    onChange={(e) =>
+                      setNovaCategoria(e.target.value as CategoriaPublicacao)
+                    }
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
+                  >
+                    <option value="BIBLIA">Bíblia</option>
+                    <option value="LIVRO">Livro</option>
+                    <option value="BROCHURA">Brochura</option>
+                    <option value="REVISTA">Revista</option>
+                    <option value="FOLHETO">Folheto</option>
+                    <option value="TRATADO">Tratado</option>
+                    <option value="CARTAO">Cartão</option>
+                    <option value="CONVITE">Convite</option>
+                    <option value="OUTRO">Outro</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                    Formato / Tipo
+                  </label>
+                  <select
+                    value={novoFormato}
+                    onChange={(e) =>
+                      setNovoFormato(e.target.value as FormatoPublicacao)
+                    }
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
+                  >
+                    {FORMATOS_DISPONIVEIS.map((f) => (
+                      <option key={f.valor} value={f.valor}>
+                        {f.rotulo}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                    Idioma
+                  </label>
+                  <select
+                    value={novoIdioma}
+                    onChange={(e) =>
+                      setNovoIdioma(e.target.value as IdiomaPublicacao)
+                    }
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
+                  >
+                    {IDIOMAS_DISPONIVEIS.map((i) => (
+                      <option key={i.valor} value={i.valor}>
+                        {i.rotulo}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                    Estoque Mínimo (Alerta)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={novoEstoqueMinimo}
+                    onChange={(e) =>
+                      setNovoEstoqueMinimo(Number(e.target.value))
+                    }
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-3 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setModalEditarAberto(false)}
+                  className="w-1/2 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={processando}
+                  className="w-1/2 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl shadow-lg flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  {processando ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    "Salvar Alterações"
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
