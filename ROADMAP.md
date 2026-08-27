@@ -69,6 +69,18 @@ Documento oficial de acompanhamento das fases e tarefas de engenharia do projeto
 
 ---
 
+## ✅ Módulo 6: Gestão do Estoque de Publicações & Movimentações
+
+- [x] **Task 6.1:** Modelagem e Migration Flyway (`tb_publicacao` e `tb_movimentacao_estoque`)
+- [x] **Task 6.2:** Catálogo categorizado (Bíblias, Livros, Brochuras, Revistas, Folhetos, Tratados)
+- [x] **Task 6.3:** Controle de estoque por congregação e definição de estoque mínimo
+- [x] **Task 6.4:** Alertas visuais de estoque baixo ou zerado
+- [x] **Task 6.5:** Registro de movimentações: Entradas (remessas Betel), Saídas (balcão/pioneiros) e Inventário
+- [x] **Task 6.6:** Histórico detalhado de movimentações com exportação e impressão
+- [x] **Task 6.7:** Interface frontend com busca em tempo real, filtros por categoria e modais responsivos
+
+---
+
 ## 🚀 Próximas Etapas
 
 ### 👥 Separação de Domínio: Usuários vs Publicadores
@@ -80,7 +92,6 @@ Documento oficial de acompanhamento das fases e tarefas de engenharia do projeto
 ### 📚 Módulo de Publicações
 
 - [ ] Catálogo de Publicações (Bíblias, Livros, Folhetos, Revistas)
-- [ ] Controle de estoque por congregação
 - [ ] Sistema de pedidos e solicitações de publicadores
 
 ### 👥 Gestão de Usuários e Congregações

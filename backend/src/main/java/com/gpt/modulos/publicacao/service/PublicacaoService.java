@@ -3,188 +3,195 @@ package com.gpt.modulos.publicacao.service;
 import com.gpt.modulos.congregacao.model.Congregacao;
 import com.gpt.modulos.congregacao.repository.CongregacaoRepository;
 import com.gpt.modulos.publicacao.dto.*;
-import com.gpt.modulos.publicacao.model.EstoquePublicacao;
-import com.gpt.modulos.publicacao.model.PedidoPublicacao;
-import com.gpt.modulos.publicacao.model.Publicacao;
-import com.gpt.modulos.publicacao.model.StatusPedido;
-import com.gpt.modulos.publicacao.repository.EstoquePublicacaoRepository;
-import com.gpt.modulos.publicacao.repository.PedidoPublicacaoRepository;
+import com.gpt.modulos.publicacao.model.*;
+import com.gpt.modulos.publicacao.repository.MovimentacaoEstoqueRepository;
 import com.gpt.modulos.publicacao.repository.PublicacaoRepository;
+import com.gpt.modulos.publicador.model.Publicador;
+import com.gpt.modulos.publicador.repository.PublicadorRepository;
 import com.gpt.modulos.usuario.model.Usuario;
 import com.gpt.modulos.usuario.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class PublicacaoService {
 
     private final PublicacaoRepository publicacaoRepository;
-    private final EstoquePublicacaoRepository estoqueRepository;
-    private final PedidoPublicacaoRepository pedidoRepository;
+    private final MovimentacaoEstoqueRepository movimentacaoRepository;
     private final CongregacaoRepository congregacaoRepository;
-    private final UsuarioRepository usuarioRepository;
+    private final PublicadorRepository publicadorRepository;
+    private final UsuarioRepository usuarioRepository; // <-- Injeção adicionada
 
-    // --- Catálogo ---
+    @Transactional(readOnly = true)
+    public List<PublicacaoResponseDTO> listarPorCongregacao(Long congregacaoId) {
+        return publicacaoRepository.findByCongregacaoIdAndAtivoTrueOrderByTituloAsc(congregacaoId)
+                .stream()
+                .map(this::converterParaResponseDTO)
+                .toList();
+    }
 
     @Transactional
-    public PublicacaoResponseDTO cadastrarPublicacao(PublicacaoRequestDTO request) {
-        if (publicacaoRepository.existsByCodigo(request.getCodigo())) {
-            throw new IllegalArgumentException("Publicação já cadastrada com o código: " + request.getCodigo());
+    public PublicacaoResponseDTO cadastrar(PublicacaoRequestDTO dto, Usuario responsavel) {
+        if (dto.congregacaoId() == null) {
+            throw new IllegalArgumentException("O ID da congregação é obrigatório.");
         }
 
+        if (publicacaoRepository.existsByCodigoIgnoreCaseAndCongregacaoId(dto.codigo().trim(), dto.congregacaoId())) {
+            throw new IllegalArgumentException("Já existe uma publicação com o código '" + dto.codigo() + "' cadastrada nesta congregação.");
+        }
+
+        Congregacao congregacao = congregacaoRepository.findById(dto.congregacaoId())
+                .orElseThrow(() -> new IllegalArgumentException("Congregação não encontrada com ID: " + dto.congregacaoId()));
+
+        int qtdInicial = dto.quantidadeEstoque() != null ? dto.quantidadeEstoque() : 0;
+        int estoqueMin = dto.estoqueMinimo() != null ? dto.estoqueMinimo() : 5;
+
         Publicacao publicacao = Publicacao.builder()
-                .codigo(request.getCodigo().toLowerCase())
-                .titulo(request.getTitulo())
-                .categoria(request.getCategoria())
-                .idioma(request.getIdioma() != null ? request.getIdioma() : "Português")
+                .codigo(dto.codigo().trim().toUpperCase())
+                .titulo(dto.titulo().trim())
+                .categoria(dto.categoria())
+                .idioma(dto.idioma() != null && !dto.idioma().isBlank() ? dto.idioma().trim() : "Português")
+                .quantidadeEstoque(qtdInicial)
+                .estoqueMinimo(estoqueMin)
+                .congregacao(congregacao)
                 .ativo(true)
                 .build();
 
-        return converterParaPublicacaoDTO(publicacaoRepository.save(publicacao));
-    }
+        Publicacao salva = publicacaoRepository.save(publicacao);
 
-    @Transactional(readOnly = true)
-    public List<PublicacaoResponseDTO> listarCatalogo() {
-        return publicacaoRepository.findByAtivoTrue().stream()
-                .map(this::converterParaPublicacaoDTO)
-                .collect(Collectors.toList());
-    }
+        // Registra a primeira entrada no histórico se começou com estoque > 0
+        if (qtdInicial > 0) {
+            Usuario usuarioFinal = responsavel;
+            if (usuarioFinal == null) {
+                usuarioFinal = usuarioRepository.findAll().stream().findFirst().orElse(null);
+            }
 
-    // --- Estoque ---
-
-    @Transactional
-    public EstoqueResponseDTO atualizarEstoque(AjusteEstoqueDTO request) {
-        Congregacao congregacao = congregacaoRepository.findById(request.getCongregacaoId())
-                .orElseThrow(() -> new IllegalArgumentException("Congregação não encontrada"));
-
-        Publicacao publicacao = publicacaoRepository.findById(request.getPublicacaoId())
-                .orElseThrow(() -> new IllegalArgumentException("Publicação não encontrada"));
-
-        EstoquePublicacao estoque = estoqueRepository
-                .findByPublicacaoIdAndCongregacaoId(request.getPublicacaoId(), request.getCongregacaoId())
-                .orElse(EstoquePublicacao.builder()
+            if (usuarioFinal != null) {
+                MovimentacaoEstoque movInicial = MovimentacaoEstoque.builder()
+                        .publicacao(salva)
                         .congregacao(congregacao)
-                        .publicacao(publicacao)
-                        .quantidadeDisponivel(0)
-                        .build());
+                        .tipo(TipoMovimentacao.ENTRADA)
+                        .quantidade(qtdInicial)
+                        .quantidadeAnterior(0)
+                        .quantidadePosterior(qtdInicial)
+                        .responsavel(usuarioFinal)
+                        .observacoes("Estoque inicial de cadastro")
+                        .build();
+                movimentacaoRepository.save(movInicial);
+            }
+        }
 
-        estoque.setQuantidadeDisponivel(request.getQuantidade());
-        return converterParaEstoqueDTO(estoqueRepository.save(estoque));
+        return converterParaResponseDTO(salva);
     }
-
-    @Transactional(readOnly = true)
-    public List<EstoqueResponseDTO> listarEstoquePorCongregacao(Long congregacaoId) {
-        return estoqueRepository.findByCongregacaoId(congregacaoId).stream()
-                .map(this::converterParaEstoqueDTO)
-                .collect(Collectors.toList());
-    }
-
-    // --- Pedidos ---
 
     @Transactional
-    public PedidoPublicacaoResponseDTO solicitarPublicacao(PedidoPublicacaoRequestDTO request) {
-        Usuario publicador = usuarioRepository.findById(request.getPublicadorId())
-                .orElseThrow(() -> new IllegalArgumentException("Publicador não encontrado"));
+    public MovimentacaoResponseDTO movimentarEstoque(Long publicacaoId, MovimentacaoEstoqueDTO dto, Usuario responsavel) {
+        Publicacao publicacao = publicacaoRepository.findById(publicacaoId)
+                .orElseThrow(() -> new IllegalArgumentException("Publicação não encontrada com ID: " + publicacaoId));
 
-        Congregacao congregacao = congregacaoRepository.findById(request.getCongregacaoId())
-                .orElseThrow(() -> new IllegalArgumentException("Congregação não encontrada"));
+        int qtdAnterior = publicacao.getQuantidadeEstoque() != null ? publicacao.getQuantidadeEstoque() : 0;
+        int qtdMovimento = dto.quantidade();
+        int qtdPosterior;
 
-        Publicacao publicacao = publicacaoRepository.findById(request.getPublicacaoId())
-                .orElseThrow(() -> new IllegalArgumentException("Publicação não encontrada"));
+        Publicador publicador = null;
+        if (dto.publicadorId() != null) {
+            publicador = publicadorRepository.findById(dto.publicadorId()).orElse(null);
+        }
 
-        PedidoPublicacao pedido = PedidoPublicacao.builder()
-                .publicador(publicador)
-                .congregacao(congregacao)
+        switch (dto.tipo()) {
+            case ENTRADA -> qtdPosterior = qtdAnterior + qtdMovimento;
+            case SAIDA -> {
+                if (qtdAnterior < qtdMovimento) {
+                    throw new IllegalArgumentException("Estoque insuficiente. Quantidade disponível: " + qtdAnterior);
+                }
+                qtdPosterior = qtdAnterior - qtdMovimento;
+            }
+            case AJUSTE -> qtdPosterior = qtdMovimento;
+            default -> throw new IllegalArgumentException("Tipo de movimentação inválido.");
+        }
+
+        publicacao.setQuantidadeEstoque(qtdPosterior);
+        publicacaoRepository.save(publicacao);
+
+        Usuario usuarioFinal = responsavel;
+        if (usuarioFinal == null) {
+            usuarioFinal = usuarioRepository.findAll().stream().findFirst().orElse(null);
+        }
+
+        MovimentacaoEstoque movimentacao = MovimentacaoEstoque.builder()
                 .publicacao(publicacao)
-                .quantidade(request.getQuantidade())
-                .status(StatusPedido.PENDENTE)
-                .observacoes(request.getObservacoes())
+                .congregacao(publicacao.getCongregacao())
+                .tipo(dto.tipo())
+                .quantidade(qtdMovimento)
+                .quantidadeAnterior(qtdAnterior)
+                .quantidadePosterior(qtdPosterior)
+                .publicador(publicador)
+                .responsavel(usuarioFinal)
+                .observacoes(dto.observacoes())
                 .build();
 
-        return converterParaPedidoDTO(pedidoRepository.save(pedido));
-    }
+        MovimentacaoEstoque salva = movimentacaoRepository.save(movimentacao);
 
-    @Transactional
-    public PedidoPublicacaoResponseDTO atenderPedido(Long pedidoId) {
-        PedidoPublicacao pedido = pedidoRepository.findById(pedidoId)
-                .orElseThrow(() -> new IllegalArgumentException("Pedido não encontrado"));
-
-        if (pedido.getStatus() != StatusPedido.PENDENTE) {
-            throw new IllegalStateException("Apenas pedidos pendentes podem ser atendidos");
-        }
-
-        // Busca o estoque da congregação
-        EstoquePublicacao estoque = estoqueRepository
-                .findByPublicacaoIdAndCongregacaoId(pedido.getPublicacao().getId(), pedido.getCongregacao().getId())
-                .orElseThrow(() -> new IllegalStateException("Esta publicação não possui estoque cadastrado nesta congregação"));
-
-        if (estoque.getQuantidadeDisponivel() < pedido.getQuantidade()) {
-            throw new IllegalStateException("Estoque insuficiente para atender o pedido. Disponível: " 
-                    + estoque.getQuantidadeDisponivel() + " | Solicitado: " + pedido.getQuantidade());
-        }
-
-        // Baixa automática no estoque
-        estoque.setQuantidadeDisponivel(estoque.getQuantidadeDisponivel() - pedido.getQuantidade());
-        estoqueRepository.save(estoque);
-
-        pedido.setStatus(StatusPedido.ENTREGUE);
-        pedido.setAtendidoEm(LocalDateTime.now());
-
-        return converterParaPedidoDTO(pedidoRepository.save(pedido));
+        return new MovimentacaoResponseDTO(
+                salva.getId(),
+                publicacao.getId(),
+                publicacao.getCodigo(),
+                publicacao.getTitulo(),
+                salva.getTipo(),
+                salva.getQuantidade(),
+                salva.getQuantidadeAnterior(),
+                salva.getQuantidadePosterior(),
+                publicador != null ? publicador.getId() : null,
+                publicador != null ? publicador.getNome() : null,
+                usuarioFinal != null ? usuarioFinal.getNome() : "Sistema",
+                salva.getObservacoes(),
+                salva.getDataMovimentacao()
+        );
     }
 
     @Transactional(readOnly = true)
-    public List<PedidoPublicacaoResponseDTO> listarPedidosPorCongregacao(Long congregacaoId) {
-        return pedidoRepository.findByCongregacaoIdOrderByCriadoEmDesc(congregacaoId).stream()
-                .map(this::converterParaPedidoDTO)
-                .collect(Collectors.toList());
+    public List<MovimentacaoResponseDTO> listarHistoricoGeral(Long congregacaoId) {
+        return movimentacaoRepository.findByCongregacaoIdOrderByDataMovimentacaoDesc(congregacaoId)
+                .stream()
+                .map(m -> new MovimentacaoResponseDTO(
+                        m.getId(),
+                        m.getPublicacao().getId(),
+                        m.getPublicacao().getCodigo(),
+                        m.getPublicacao().getTitulo(),
+                        m.getTipo(),
+                        m.getQuantidade(),
+                        m.getQuantidadeAnterior(),
+                        m.getQuantidadePosterior(),
+                        m.getPublicador() != null ? m.getPublicador().getId() : null,
+                        m.getPublicador() != null ? m.getPublicador().getNome() : null,
+                        m.getResponsavel() != null ? m.getResponsavel().getNome() : "Sistema",
+                        m.getObservacoes(),
+                        m.getDataMovimentacao()
+                ))
+                .toList();
     }
 
-    // --- Conversores ---
+    private PublicacaoResponseDTO converterParaResponseDTO(Publicacao p) {
+        int estoque = p.getQuantidadeEstoque() != null ? p.getQuantidadeEstoque() : 0;
+        int minimo = p.getEstoqueMinimo() != null ? p.getEstoqueMinimo() : 0;
 
-    private PublicacaoResponseDTO converterParaPublicacaoDTO(Publicacao p) {
-        return PublicacaoResponseDTO.builder()
-                .id(p.getId())
-                .codigo(p.getCodigo())
-                .titulo(p.getTitulo())
-                .categoria(p.getCategoria())
-                .idioma(p.getIdioma())
-                .ativo(p.getAtivo())
-                .build();
-    }
-
-    private EstoqueResponseDTO converterParaEstoqueDTO(EstoquePublicacao e) {
-        return EstoqueResponseDTO.builder()
-                .id(e.getId())
-                .congregacaoId(e.getCongregacao().getId())
-                .publicacaoId(e.getPublicacao().getId())
-                .publicacaoCodigo(e.getPublicacao().getCodigo())
-                .publicacaoTitulo(e.getPublicacao().getTitulo())
-                .quantidadeDisponivel(e.getQuantidadeDisponivel())
-                .atualizadoEm(e.getAtualizadoEm())
-                .build();
-    }
-
-    private PedidoPublicacaoResponseDTO converterParaPedidoDTO(PedidoPublicacao p) {
-        return PedidoPublicacaoResponseDTO.builder()
-                .id(p.getId())
-                .publicadorId(p.getPublicador().getId())
-                .publicadorNome(p.getPublicador().getNome())
-                .congregacaoId(p.getCongregacao().getId())
-                .publicacaoId(p.getPublicacao().getId())
-                .publicacaoCodigo(p.getPublicacao().getCodigo())
-                .publicacaoTitulo(p.getPublicacao().getTitulo())
-                .quantidade(p.getQuantidade())
-                .status(p.getStatus())
-                .observacoes(p.getObservacoes())
-                .criadoEm(p.getCriadoEm())
-                .atendidoEm(p.getAtendidoEm())
-                .build();
+        return new PublicacaoResponseDTO(
+                p.getId(),
+                p.getCodigo(),
+                p.getTitulo(),
+                p.getCategoria(),
+                p.getIdioma(),
+                estoque,
+                minimo,
+                estoque <= minimo,
+                p.getCongregacao().getId(),
+                p.getCongregacao().getNome(),
+                p.getAtivo(),
+                p.getCriadoEm()
+        );
     }
 }

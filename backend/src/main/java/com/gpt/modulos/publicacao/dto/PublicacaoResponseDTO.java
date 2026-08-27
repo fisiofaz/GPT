@@ -1,23 +1,19 @@
 package com.gpt.modulos.publicacao.dto;
 
 import com.gpt.modulos.publicacao.model.CategoriaPublicacao;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import java.time.LocalDateTime;
 
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class PublicacaoResponseDTO {
-
-    private Long id;
-    private String codigo;
-    private String titulo;
-    private CategoriaPublicacao categoria;
-    private String idioma;
-    private Boolean ativo;
-}
+public record PublicacaoResponseDTO(
+        Long id,
+        String codigo,
+        String titulo,
+        CategoriaPublicacao categoria,
+        String idioma,
+        Integer quantidadeEstoque,
+        Integer estoqueMinimo,
+        boolean alertaEstoqueBaixo,
+        Long congregacaoId,
+        String congregacaoNome,
+        Boolean ativo,
+        LocalDateTime criadoEm
+) {}
