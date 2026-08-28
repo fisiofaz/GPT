@@ -1,8 +1,8 @@
 package com.gpt.modulos.publicacao.dto;
 
-import com.gpt.modulos.publicacao.model.CategoriaPublicacao;
-import com.gpt.modulos.publicacao.model.FormatoPublicacao;
-import com.gpt.modulos.publicacao.model.IdiomaPublicacao;
+import com.gpt.dominio.enums.CategoriaPublicacao;
+import com.gpt.dominio.enums.FormatoPublicacao;
+import com.gpt.dominio.enums.IdiomaPublicacao;
 
 import java.time.LocalDateTime;
 

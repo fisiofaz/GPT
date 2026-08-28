@@ -1,5 +1,6 @@
 package com.gpt.modulos.publicacao.model;
 
+import com.gpt.dominio.enums.TipoMovimentacao;
 import com.gpt.modulos.congregacao.model.Congregacao;
 import com.gpt.modulos.publicador.model.Publicador;
 import com.gpt.modulos.usuario.model.Usuario;

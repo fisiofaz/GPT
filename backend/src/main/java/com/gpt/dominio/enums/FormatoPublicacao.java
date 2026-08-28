@@ -1,4 +1,4 @@
-package com.gpt.modulos.publicacao.model;
+package com.gpt.dominio.enums;
 
 public enum FormatoPublicacao {
     NORMAL,

@@ -1,5 +1,6 @@
 package com.gpt.modulos.publicacao.model;
 
+import com.gpt.dominio.enums.*;
 import com.gpt.modulos.congregacao.model.Congregacao;
 
 import jakarta.persistence.*;
