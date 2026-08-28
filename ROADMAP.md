@@ -81,6 +81,11 @@ Documento oficial de acompanhamento das fases e tarefas de engenharia do projeto
 - [x] **Task 6.8:** Registro de movimentações: Entradas (remessas Betel), Saídas (balcão/pioneiros) e Inventário
 - [x] **Task 6.9:** Histórico detalhado de movimentações com exportação e impressão
 - [x] **Task 6.10:** Interface frontend com busca em tempo real, filtros por categoria e modais responsivos
+[x] **Task 6.11: Refatoração & Qualidade de Código:**
+  - [x] **Task 6.11.1:** Separação estrita de responsabilidades com Hook Customizado `usePublicacoes`
+  - [x] **Task 6.11.2:** Formulários de alta performance com `React Hook Form` e validação type-safe via `Zod`
+  - [x] **Task 6.11.3:** Notificações toast modernas não-bloqueantes com `Sonner`
+  - [x] **Task 6.11.4:** Modal customizado de confirmação de exclusão com Tailwind CSS
 
 ---
 
