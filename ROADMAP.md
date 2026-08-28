@@ -66,6 +66,12 @@ Documento oficial de acompanhamento das fases e tarefas de engenharia do projeto
 - [x] **Task 5.9:** Cartão Digital de Território (S-12) com navegação GPS / Google Maps
 - [x] **Task 5.10:** Mapa Geral Consolidado da Congregação com painel lateral e busca interativa
 - [x] **Task 5.11:** Envio automático do mapa e orientações para o Publicador via WhatsApp
+- [x] **Task 5.12: Refatoração & Qualidade de Código:**
+  - [x] **Task 5.12.1:** Hook Customizado `useTerritorios` para total separação de regra de negócio e visual
+  - [x] **Task 5.12.2:** Schemas de validação type-safe com `Zod` (`territorioSchema`, `designacaoSchema`, `devolucaoSchema`)
+  - [x] **Task 5.12.3:** Formulários de alta performance com `React Hook Form`
+  - [x] **Task 5.12.4:** Notificações toast modernas não-bloqueantes com `Sonner`
+  - [x] **Task 5.12.5:** Modularização em subcomponentes (`ModalCriarTerritorio`, `ModalDesignar`, `ModalDevolver`, `ModalSucessoRetirada`, `ModalRelatorioS13`, `CardTerritorio`)
 
 ---
 

@@ -1,46 +1,53 @@
-export type StatusTerritorio =
-  | "DISPONIVEL"
-  | "EM_TRABALHO"
-  | "EM_ATRASO"
-  | "TRABALHADO";
+export type StatusTerritorio = "DISPONIVEL" | "EM_TRABALHO" | "EM_ATRASO";
 
 export interface Territorio {
   id: number;
   numero: string;
   nome: string;
   descricao?: string;
-  poligonoGeojson?: string;
+  poligonoGeoJson?: string;
   status: StatusTerritorio;
   congregacaoId: number;
   congregacaoNome?: string;
-  criadoEm?: string;
+  publicadorId?: number;
   publicadorNome?: string;
+  publicadorAtualId?: number;
+  publicadorAtualNome?: string;
+  dataDesignacao?: string;
   dataRetirada?: string;
-  dataPrevisaoDevolucao?: string;
 }
-export interface CriarTerritorioDTO {
+
+export interface TerritorioRequest {
   numero: string;
   nome: string;
   descricao?: string;
-  poligonoGeojson?: string;
+  poligonoGeoJson?: string;
   congregacaoId: number;
 }
 
-export interface MovimentacaoTerritorioDTO {
+export interface DesignacaoRequest {
   publicadorId: number;
-  dataRetirada?: string;
   observacoes?: string;
 }
 
+// Alias de compatibilidade com outros arquivos do projeto
+export type RetiradaRequest = DesignacaoRequest;
+
+export interface DevolucaoRequest {
+  observacoes?: string;
+}
 
 export interface HistoricoTerritorio {
   id: number;
-  territorioId: number;
+  territorioId?: number;
   territorioNumero?: string;
   territorioNome?: string;
-  publicadorId: number;
+  publicadorId?: number;
   publicadorNome?: string;
-  dataRetirada: string;
+  dataRetirada?: string;
   dataDevolucao?: string;
   observacoes?: string;
 }
+
+// Alias para o relatório S-13
+export type RelatorioS13Item = HistoricoTerritorio;
