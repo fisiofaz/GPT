@@ -1,5 +1,6 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Toaster } from "sonner";
 import { AuthProvider } from "./context/AuthProvider";
 import { useAuth } from "./context/useAuth";
 import { Login } from "./pages/Login";
@@ -19,6 +20,7 @@ export const App: React.FC = () => {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <Toaster theme="dark" position="top-right" richColors closeButton />
         <Routes>
           {/* Rotas Públicas */}
           <Route path="/login" element={<Login />} />
@@ -61,12 +63,7 @@ export const App: React.FC = () => {
             }
           />
 
-          <Route 
-            path="/catalogo" 
-            element={
-              <CatalogoPublicacoes />
-            } 
-          />
+          <Route path="/catalogo" element={<CatalogoPublicacoes />} />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
