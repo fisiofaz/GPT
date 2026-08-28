@@ -1,6 +1,5 @@
 package com.gpt.modulos.territorio.dto;
 
-import com.gpt.modulos.territorio.model.StatusTerritorio;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -8,6 +7,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+
+import com.gpt.dominio.enums.StatusTerritorio;
 
 @Getter
 @Setter

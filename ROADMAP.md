@@ -78,20 +78,36 @@ Documento oficial de acompanhamento das fases e tarefas de engenharia do projeto
 ## ✅ Módulo 6: Gestão do Estoque de Publicações & Movimentações
 
 - [x] **Task 6.1:** Modelagem e Migration Flyway (`tb_publicacao` e `tb_movimentacao_estoque`)
-[x] **Task 6.2:** Tabela Mestra Global (`tb_catalogo_mestre`) para modelos oficiais de publicações
-[x] **Task 6.3:** Página dedicada de gerenciamento do Catálogo Geral (`/catalogo`) com CRUD completo
-[x]  **Task 6.4:** Autopreenchimento inteligente por código no cadastro de itens da congregação
+- [x] **Task 6.2:** Tabela Mestra Global (`tb_catalogo_mestre`) para modelos oficiais de publicações
+- [x] **Task 6.3:** Página dedicada de gerenciamento do Catálogo Geral (`/catalogo`) com CRUD completo
+- [x]  **Task 6.4:** Autopreenchimento inteligente por código no cadastro de itens da congregação
 - [x] **Task 6.5:** Catálogo categorizado (Bíblias, Livros, Brochuras, Revistas, Folhetos, Tratados)
 - [x] **Task 6.6** Controle de estoque por congregação e definição de estoque mínimo
 - [x] **Task 6.7:** Alertas visuais de estoque baixo ou zerado
 - [x] **Task 6.8:** Registro de movimentações: Entradas (remessas Betel), Saídas (balcão/pioneiros) e Inventário
 - [x] **Task 6.9:** Histórico detalhado de movimentações com exportação e impressão
 - [x] **Task 6.10:** Interface frontend com busca em tempo real, filtros por categoria e modais responsivos
-[x] **Task 6.11: Refatoração & Qualidade de Código:**
+- [x] **Task 6.11: Refatoração & Qualidade de Código:**
   - [x] **Task 6.11.1:** Separação estrita de responsabilidades com Hook Customizado `usePublicacoes`
   - [x] **Task 6.11.2:** Formulários de alta performance com `React Hook Form` e validação type-safe via `Zod`
   - [x] **Task 6.11.3:** Notificações toast modernas não-bloqueantes com `Sonner`
   - [x] **Task 6.11.4:** Modal customizado de confirmação de exclusão com Tailwind CSS
+
+---
+
+## ✅ Módulo 4: Pedidos de Publicações para Betel & Pedidos Especiais
+
+- [x] **Task 7.1** Migration Flyway (`V10`) estruturando tabelas de pedidos de publicadores e pedidos Betel
+- [x] **Task 7.2** Solicitação de pedidos especiais de publicadores vinculados ao Catálogo Mestre Geral
+- [x] **Task 7.3** Painel de triagem e atendimento de pedidos de publicadores (Marcar Atendido / Cancelar)
+- [x] **Task 7.4** Montagem e consolidação da remessa mensal para Betel com busca dinâmica no Catálogo Geral
+- [x] **Task 7.5** Importação com um clique de solicitações de publicadores pendentes para o pedido consolidado
+- [x] **Task 7.6** CRUD de Pedidos de Betel (Criar, Editar rascunho/enviado, Excluir e Marcar como Enviado)
+- [x] **Task 7.7** Fluxo de conferência de chegada da caixa física com conferência item a item
+- [x] **Task 7.8** Entrada e atualização automática no estoque ativo (`tb_publicacao.quantidade_estoque`)
+- [x] **Task 7.9** Registro automático de auditoria na tabela `tb_movimentacao_estoque` vinculando o responsável logado
+- [x] **Task 7.10** Atualização em cascata do status dos pedidos de publicadores vinculados para `ATENDIDO`
+- [x] **Task 7.11** Acessos e atalhos rápidos integrados ao `Dashboard` e ao cabeçalho de `Publicações`
 
 ---
 
@@ -103,10 +119,11 @@ Documento oficial de acompanhamento das fases e tarefas de engenharia do projeto
 - [ ] Endpoint de listagem de publicadores da congregação
 - [ ] Substituição de entrada manual por Select dinâmico de publicadores nos modais
 
-### 📚 Módulo de Publicações
+### 👥 Padronização e Refatoração do Backend Spring Boot**
 
-- [ ] Catálogo de Publicações (Bíblias, Livros, Folhetos, Revistas)
-- [ ] Sistema de pedidos e solicitações de publicadores
+- [ ] Arquitetura modular por features/pacotes
+- [ ] Global Exception Handler com RFC 7807 (`ProblemDetail`)
+- [ ] Documentação com Swagger / OpenAPI
 
 ### 👥 Gestão de Usuários e Congregações
 

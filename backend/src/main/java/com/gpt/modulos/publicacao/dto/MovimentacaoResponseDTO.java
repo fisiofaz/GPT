@@ -1,7 +1,8 @@
 package com.gpt.modulos.publicacao.dto;
 
-import com.gpt.modulos.publicacao.model.TipoMovimentacao;
 import java.time.LocalDateTime;
+
+import com.gpt.dominio.enums.TipoMovimentacao;
 
 public record MovimentacaoResponseDTO(
         Long id,

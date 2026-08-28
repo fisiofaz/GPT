@@ -1,5 +1,8 @@
 package com.gpt.modulos.publicacao.service;
 
+import com.gpt.dominio.enums.FormatoPublicacao;
+import com.gpt.dominio.enums.IdiomaPublicacao;
+import com.gpt.dominio.enums.TipoMovimentacao;
 import com.gpt.modulos.congregacao.model.Congregacao;
 import com.gpt.modulos.congregacao.repository.CongregacaoRepository;
 import com.gpt.modulos.publicacao.dto.*;

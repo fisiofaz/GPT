@@ -12,6 +12,7 @@ import {
   Clock,
   Package,
   Sparkles,
+  ArrowRight,
   Building2,
 } from "lucide-react";
 
@@ -254,6 +255,36 @@ export const Dashboard: React.FC = () => {
                 <span>Gerenciar Publicadores</span>
                 <ArrowUpRight className="w-4 h-4" />
               </button>
+            </div>
+          </div>
+          {/* Card: Pedidos*/}
+          <div
+            onClick={() => navigate("/pedidos")}
+            className="bg-slate-900/80 border border-slate-800 hover:border-indigo-500/50 rounded-3xl p-6 transition-all shadow-xl hover:shadow-2xl cursor-pointer flex flex-col justify-between group"
+          >
+            <div className="space-y-4">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Package className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white group-hover:text-indigo-400 transition-colors">
+                  Pedidos & Remessas
+                </h3>
+                <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                  Controle de solicitações de publicadores e consolidação de
+                  remessas mensais para Betel.
+                </p>
+              </div>
+            </div>
+            <div className="pt-4 border-t border-slate-800/80 flex items-center text-xs font-semibold text-indigo-400 gap-1.5">
+              <button
+                onClick={() => navigate("/pedidos")}
+                className="w-full py-3.5 px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 transition-all cursor-pointer"
+              >
+                <span>Gerenciar Pedidos</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </button>
+              
             </div>
           </div>
         </section>

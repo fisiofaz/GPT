@@ -1,6 +1,6 @@
 package com.gpt.modulos.territorio.repository;
 
-import com.gpt.modulos.territorio.model.StatusTerritorio;
+import com.gpt.dominio.enums.StatusTerritorio;
 import com.gpt.modulos.territorio.model.Territorio;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;

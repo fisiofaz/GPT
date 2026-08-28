@@ -1,4 +1,4 @@
-package com.gpt.modulos.territorio.model;
+package com.gpt.dominio.enums;
 
 public enum StatusTerritorio {
     DISPONIVEL,

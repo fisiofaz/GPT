@@ -1,5 +1,7 @@
 package com.gpt.modulos.publicacao.model;
 
+import com.gpt.dominio.enums.*;
+
 import jakarta.persistence.*;
 import lombok.*;
 

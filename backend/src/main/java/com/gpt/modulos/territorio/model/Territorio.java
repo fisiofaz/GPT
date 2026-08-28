@@ -1,5 +1,7 @@
 package com.gpt.modulos.territorio.model;
 
+import com.gpt.dominio.enums.StatusTerritorio;
+import com.gpt.dominio.enums.*;
 import com.gpt.modulos.congregacao.model.Congregacao;
 import jakarta.persistence.*;
 import lombok.*;
