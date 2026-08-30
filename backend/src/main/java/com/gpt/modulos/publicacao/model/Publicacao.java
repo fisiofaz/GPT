@@ -1,7 +1,9 @@
 package com.gpt.modulos.publicacao.model;
 
-import com.gpt.dominio.enums.*;
 import com.gpt.modulos.congregacao.model.Congregacao;
+import com.gpt.modulos.publicacao.enums.CategoriaPublicacao;
+import com.gpt.modulos.publicacao.enums.FormatoPublicacao;
+import com.gpt.modulos.publicacao.enums.IdiomaPublicacao;
 
 import jakarta.persistence.*;
 import lombok.*;

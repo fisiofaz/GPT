@@ -1,6 +1,5 @@
 package com.gpt.modulos.territorio.service;
 
-import com.gpt.dominio.enums.StatusTerritorio;
 import com.gpt.modulos.congregacao.model.Congregacao;
 import com.gpt.modulos.congregacao.repository.CongregacaoRepository;
 import com.gpt.modulos.publicador.model.Publicador;
@@ -9,6 +8,7 @@ import com.gpt.modulos.territorio.dto.HistoricoTerritorioResponseDTO;
 import com.gpt.modulos.territorio.dto.MovimentacaoTerritorioDTO;
 import com.gpt.modulos.territorio.dto.TerritorioRequestDTO;
 import com.gpt.modulos.territorio.dto.TerritorioResponseDTO;
+import com.gpt.modulos.territorio.enums.StatusTerritorio;
 import com.gpt.modulos.territorio.model.HistoricoTerritorio;
 import com.gpt.modulos.territorio.model.Territorio;
 import com.gpt.modulos.territorio.repository.HistoricoTerritorioRepository;

@@ -1,6 +1,7 @@
 package com.gpt.modulos.publicacao.dto;
 
-import com.gpt.dominio.enums.TipoMovimentacao;
+
+import com.gpt.modulos.publicacao.enums.TipoMovimentacao;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;

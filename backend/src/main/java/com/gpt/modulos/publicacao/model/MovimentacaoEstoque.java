@@ -1,7 +1,7 @@
 package com.gpt.modulos.publicacao.model;
 
-import com.gpt.dominio.enums.TipoMovimentacao;
 import com.gpt.modulos.congregacao.model.Congregacao;
+import com.gpt.modulos.publicacao.enums.TipoMovimentacao;
 import com.gpt.modulos.publicador.model.Publicador;
 import com.gpt.modulos.usuario.model.Usuario;
 import jakarta.persistence.*;
@@ -58,4 +58,11 @@ public class MovimentacaoEstoque {
     @CreationTimestamp
     @Column(name = "data_movimentacao", updatable = false)
     private LocalDateTime dataMovimentacao;
+    
+    @PrePersist
+    public void prePersist() {
+        if (this.dataMovimentacao == null) {
+            this.dataMovimentacao = LocalDateTime.now();
+        }
+    }
 }

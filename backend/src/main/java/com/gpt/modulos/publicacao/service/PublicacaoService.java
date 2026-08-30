@@ -1,11 +1,11 @@
 package com.gpt.modulos.publicacao.service;
 
-import com.gpt.dominio.enums.FormatoPublicacao;
-import com.gpt.dominio.enums.IdiomaPublicacao;
-import com.gpt.dominio.enums.TipoMovimentacao;
 import com.gpt.modulos.congregacao.model.Congregacao;
 import com.gpt.modulos.congregacao.repository.CongregacaoRepository;
 import com.gpt.modulos.publicacao.dto.*;
+import com.gpt.modulos.publicacao.enums.FormatoPublicacao;
+import com.gpt.modulos.publicacao.enums.IdiomaPublicacao;
+import com.gpt.modulos.publicacao.enums.TipoMovimentacao;
 import com.gpt.modulos.publicacao.model.*;
 import com.gpt.modulos.publicacao.repository.MovimentacaoEstoqueRepository;
 import com.gpt.modulos.publicacao.repository.PublicacaoRepository;
@@ -27,8 +27,8 @@ public class PublicacaoService {
     private final MovimentacaoEstoqueRepository movimentacaoRepository;
     private final CongregacaoRepository congregacaoRepository;
     private final PublicadorRepository publicadorRepository;
-    private final UsuarioRepository usuarioRepository; // <-- Injeção adicionada
-
+    private final UsuarioRepository usuarioRepository; 
+    
     @Transactional(readOnly = true)
     public List<PublicacaoResponseDTO> listarPorCongregacao(Long congregacaoId) {
         return publicacaoRepository.findByCongregacaoIdAndAtivoTrueOrderByTituloAsc(congregacaoId)

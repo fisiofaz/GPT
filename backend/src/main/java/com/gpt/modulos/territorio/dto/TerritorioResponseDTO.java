@@ -8,7 +8,7 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 
-import com.gpt.dominio.enums.StatusTerritorio;
+import com.gpt.modulos.territorio.enums.StatusTerritorio;
 
 @Getter
 @Setter

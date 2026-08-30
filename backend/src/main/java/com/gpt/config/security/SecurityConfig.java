@@ -40,6 +40,14 @@ public class SecurityConfig {
                     // Libera requisições pre-flight do navegador (OPTIONS)
                     req.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll();
                     
+                    // Libera documentação interativa Swagger / OpenAPI
+                    req.requestMatchers(
+                            "/v3/api-docs/**",
+                            "/api-docs/**",
+                            "/swagger-ui/**",
+                            "/swagger-ui.html"
+                    ).permitAll();
+                    
                     // Libera endpoints de autenticação
                     req.requestMatchers(
                             "/auth/login",
