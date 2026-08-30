@@ -1,8 +1,8 @@
 package com.gpt.modulos.territorio.model;
 
-import com.gpt.dominio.enums.StatusTerritorio;
-import com.gpt.dominio.enums.*;
 import com.gpt.modulos.congregacao.model.Congregacao;
+import com.gpt.modulos.territorio.enums.StatusTerritorio;
+
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;

@@ -1,6 +1,6 @@
 package com.gpt.modulos.publicacao.repository;
 
-import com.gpt.dominio.enums.StatusPedido;
+import com.gpt.modulos.pedido.enums.StatusPedido;
 import com.gpt.modulos.publicacao.model.PedidoPublicacao;
 
 import org.springframework.data.jpa.repository.JpaRepository;

@@ -9,6 +9,6 @@ import java.util.Optional;
 
 @Repository
 public interface CatalogoMestreRepository extends JpaRepository<CatalogoMestre, Long> {
-    List<CatalogoMestre> findAllByOrderByTituloAsc();
-    Optional<CatalogoMestre> findByCodigoIgnoreCase(String codigo);
+	List<CatalogoMestre> findAllByOrderByTituloAsc();
+    Optional<CatalogoMestre> findByCodigo(String codigo);
 }

@@ -29,6 +29,9 @@ public class Congregacao {
 
     @Column(nullable = false, length = 2)
     private String estado;
+    
+    @Column(length = 30)
+    private String numeroCircuito;
 
     @CreationTimestamp
     @Column(name = "criado_em", nullable = false, updatable = false)
@@ -36,5 +39,5 @@ public class Congregacao {
 
     @UpdateTimestamp
     @Column(name = "atualizado_em")
-    private LocalDateTime atualizadoEm;
+    private LocalDateTime atualizadoEm;    
 }

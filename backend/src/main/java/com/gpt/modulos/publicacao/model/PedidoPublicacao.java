@@ -1,8 +1,7 @@
 package com.gpt.modulos.publicacao.model;
 
-import com.gpt.dominio.enums.StatusPedido;
-import com.gpt.dominio.enums.*;
 import com.gpt.modulos.congregacao.model.Congregacao;
+import com.gpt.modulos.pedido.enums.StatusPedido;
 import com.gpt.modulos.usuario.model.Usuario;
 import jakarta.persistence.*;
 import lombok.*;
