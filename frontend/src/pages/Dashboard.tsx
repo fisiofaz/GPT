@@ -1,35 +1,45 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
+import { api } from "../services/api";
 import {
   LogOut,
   MapPin,
   BookOpen,
-  Users,
   Layers,
   ArrowUpRight,
   CheckCircle2,
   Clock,
   Package,
   Sparkles,
-  ArrowRight,
   Building2,
   ShieldCheck,
   UserCog,
+  Activity,
+  FileText,
 } from "lucide-react";
+
+interface HistoricoConsumo {
+  mesAno: string;
+  totalSaidas: number;
+}
+
+interface DashboardStats {
+  territoriosDisponiveis: number;
+  territoriosTrabalhadosAnoServico: number;
+  territoriosEmAndamento: number;
+  totalItensEstoque: number;
+  totalPedidos: number;
+  totalCongregacoesAtivas: number;
+  historicoConsumo: HistoricoConsumo[];
+}
 
 export const Dashboard: React.FC = () => {
   const { usuario, logout } = useAuth();
   const navigate = useNavigate();
 
-  // Formatação amigável das roles
-  const formatarRole = (role: string) => {
-    return role
-      .replace("ROLE_", "")
-      .replace("_", " ")
-      .toLowerCase()
-      .replace(/\b\w/g, (l) => l.toUpperCase());
-  };
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const userRoles: string[] = usuario?.roles || [];
   const isAdminGeral = userRoles.includes("ROLE_ADMIN_GERAL");
@@ -38,12 +48,38 @@ export const Dashboard: React.FC = () => {
     userRoles.includes("ROLE_SUPERINTENDENTE_SERVICO") ||
     userRoles.includes("ROLE_ANCIAO");
 
+  const congregacaoId = usuario?.congregacaoId || 1;
+
+  useEffect(() => {
+    const carregarEstatisticas = async () => {
+      try {
+        const response = await api.get(
+          `/api/v1/dashboard/estatisticas/${congregacaoId}`,
+        );
+        setStats(response.data);
+      } catch (error) {
+        console.error("Erro ao carregar estatísticas do dashboard", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    carregarEstatisticas();
+  }, [congregacaoId]);
+
+  const formatarRole = (role: string) => {
+    return role
+      .replace("ROLE_", "")
+      .replace("_", " ")
+      .toLowerCase()
+      .replace(/\b\w/g, (l) => l.toUpperCase());
+  };
+
   return (
     <div className="min-h-screen bg-[#0b0f19] text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
-      {/* Barra de Navegação Superior com efeito Glassmorphism */}
+      {/* Header */}
       <header className="sticky top-0 z-50 backdrop-blur-xl bg-[#0b0f19]/80 border-b border-slate-800/80">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          {/* Logo & Marca */}
           <div className="flex items-center gap-3.5">
             <div className="w-11 h-11 rounded-2xl bg-linear-to-br from-indigo-500 via-indigo-600 to-violet-700 flex items-center justify-center shadow-lg shadow-indigo-500/25 border border-indigo-400/30">
               <Layers className="w-6 h-6 text-white" />
@@ -63,11 +99,10 @@ export const Dashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Perfil & Logout */}
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3 pl-4 pr-3 py-1.5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-inner">
               <div className="w-8 h-8 rounded-xl bg-linear-to-tr from-indigo-500 to-violet-500 flex items-center justify-center text-xs font-bold text-white shadow">
-                {usuario?.nome.charAt(0).toUpperCase()}
+                {usuario?.nome?.charAt(0).toUpperCase()}
               </div>
               <div className="text-left hidden sm:block">
                 <p className="text-xs font-semibold text-slate-200 leading-tight">
@@ -79,7 +114,7 @@ export const Dashboard: React.FC = () => {
 
             <button
               onClick={logout}
-              className="p-2.5 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-all duration-200 cursor-pointer"
+              className="p-2.5 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/25 transition-all duration-200 cursor-pointer"
               title="Encerrar Sessão"
             >
               <LogOut className="w-5 h-5" />
@@ -103,12 +138,11 @@ export const Dashboard: React.FC = () => {
                 Olá, {usuario?.nome}!
               </h1>
               <p className="text-slate-400 text-sm sm:text-base max-w-xl">
-                Seja bem-vindo ao sistema de gestão unificada da sua
-                congregação. Acompanhe o fluxo de trabalho abaixo.
+                Acompanhe o panorama dos territórios, estoque, pedidos e
+                métricas do sistema.
               </p>
             </div>
 
-            {/* Badges de Roles */}
             <div className="flex flex-wrap gap-2 md:justify-end items-center max-w-md">
               {usuario?.roles.map((role) => (
                 <span
@@ -123,64 +157,137 @@ export const Dashboard: React.FC = () => {
           </div>
         </section>
 
-        {/*Estatusca */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {/* Estatísticas: Território Livre */}
-          <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800/80 flex items-center gap-4 hover:border-slate-700 transition-all">
-            <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20">
-              <CheckCircle2 className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                Territórios Livres
-              </p>
-              <p className="text-2xl font-bold text-white mt-0.5">
-                Disponíveis
-              </p>
-            </div>
-          </div>
+        {/* 📊 SEÇÃO DE CARDS DE MÉTRICAS */}
+        <section className="space-y-4">
+          <h2 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
+            <Activity className="w-5 h-5 text-indigo-400" />
+            Indicadores Principais
+          </h2>
 
-          {/*Estatusca: Território em Andamento */}
-          <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800/80 flex items-center gap-4 hover:border-slate-700 transition-all">
-            <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center border border-amber-500/20">
-              <Clock className="w-6 h-6" />
+          <div
+            className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 ${isAdminGeral ? "xl:grid-cols-6" : "xl:grid-cols-5"} gap-5`}
+          >
+            {/* 1. Territórios Disponíveis */}
+            <div className="p-6 rounded-3xl bg-slate-900/70 border border-slate-800/80 flex flex-col justify-between hover:border-emerald-500/30 transition-all shadow-xl">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  Disponíveis
+                </span>
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20">
+                  <CheckCircle2 className="w-5 h-5" />
+                </div>
+              </div>
+              <div className="mt-4">
+                <p className="text-3xl font-extrabold text-white">
+                  {loading ? "..." : (stats?.territoriosDisponiveis ?? 0)}
+                </p>
+                <p className="text-xs text-slate-500 mt-1">
+                  Prontos p/ designação
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                Em Andamento
-              </p>
-              <p className="text-2xl font-bold text-white mt-0.5">Designados</p>
-            </div>
-          </div>
 
-          {/*Estatusca: Publicação */}
-          <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800/80 flex items-center gap-4 hover:border-slate-700 transition-all">
-            <div className="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center border border-indigo-500/20">
-              <Package className="w-6 h-6" />
+            {/* 2. Territórios Já Trabalhados */}
+            <div className="p-6 rounded-3xl bg-slate-900/70 border border-slate-800/80 flex flex-col justify-between hover:border-blue-500/30 transition-all shadow-xl">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  Trabalhados
+                </span>
+                <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center border border-blue-500/20">
+                  <MapPin className="w-5 h-5" />
+                </div>
+              </div>
+              <div className="mt-4">
+                <p className="text-3xl font-extrabold text-white">
+                  {loading
+                    ? "..."
+                    : (stats?.territoriosTrabalhadosAnoServico ?? 0)}
+                </p>
+                <p className="text-xs text-slate-500 mt-1">
+                  Neste ano de serviço
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                Publicações
-              </p>
-              <p className="text-2xl font-bold text-white mt-0.5">Em Estoque</p>
-            </div>
-          </div>
 
-          {/*Estatusca: Congregação */}
-          <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800/80 flex items-center gap-4 hover:border-slate-700 transition-all">
-            <div className="w-12 h-12 rounded-xl bg-violet-500/10 text-violet-400 flex items-center justify-center border border-violet-500/20">
-              <Building2 className="w-6 h-6" />
+            {/* 3. Territórios em Andamento */}
+            <div className="p-6 rounded-3xl bg-slate-900/70 border border-slate-800/80 flex flex-col justify-between hover:border-amber-500/30 transition-all shadow-xl">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  Em Andamento
+                </span>
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center border border-amber-500/20">
+                  <Clock className="w-5 h-5" />
+                </div>
+              </div>
+              <div className="mt-4">
+                <p className="text-3xl font-extrabold text-white">
+                  {loading ? "..." : (stats?.territoriosEmAndamento ?? 0)}
+                </p>
+                <p className="text-xs text-slate-500 mt-1">Com publicadores</p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                Congregação
-              </p>
-              <p className="text-2xl font-bold text-white mt-0.5">Ativa</p>
+
+            {/* 4. Número Total de Pedidos */}
+            <div className="p-6 rounded-3xl bg-slate-900/70 border border-slate-800/80 flex flex-col justify-between hover:border-violet-500/30 transition-all shadow-xl">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  Total Pedidos
+                </span>
+                <div className="w-10 h-10 rounded-xl bg-violet-500/10 text-violet-400 flex items-center justify-center border border-violet-500/20">
+                  <FileText className="w-5 h-5" />
+                </div>
+              </div>
+              <div className="mt-4">
+                <p className="text-3xl font-extrabold text-white">
+                  {loading ? "..." : (stats?.totalPedidos ?? 0)}
+                </p>
+                <p className="text-xs text-slate-500 mt-1">Registrados</p>
+              </div>
             </div>
+
+            {/* 5. Total de Publicações no Estoque */}
+            <div className="p-6 rounded-3xl bg-slate-900/70 border border-slate-800/80 flex flex-col justify-between hover:border-indigo-500/30 transition-all shadow-xl">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  Estoque Total
+                </span>
+                <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center border border-indigo-500/20">
+                  <Package className="w-5 h-5" />
+                </div>
+              </div>
+              <div className="mt-4">
+                <p className="text-3xl font-extrabold text-white">
+                  {loading ? "..." : (stats?.totalItensEstoque ?? 0)}
+                </p>
+                <p className="text-xs text-slate-500 mt-1">Itens disponíveis</p>
+              </div>
+            </div>
+
+            {/* 6. Total de Congregações Ativas (Exclusivo ROLE_ADMIN_GERAL) */}
+            {isAdminGeral && (
+              <div className="p-6 rounded-3xl bg-slate-900/70 border border-cyan-500/30 flex flex-col justify-between hover:border-cyan-500/60 transition-all shadow-xl bg-linear-to-br from-slate-900 to-cyan-950/30">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-cyan-300 uppercase tracking-wider">
+                    Congregações
+                  </span>
+                  <div className="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center border border-cyan-500/20">
+                    <Building2 className="w-5 h-5" />
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <p className="text-3xl font-extrabold text-white">
+                    {loading ? "..." : (stats?.totalCongregacoesAtivas ?? 0)}
+                  </p>
+                  <p className="text-xs text-cyan-400/80 mt-1">
+                    Ativas no sistema
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </section>
 
-        {/* 🏢 SEÇÃO ADMINISTRATIVA / MULTI-TENANT (Condicional por Papel) */}
+        {/* Módulos de Acesso e Governança */}
         {(isAdminGeral || isLiderancaLocal) && (
           <section className="space-y-4">
             <div className="flex items-center gap-2">
@@ -190,30 +297,26 @@ export const Dashboard: React.FC = () => {
               </h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Card: Gerenciar Congregações (Exclusivo Admin Geral) */}
               {isAdminGeral && (
-                <div className="group relative overflow-hidden rounded-3xl bg-slate-900/70 border border-slate-800 hover:border-indigo-500/40 p-8 transition-all duration-300 flex flex-col justify-between hover:shadow-2xl hover:shadow-indigo-950/30">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-2xl group-hover:bg-indigo-500/10 transition-all" />
-
+                <div className="group relative overflow-hidden rounded-3xl bg-slate-900/70 border border-slate-800 hover:border-indigo-500/40 p-8 transition-all duration-300 flex flex-col justify-between shadow-xl">
                   <div className="space-y-4 relative z-10">
-                    <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                    <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center">
                       <Building2 className="w-7 h-7" />
                     </div>
                     <div>
                       <h3 className="text-2xl font-bold text-white tracking-tight">
                         Congregações (Multi-Tenant)
                       </h3>
-                      <p className="text-slate-400 text-sm mt-2 leading-relaxed">
+                      <p className="text-slate-400 text-sm mt-2">
                         Cadastre e administre as congregações globais do
-                        sistema, códigos e infraestrutura multi-tenant.
+                        sistema.
                       </p>
                     </div>
                   </div>
-
                   <div className="pt-8 relative z-10">
                     <button
                       onClick={() => navigate("/admin/congregacoes")}
-                      className="w-full py-3.5 px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 transition-all cursor-pointer group-hover:gap-3"
+                      className="w-full py-3.5 px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 transition-all cursor-pointer"
                     >
                       <span>Gerenciar Congregações</span>
                       <ArrowUpRight className="w-4 h-4" />
@@ -222,30 +325,26 @@ export const Dashboard: React.FC = () => {
                 </div>
               )}
 
-              {/* Card: Usuários da Congregação (Admin Geral, Superintendente e Ancião) */}
               {isLiderancaLocal && (
-                <div className="group relative overflow-hidden rounded-3xl bg-slate-900/70 border border-slate-800 hover:border-cyan-500/40 p-8 transition-all duration-300 flex flex-col justify-between hover:shadow-2xl hover:shadow-cyan-950/30">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 rounded-full blur-2xl group-hover:bg-cyan-500/10 transition-all" />
-
+                <div className="group relative overflow-hidden rounded-3xl bg-slate-900/70 border border-slate-800 hover:border-cyan-500/40 p-8 transition-all duration-300 flex flex-col justify-between shadow-xl">
                   <div className="space-y-4 relative z-10">
-                    <div className="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                    <div className="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center">
                       <UserCog className="w-7 h-7" />
                     </div>
                     <div>
                       <h3 className="text-2xl font-bold text-white tracking-tight">
                         Usuários da Congregação
                       </h3>
-                      <p className="text-slate-400 text-sm mt-2 leading-relaxed">
-                        Visualize e gerencie os usuários associados, atribuições
-                        de papéis e permissões locais de acesso.
+                      <p className="text-slate-400 text-sm mt-2">
+                        Visualize e gerencie os usuários associados e
+                        permissões.
                       </p>
                     </div>
                   </div>
-
                   <div className="pt-8 relative z-10">
                     <button
                       onClick={() => navigate("/admin/usuarios-congregacao")}
-                      className="w-full py-3.5 px-5 rounded-2xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-sm shadow-lg shadow-cyan-600/25 flex items-center justify-center gap-2 transition-all cursor-pointer group-hover:gap-3"
+                      className="w-full py-3.5 px-5 rounded-2xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-sm shadow-lg shadow-cyan-600/25 flex items-center justify-center gap-2 transition-all cursor-pointer"
                     >
                       <span>Gerenciar Usuários</span>
                       <ArrowUpRight className="w-4 h-4" />
@@ -257,32 +356,26 @@ export const Dashboard: React.FC = () => {
           </section>
         )}
 
-        {/* Cards de Módulos (Ações Principais) */}
+        {/* Atalhos de Navegação Principal */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Card Territórios */}
-          <div className="group relative overflow-hidden rounded-3xl bg-slate-900/70 border border-slate-800 hover:border-emerald-500/40 p-8 transition-all duration-300 flex flex-col justify-between hover:shadow-2xl hover:shadow-emerald-950/30">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl group-hover:bg-emerald-500/10 transition-all" />
-
-            <div className="space-y-4 relative z-10">
-              <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+          <div className="p-8 rounded-3xl bg-slate-900/70 border border-slate-800 hover:border-emerald-500/40 transition-all flex flex-col justify-between shadow-xl">
+            <div className="space-y-4">
+              <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
                 <MapPin className="w-7 h-7" />
               </div>
               <div>
-                <h3 className="text-2xl font-bold text-white tracking-tight">
+                <h3 className="text-2xl font-bold text-white">
                   Gestão de Territórios
                 </h3>
-                <p className="text-slate-400 text-sm mt-2 leading-relaxed">
-                  Cadastre mapas de quadras, registre saídas para os
-                  publicadores, acompanhe prazos de trabalho e registre
-                  devoluções com histórico detalhado.
+                <p className="text-sm text-slate-400 mt-2">
+                  Cadastre mapas de quadras, registre saídas e acompanhe prazos.
                 </p>
               </div>
             </div>
-
-            <div className="pt-8 relative z-10">
+            <div className="pt-8">
               <button
                 onClick={() => navigate("/territorios")}
-                className="w-full py-3.5 px-5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2 transition-all cursor-pointer group-hover:gap-3"
+                className="w-full py-3.5 px-5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
                 <span>Gerenciar Territórios</span>
                 <ArrowUpRight className="w-4 h-4" />
@@ -290,94 +383,31 @@ export const Dashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Card Publicações */}
-          <div className="group relative overflow-hidden rounded-3xl bg-slate-900/70 border border-slate-800 hover:border-indigo-500/40 p-8 transition-all duration-300 flex flex-col justify-between hover:shadow-2xl hover:shadow-indigo-950/30">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-2xl group-hover:bg-indigo-500/10 transition-all" />
-
-            <div className="space-y-4 relative z-10">
-              <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+          <div className="p-8 rounded-3xl bg-slate-900/70 border border-slate-800 hover:border-indigo-500/40 transition-all flex flex-col justify-between shadow-xl">
+            <div className="space-y-4">
+              <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center">
                 <BookOpen className="w-7 h-7" />
               </div>
               <div>
-                <h3 className="text-2xl font-bold text-white tracking-tight">
+                <h3 className="text-2xl font-bold text-white">
                   Gestão de Publicações
                 </h3>
-                <p className="text-slate-400 text-sm mt-2 leading-relaxed">
-                  Consulte o catálogo unificado, faça pedidos de itens bíblicos,
-                  controle os níveis de estoque da congregação e atenda
-                  solicitações com baixa automática.
+                <p className="text-sm text-slate-400 mt-2">
+                  Consulte catálogo, faça pedidos e controle os níveis de
+                  estoque.
                 </p>
               </div>
             </div>
-
-            <div className="pt-8 relative z-10">
+            <div className="pt-8">
               <button
                 onClick={() => navigate("/publicacoes")}
-                className="w-full py-3.5 px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 transition-all cursor-pointer group-hover:gap-3"
+                className="w-full py-3.5 px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
                 <span>Acessar Publicações</span>
                 <ArrowUpRight className="w-4 h-4" />
               </button>
             </div>
           </div>
-          {/* Card: Publicadores */}
-          <div className="p-8 rounded-3xl bg-slate-900/60 backdrop-blur-xl border border-slate-800 hover:border-slate-700 transition-all duration-300 flex flex-col justify-between group shadow-xl">
-            <div className="space-y-4">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 group-hover:scale-110 transition-transform">
-                <Users className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-white group-hover:text-indigo-300 transition-colors">
-                  Publicadores
-                </h3>
-                <p className="text-sm text-slate-400 mt-2 leading-relaxed">
-                  Gerencie os publicadores ativos da congregação para designação
-                  de mapas e pedidos.
-                </p>
-              </div>
-            </div>
-
-            <div className="pt-6 border-t border-slate-800/80 mt-6">
-              <button
-                onClick={() => navigate("/publicadores")}
-                className="w-full py-3.5 px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 transition-all cursor-pointer"
-              >
-                <span>Gerenciar Publicadores</span>
-                <ArrowUpRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-          {/* Card: Pedidos*/}
-          <div
-            onClick={() => navigate("/pedidos")}
-            className="bg-slate-900/80 border border-slate-800 hover:border-indigo-500/50 rounded-3xl p-6 transition-all shadow-xl hover:shadow-2xl cursor-pointer flex flex-col justify-between group"
-          >
-            <div className="space-y-4">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Package className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-white group-hover:text-indigo-400 transition-colors">
-                  Pedidos & Remessas
-                </h3>
-                <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                  Controle de solicitações de publicadores e consolidação de
-                  remessas mensais para Betel.
-                </p>
-              </div>
-            </div>
-            <div className="pt-4 border-t border-slate-800/80 flex items-center text-xs font-semibold text-indigo-400 gap-1.5">
-              <button
-                onClick={() => navigate("/pedidos")}
-                className="w-full py-3.5 px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 transition-all cursor-pointer"
-              >
-                <span>Gerenciar Pedidos</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </button>
-            </div>
-          </div>
-
-          {/**Card  */}
         </section>
       </main>
     </div>

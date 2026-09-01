@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,4 +29,12 @@ public interface HistoricoTerritorioRepository extends JpaRepository<HistoricoTe
            "WHERE t.congregacao.id = :congregacaoId " +
            "ORDER BY h.dataRetirada DESC")
     List<HistoricoTerritorio> buscarHistoricoGeralPorCongregacao(@Param("congregacaoId") Long congregacaoId);
+    
+ // 📊 Contagem distinta de territórios trabalhados no período (Ano de Serviço)
+    @Query("SELECT COUNT(DISTINCT h.territorio.id) FROM HistoricoTerritorio h JOIN h.territorio t WHERE t.congregacao.id = :congregacaoId AND h.dataDevolucao BETWEEN :inicio AND :fim")
+    long countTerritoriosTrabalhadosNoPeriodo(
+            @Param("congregacaoId") Long congregacaoId,
+            @Param("inicio") LocalDateTime inicio,
+            @Param("fim") LocalDateTime fim
+    );
 }

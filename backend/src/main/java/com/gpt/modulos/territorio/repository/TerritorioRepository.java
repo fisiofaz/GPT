@@ -22,4 +22,9 @@ public interface TerritorioRepository extends JpaRepository<Territorio, Long> {
 
     // Buscar por ID e congregação (Garante que um admin não altere território de outro tenant)
     Optional<Territorio> findByIdAndCongregacaoId(Long id, Long congregacaoId);
+
+    // 📊 Métricas para o Dashboard
+    long countByCongregacaoId(Long congregacaoId);
+
+    long countByCongregacaoIdAndStatus(Long congregacaoId, StatusTerritorio status);
 }

@@ -1,10 +1,10 @@
 # 🗺️ Roadmap de Desenvolvimento - GPT (Gestão de Publicações e Territórios)
 
-Documento oficial de acompanhamento das fases e tarefas de engenharia do projeto GPT.
+Documento oficial de acompanhamento das fases e engenharia do projeto GPT - Versão 1.0.
 
 ---
 
-## 📌 Fase 1: Fundação do Ambiente, Domínio Base & Autenticação Multi-Tenant (Em Progresso)
+## 📌 Fase 1: Fundação do Ambiente, Domínio Base & Autenticação Multi-Tenant (Concluído)
 
 - [x] **Task 1.1: Infraestrutura Local**
   - [x] Criação do `docker-compose.yml` (PostgreSQL 16 + pgAdmin 4).
@@ -30,7 +30,7 @@ Documento oficial de acompanhamento das fases e tarefas de engenharia do projeto
 
 ---
 
-## 📌 Fase 2: Core Business - Módulo de Territórios
+## 📌 Fase 2: Core Business - Módulo de Territórios (Concluído)
 
 - [x] **Task 2.1:** Migrations para tabela `tb_territorio` e tabela de histórico/movimentação.
 - [x] **Task 2.2:** Regras de negócio de Retirada e Devolução de Territórios.
@@ -38,7 +38,7 @@ Documento oficial de acompanhamento das fases e tarefas de engenharia do projeto
 
 ---
 
-## 📌 Fase 3: Core Business - Módulo de Publicações
+## 📌 Fase 3: Core Business - Módulo de Publicações (Concluído)
 
 - [x] **Task 3.1:** Migrations para catálogo (`tb_publicacao`), estoque por congregação (`tb_estoque_publicacao`) e pedidos (`tb_pedido_publicacao`).
 - [x] **Task 3.2:** Controle de estoque multi-tenant e fluxo de pedidos com baixa automática na entrega.
@@ -46,7 +46,7 @@ Documento oficial de acompanhamento das fases e tarefas de engenharia do projeto
 
 ---
 
-### 🎨 Fase 4: Frontend (React + TypeScript + Vite + Tailwind CSS)
+### 🎨 Fase 4: Frontend (React + TypeScript + Vite + Tailwind CSS) (Concluído)
 
 - [x] **Task 4.1:** Configuração do Tailwind CSS no Vite com `@tailwindcss/vite`
 - [x] **Task 4.2:** Configuração do cliente HTTP (Axios) com interceptores para injeção de Token JWT
@@ -57,7 +57,7 @@ Documento oficial de acompanhamento das fases e tarefas de engenharia do projeto
 
 ---
 
-## ✅ Módulo 5: Gestão de Territórios & Publicadores
+## ✅ Módulo 5: Gestão de Territórios & Publicadores (Concluído)
 
 - [x] **Task 5.1:** Cadastro e gerenciamento de Publicadores por congregação
 - [x] **Task 5.2:** Listagem e busca em tempo real de publicadores
@@ -66,7 +66,7 @@ Documento oficial de acompanhamento das fases e tarefas de engenharia do projeto
 - [x] **Task 5.5:** Fluxo de Devolução com registro de observações
 - [x] **Task 5.6:** Relatório Geral consolidado de designações de mapas (Histórico S-13)
 - [x] **Task 5.7:** Exportação para PDF e Impressão formatada em folha A4 oficial
-  [x] **Task 5.8** Delimitação e desenho interativo de polígonos no mapa (Leaflet & OpenStreetMap)
+- [x] **Task 5.8:** Delimitação e desenho interativo de polígonos no mapa (Leaflet & OpenStreetMap)
 - [x] **Task 5.9:** Cartão Digital de Território (S-12) com navegação GPS / Google Maps
 - [x] **Task 5.10:** Mapa Geral Consolidado da Congregação com painel lateral e busca interativa
 - [x] **Task 5.11:** Envio automático do mapa e orientações para o Publicador via WhatsApp
@@ -79,14 +79,14 @@ Documento oficial de acompanhamento das fases e tarefas de engenharia do projeto
 
 ---
 
-## ✅ Módulo 6: Gestão do Estoque de Publicações & Movimentações
+## ✅ Módulo 6: Gestão do Estoque de Publicações & Movimentações (Concluído)
 
-- [x] **Task 6.1:** Modelagem e Migration Flyway (`tb_publicacao` e `tb_movimentacao_estoque`)
+- [x] **Task 6.1:** Migration Flyway (`tb_publicacao` e `tb_movimentacao_estoque`)
 - [x] **Task 6.2:** Tabela Mestra Global (`tb_catalogo_mestre`) para modelos oficiais de publicações
 - [x] **Task 6.3:** Página dedicada de gerenciamento do Catálogo Geral (`/catalogo`) com CRUD completo
-- [x]  **Task 6.4:** Autopreenchimento inteligente por código no cadastro de itens da congregação
+- [x] **Task 6.4:** Autopreenchimento inteligente por código no cadastro de itens da congregação
 - [x] **Task 6.5:** Catálogo categorizado (Bíblias, Livros, Brochuras, Revistas, Folhetos, Tratados)
-- [x] **Task 6.6** Controle de estoque por congregação e definição de estoque mínimo
+- [x] **Task 6.6:** Controle de estoque por congregação e definição de estoque mínimo
 - [x] **Task 6.7:** Alertas visuais de estoque baixo ou zerado
 - [x] **Task 6.8:** Registro de movimentações: Entradas (remessas Betel), Saídas (balcão/pioneiros) e Inventário
 - [x] **Task 6.9:** Histórico detalhado de movimentações com exportação e impressão
@@ -99,38 +99,41 @@ Documento oficial de acompanhamento das fases e tarefas de engenharia do projeto
 
 ---
 
-## ✅ Módulo 7: Pedidos de Publicações para Betel & Pedidos Especiais
+## ✅ Módulo 7: Pedidos de Publicações para Betel & Pedidos Especiais (Concluído)
 
-- [x] **Task 7.1** Migration Flyway (`V10`) estruturando tabelas de pedidos de publicadores e pedidos Betel
-- [x] **Task 7.2** Solicitação de pedidos especiais de publicadores vinculados ao Catálogo Mestre Geral
-- [x] **Task 7.3** Painel de triagem e atendimento de pedidos de publicadores (Marcar Atendido / Cancelar)
-- [x] **Task 7.4** Montagem e consolidação da remessa mensal para Betel com busca dinâmica no Catálogo Geral
-- [x] **Task 7.5** Importação com um clique de solicitações de publicadores pendentes para o pedido consolidado
-- [x] **Task 7.6** CRUD de Pedidos de Betel (Criar, Editar rascunho/enviado, Excluir e Marcar como Enviado)
-- [x] **Task 7.7** Fluxo de conferência de chegada da caixa física com conferência item a item
-- [x] **Task 7.8** Entrada e atualização automática no estoque ativo (`tb_publicacao.quantidade_estoque`)
-- [x] **Task 7.9** Registro automático de auditoria na tabela `tb_movimentacao_estoque` vinculando o responsável logado
-- [x] **Task 7.10** Atualização em cascata do status dos pedidos de publicadores vinculados para `ATENDIDO`
-- [x] **Task 7.11** Acessos e atalhos rápidos integrados ao `Dashboard` e ao cabeçalho de `Publicações`
-
----
-
-### ✅ Módulo 8: Separação de Domínio: Usuários vs Publicadores
-
-- [x] **Task 8.1** Modelagem da entidade `Publicador` (ID, Nome, Telefone, Congregação)
-- [x] **Task 8.2** Endpoint de listagem de publicadores da congregação
-- [x] **Task 8.3** Substituição de entrada manual por Select dinâmico de publicadores nos modais
-- [x] **Task 8.4** Correção na atualização de usuários (`PUT /usuarios/{id}`)
-- [x] **Task 8.5** Ajuste na associação de congregações para usuários com perfil `ROLE_ADMIN_GERAL` (`congregacao_id` nulo)
-- [x] **Task 8.6** Ajuste no endpoint e na tela React para listagem completa de usuários do sistema (`GET /usuarios`)
-- [x] **Task 8.7** Painel do Administrador Geral / Administrador de Congregação
-- [x] **Task 8.8** Gestão de permissões por perfil (Servo de Território, Servo de Publicações, Publicador)
+- [x] **Task 7.1:** Migration Flyway estruturando tabelas de pedidos de publicadores e pedidos Betel
+- [x] **Task 7.2:** Solicitação de pedidos especiais de publicadores vinculados ao Catálogo Mestre Geral
+- [x] **Task 7.3:** Painel de triagem e atendimento de pedidos de publicadores (Marcar Atendido / Cancelar)
+- [x] **Task 7.4:** Montagem e consolidação da remessa mensal para Betel com busca dinâmica no Catálogo Geral
+- [x] **Task 7.5:** Importação com um clique de solicitações de publicadores pendentes para o pedido consolidado
+- [x] **Task 7.6:** CRUD de Pedidos de Betel (Criar, Editar rascunho/enviado, Excluir e Marcar como Enviado)
+- [x] **Task 7.7:** Fluxo de conferência de chegada da caixa física com conferência item a item
+- [x] **Task 7.8:** Entrada e atualização automática no estoque ativo
+- [x] **Task 7.9:** Registro automático de auditoria na tabela de movimentação vinculando o responsável logado
+- [x] **Task 7.10:** Atualização em cascata do status dos pedidos de publicadores vinculados para `ATENDIDO`
+- [x] **Task 7.11:** Acessos e atalhos rápidos integrados ao `Dashboard` e ao cabeçalho de `Publicações`
 
 ---
 
-## 🚀 Próximas Etapas
-  
-### Dashboard e Métricas Avançadas
+## ✅ Módulo 8: Separação de Domínio: Usuários vs Publicadores (Concluído)
 
-- [ ] Indicadores visuais de cobertura de território no ano de serviço
-- [ ] Histórico de consumo de publicações
+- [x] **Task 8.1:** Modelagem da entidade `Publicador` (ID, Nome, Telefone, Congregação)
+- [x] **Task 8.2:** Endpoint de listagem de publicadores da congregação
+- [x] **Task 8.3:** Substituição de entrada manual por Select dinâmico de publicadores nos modais
+- [x] **Task 8.4:** Correção na atualização de usuários (`PUT /usuarios/{id}`)
+- [x] **Task 8.5:** Ajuste na associação de congregações para usuários com perfil `ROLE_ADMIN_GERAL`
+- [x] **Task 8.6:** Ajuste no endpoint e na tela React para listagem completa de usuários do sistema
+- [x] **Task 8.7:** Painel do Administrador Geral / Administrador de Congregação
+- [x] **Task 8.8:** Gestão de permissões por perfil (Servo de Território, Servo de Publicações, Publicador)
+
+---
+
+## ✅ Módulo 9: Dashboard e Métricas Avançadas (Concluído - v1.0)
+
+- [x] **Task 9.1:** Indicadores visuais de cobertura de território em tempo real
+- [x] **Task 9.2:** Histórico e estatísticas de consumo de publicações por congregação (`/dashboard/estatisticas/{id}`)
+- [x] **Task 9.3:** Painel gerencial unificado com atalhos e resumos operacionais
+
+---
+
+🚀 **Versão 1.0 oficialmente concluída e pronta para produção!**
