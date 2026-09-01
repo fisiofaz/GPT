@@ -1,5 +1,6 @@
 package com.gpt.modulos.congregacao.dto;
 
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -12,6 +13,11 @@ public class CongregacaoRequestDTO {
     @NotBlank(message = "O nome da congregação é obrigatório")
     @Size(max = 150, message = "O nome não pode ter mais de 150 caracteres")
     private String nome;
+    
+    @NotBlank(message = "O número da congregação é obrigatório")
+    @Size(max = 150, message = "O número não pode ter mais de 150 caracteres")
+    private String numero;
+
 
     @NotBlank(message = "A cidade é obrigatória")
     @Size(max = 100, message = "A cidade não pode ter mais de 100 caracteres")

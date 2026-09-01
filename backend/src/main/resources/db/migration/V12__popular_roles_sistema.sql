@@ -1,0 +1,9 @@
+-- Inserção dos papéis (Roles) atualizados do sistema
+INSERT INTO tb_role (nome) VALUES 
+('ROLE_ADMIN_GERAL'),
+('ROLE_SUPERINTENDENTE_SERVICO'),
+('ROLE_ANCIAO'),
+('ROLE_SERVO_TERRITORIO'),
+('ROLE_SERVO_PUBLICACOES'),
+('ROLE_PUBLICADOR')
+ON CONFLICT (nome) DO NOTHING;

@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,16 +26,19 @@ public class PublicacaoController {
     private final CatalogoMestreRepository catalogoMestreRepository;
 
     @GetMapping("/congregacao/{congregacaoId}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO')")
     public ResponseEntity<List<PublicacaoResponseDTO>> listarPorCongregacao(@PathVariable Long congregacaoId) {
         return ResponseEntity.ok(publicacaoService.listarPorCongregacao(congregacaoId));
     }
     
     @GetMapping("/catalogo-mestre")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO', 'ROLE_SERVO_PUBLICACOES')")
     public ResponseEntity<List<CatalogoMestre>> listarCatalogoMestre() {
         return ResponseEntity.ok(catalogoMestreRepository.findAllByOrderByTituloAsc());
     }
     
     @PutMapping("/catalogo-mestre/{id}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO')")
     public ResponseEntity<CatalogoMestre> atualizarNoCatalogo(
             @PathVariable Long id,
             @RequestBody CatalogoMestre itemAtualizado
@@ -53,6 +57,7 @@ public class PublicacaoController {
     }
 
     @DeleteMapping("/catalogo-mestre/{id}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO')")
     public ResponseEntity<Void> deletarDoCatalogo(@PathVariable Long id) {
         if (!catalogoMestreRepository.existsById(id)) {
             return ResponseEntity.notFound().build();
@@ -62,6 +67,7 @@ public class PublicacaoController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO')")
     public ResponseEntity<PublicacaoResponseDTO> cadastrar(
             @Valid @RequestBody PublicacaoRequestDTO dto,
             Authentication authentication
@@ -71,6 +77,7 @@ public class PublicacaoController {
     }
 
     @PostMapping("/{id}/movimentar")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO', 'ROLE_SERVO_PUBLICACOES')")
     public ResponseEntity<MovimentacaoResponseDTO> movimentar(
             @PathVariable Long id,
             @Valid @RequestBody MovimentacaoEstoqueDTO dto,
@@ -81,6 +88,7 @@ public class PublicacaoController {
     }
 
     @GetMapping("/congregacao/{congregacaoId}/historico")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO', 'ROLE_SERVO_PUBLICACOES')")
     public ResponseEntity<List<MovimentacaoResponseDTO>> listarHistoricoGeral(@PathVariable Long congregacaoId) {
         return ResponseEntity.ok(publicacaoService.listarHistoricoGeral(congregacaoId));
     }
@@ -93,6 +101,7 @@ public class PublicacaoController {
     }
     
     @PostMapping("/catalogo-mestre")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO')")
     public ResponseEntity<CatalogoMestre> cadastrarOuAtualizarNoCatalogo(
             @RequestBody CatalogoMestre item
     ) {
@@ -103,6 +112,7 @@ public class PublicacaoController {
     }
     
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO', 'ROLE_SERVO_PUBLICACOES')")
     public ResponseEntity<PublicacaoResponseDTO> atualizar(
             @PathVariable Long id,
             @Valid @RequestBody PublicacaoRequestDTO dto
@@ -111,6 +121,7 @@ public class PublicacaoController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO', 'ROLE_SERVO_PUBLICACOES')")
     public ResponseEntity<Void> deletar(@PathVariable Long id) {
         publicacaoService.deletar(id);
         return ResponseEntity.noContent().build();

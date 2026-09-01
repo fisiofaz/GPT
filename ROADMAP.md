@@ -23,6 +23,10 @@ Documento oficial de acompanhamento das fases e tarefas de engenharia do projeto
 - [x] **Task 1.5: CRUD de Congregações & Usuários (Rotas Protegidas)**
   - [x] Endpoints protegidos via `Bearer Token`.
   - [x] Validação de perfil por anotações `@PreAuthorize`.
+- [x] **Task 1.6: Refatoração: Padronização e Refatoração do Backend Spring Boot**
+  - [x] Arquitetura modular por features/pacotes
+  - [x] Global Exception Handler com RFC 7807 (`ProblemDetail`)
+  - [x] Documentação com Swagger / OpenAPI
 
 ---
 
@@ -95,7 +99,7 @@ Documento oficial de acompanhamento das fases e tarefas de engenharia do projeto
 
 ---
 
-## ✅ Módulo 4: Pedidos de Publicações para Betel & Pedidos Especiais
+## ✅ Módulo 7: Pedidos de Publicações para Betel & Pedidos Especiais
 
 - [x] **Task 7.1** Migration Flyway (`V10`) estruturando tabelas de pedidos de publicadores e pedidos Betel
 - [x] **Task 7.2** Solicitação de pedidos especiais de publicadores vinculados ao Catálogo Mestre Geral
@@ -111,24 +115,20 @@ Documento oficial de acompanhamento das fases e tarefas de engenharia do projeto
 
 ---
 
+### ✅ Módulo 8: Separação de Domínio: Usuários vs Publicadores
+
+- [x] **Task 8.1** Modelagem da entidade `Publicador` (ID, Nome, Telefone, Congregação)
+- [x] **Task 8.2** Endpoint de listagem de publicadores da congregação
+- [x] **Task 8.3** Substituição de entrada manual por Select dinâmico de publicadores nos modais
+- [x] **Task 8.4** Correção na atualização de usuários (`PUT /usuarios/{id}`)
+- [x] **Task 8.5** Ajuste na associação de congregações para usuários com perfil `ROLE_ADMIN_GERAL` (`congregacao_id` nulo)
+- [x] **Task 8.6** Ajuste no endpoint e na tela React para listagem completa de usuários do sistema (`GET /usuarios`)
+- [x] **Task 8.7** Painel do Administrador Geral / Administrador de Congregação
+- [x] **Task 8.8** Gestão de permissões por perfil (Servo de Território, Servo de Publicações, Publicador)
+
+---
+
 ## 🚀 Próximas Etapas
-
-### 👥 Separação de Domínio: Usuários vs Publicadores
-
-- [ ] Modelagem da entidade `Publicador` (ID, Nome, Telefone, Congregação)
-- [ ] Endpoint de listagem de publicadores da congregação
-- [ ] Substituição de entrada manual por Select dinâmico de publicadores nos modais
-
-### 👥 Padronização e Refatoração do Backend Spring Boot**
-
-- [ ] Arquitetura modular por features/pacotes
-- [ ] Global Exception Handler com RFC 7807 (`ProblemDetail`)
-- [ ] Documentação com Swagger / OpenAPI
-
-### 👥 Gestão de Usuários e Congregações
-
-- [ ] Painel do Administrador Geral / Administrador de Congregação
-- [ ] Gestão de permissões por perfil (Servo de Território, Servo de Publicações, Publicador)
   
 ### Dashboard e Métricas Avançadas
 

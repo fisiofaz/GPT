@@ -54,4 +54,28 @@ public class PublicadorService {
                 .congregacaoId(p.getCongregacao().getId())
                 .build();
     }
+    
+    @Transactional
+    public PublicadorResponseDTO atualizar(Long id, PublicadorRequestDTO request) {
+        Publicador publicador = publicadorRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Publicador não encontrado com ID: " + id));
+
+        Congregacao congregacao = congregacaoRepository.findById(request.getCongregacaoId())
+                .orElseThrow(() -> new EntityNotFoundException("Congregação não encontrada com ID: " + request.getCongregacaoId()));
+
+        publicador.setNome(request.getNome().trim());
+        publicador.setTelefone(request.getTelefone());
+        publicador.setCongregacao(congregacao);
+
+        publicador = publicadorRepository.save(publicador);
+        return toDTO(publicador);
+    }
+
+    @Transactional
+    public void desativar(Long id) {
+        Publicador publicador = publicadorRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Publicador não encontrado com ID: " + id));
+        publicador.setAtivo(false);
+        publicadorRepository.save(publicador);
+    }
 }

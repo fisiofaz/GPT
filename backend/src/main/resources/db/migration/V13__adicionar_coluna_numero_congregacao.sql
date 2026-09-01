@@ -1,0 +1,1 @@
+ALTER TABLE tb_congregacao ADD COLUMN numero VARCHAR(255);
