@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,15 +21,15 @@ public class PedidoController {
 
     private final PedidoService pedidoService;
 
-    // --- Publicadores ---
-
     @PostMapping("/publicador")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO', 'ROLE_SERVO_PUBLICACOES')")
     public ResponseEntity<PedidoPublicadorDTO.Response> criarPedidoPublicador(
             @RequestBody @Valid PedidoPublicadorDTO.Request dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(pedidoService.criarPedidoPublicador(dto));
     }
 
     @GetMapping("/publicador/congregacao/{congregacaoId}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO', 'ROLE_SERVO_PUBLICACOES')")
     public ResponseEntity<List<PedidoPublicadorDTO.Response>> listarPedidosPublicadores(
             @PathVariable Long congregacaoId,
             @RequestParam(required = false) StatusPedidoPublicador status) {
@@ -36,32 +37,35 @@ public class PedidoController {
     }
 
     @PatchMapping("/publicador/{id}/atender")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO', 'ROLE_SERVO_PUBLICACOES')")
     public ResponseEntity<Void> marcarPedidoPublicadorAtendido(@PathVariable Long id) {
         pedidoService.marcarPedidoPublicadorAtendido(id);
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/publicador/{id}/cancelar")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO', 'ROLE_SERVO_PUBLICACOES')")
     public ResponseEntity<Void> cancelarPedidoPublicador(@PathVariable Long id) {
         pedidoService.cancelarPedidoPublicador(id);
         return ResponseEntity.noContent().build();
     }
 
-    // --- Betel (Consolidado) ---
-
     @PostMapping("/betel")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO', 'ROLE_SERVO_PUBLICACOES')")
     public ResponseEntity<PedidoBetelDTO.Response> criarPedidoBetel(
             @RequestBody @Valid PedidoBetelDTO.CriarRequest dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(pedidoService.criarPedidoBetel(dto));
     }
 
     @GetMapping("/betel/congregacao/{congregacaoId}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO', 'ROLE_SERVO_PUBLICACOES')")
     public ResponseEntity<List<PedidoBetelDTO.Response>> listarPedidosBetel(
             @PathVariable Long congregacaoId) {
         return ResponseEntity.ok(pedidoService.listarPedidosBetel(congregacaoId));
     }
 
     @GetMapping("/betel/{id}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO', 'ROLE_SERVO_PUBLICACOES')")
     public ResponseEntity<PedidoBetelDTO.Response> buscarPedidoBetelPorId(@PathVariable Long id) {
         return ResponseEntity.ok(pedidoService.buscarPedidoBetelPorId(id));
     }
@@ -72,6 +76,7 @@ public class PedidoController {
     }
 
     @PostMapping("/betel/{id}/receber")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO', 'ROLE_SERVO_PUBLICACOES')")
     public ResponseEntity<PedidoBetelDTO.Response> registrarRecebimento(
             @PathVariable Long id,
             @RequestBody @Valid PedidoBetelDTO.ConferirPedidoRequest dto) {
@@ -79,6 +84,7 @@ public class PedidoController {
     }
     
     @PutMapping("/betel/{id}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO', 'ROLE_SERVO_PUBLICACOES')")
     public ResponseEntity<PedidoBetelDTO.Response> atualizarPedidoBetel(
             @PathVariable Long id,
             @RequestBody @Valid PedidoBetelDTO.CriarRequest dto) {
@@ -86,6 +92,7 @@ public class PedidoController {
     }
 
     @DeleteMapping("/betel/{id}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO', 'ROLE_SERVO_PUBLICACOES')")
     public ResponseEntity<Void> excluirPedidoBetel(@PathVariable Long id) {
         pedidoService.excluirPedidoBetel(id);
         return ResponseEntity.noContent().build();

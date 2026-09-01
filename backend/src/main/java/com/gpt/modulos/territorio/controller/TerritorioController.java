@@ -24,7 +24,7 @@ public class TerritorioController {
 
     // Criar território (Permitido para ADMIN_GERAL, ADMIN_CONGREGACAO e SERVO_TERRITORIO)
     @PostMapping
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_ADMIN_CONGREGACAO', 'ROLE_SERVO_TERRITORIO')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO')")
     public ResponseEntity<TerritorioResponseDTO> criar(@Valid @RequestBody TerritorioRequestDTO request) {
         TerritorioResponseDTO response = territorioService.criar(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -32,13 +32,14 @@ public class TerritorioController {
 
     // Listar territórios por congregação
     @GetMapping("/congregacao/{congregacaoId}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO', 'ROLE_SERVO_TERRITORIO')")
     public ResponseEntity<List<TerritorioResponseDTO>> listarPorCongregacao(@PathVariable Long congregacaoId) {
         return ResponseEntity.ok(territorioService.listarPorCongregacao(congregacaoId));
     }
 
     // Retirar território
     @PostMapping("/{id}/retirar")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_ADMIN_CONGREGACAO', 'ROLE_SERVO_TERRITORIO')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO','ROLE_SERVO_TERRITORIO')")
     public ResponseEntity<HistoricoTerritorioResponseDTO> retirar(
             @PathVariable Long id,
             @Valid @RequestBody MovimentacaoTerritorioDTO request) {
@@ -47,7 +48,7 @@ public class TerritorioController {
 
     // Devolver território
     @PostMapping("/{id}/devolver")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_ADMIN_CONGREGACAO', 'ROLE_SERVO_TERRITORIO')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO','ROLE_SERVO_TERRITORIO')")
     public ResponseEntity<HistoricoTerritorioResponseDTO> devolver(
             @PathVariable Long id,
             @RequestBody(required = false) Map<String, String> payload) {
@@ -57,6 +58,7 @@ public class TerritorioController {
 
     // Histórico de um território
     @GetMapping("/{id}/historico")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO', 'ROLE_SERVO_TERRITORIO')")
     public ResponseEntity<List<HistoricoTerritorioResponseDTO>> listarHistorico(@PathVariable Long id) {
         return ResponseEntity.ok(territorioService.listarHistorico(id));
     }
@@ -69,7 +71,7 @@ public class TerritorioController {
     
     // Atualizar mapa / polígono do território
     @PatchMapping("/{id}/mapa")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_ADMIN_CONGREGACAO', 'ROLE_SERVO_TERRITORIO')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO', 'ROLE_SERVO_TERRITORIO')")
     public ResponseEntity<TerritorioResponseDTO> atualizarPoligono(
             @PathVariable Long id,
             @RequestBody Map<String, String> payload) {
@@ -79,6 +81,7 @@ public class TerritorioController {
     
     // Endpoint público para visualização no celular do publicador
     @GetMapping("/publico/{id}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_SERVO_TERRITORIO')")
     public ResponseEntity<TerritorioResponseDTO> buscarPublicoPorId(@PathVariable Long id) {
         return ResponseEntity.ok(territorioService.buscarPorId(id));
     }

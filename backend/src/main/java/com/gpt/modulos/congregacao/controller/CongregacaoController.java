@@ -19,23 +19,40 @@ public class CongregacaoController {
 
     private final CongregacaoService congregacaoService;
 
-    // Qualquer usuário autenticado pode listar as congregações
     @GetMapping
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL')")
     public ResponseEntity<List<CongregacaoResponseDTO>> listarTodas() {
         return ResponseEntity.ok(congregacaoService.listarTodas());
     }
 
-    // Buscar por ID
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO')")
     public ResponseEntity<CongregacaoResponseDTO> buscarPorId(@PathVariable Long id) {
         return ResponseEntity.ok(congregacaoService.buscarPorId(id));
     }
 
-    // Apenas ADMIN GERAL pode cadastrar novas congregações no sistema
     @PostMapping
     @PreAuthorize("hasAuthority('ROLE_ADMIN_GERAL')")
     public ResponseEntity<CongregacaoResponseDTO> criar(@Valid @RequestBody CongregacaoRequestDTO request) {
         CongregacaoResponseDTO response = congregacaoService.criar(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+    
+    // Atualizado para chamar o método do Service
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN_GERAL')")
+    public ResponseEntity<Void> deletar(@PathVariable Long id) {
+        congregacaoService.deletar(id);
+        return ResponseEntity.noContent().build();
+    }
+    
+ // Atualizar congregação existente
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN_GERAL')")
+    public ResponseEntity<CongregacaoResponseDTO> atualizar(
+            @PathVariable Long id, 
+            @Valid @RequestBody CongregacaoRequestDTO request) {
+        CongregacaoResponseDTO response = congregacaoService.atualizar(id, request);
+        return ResponseEntity.ok(response);
     }
 }

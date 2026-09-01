@@ -35,6 +35,7 @@ public class CongregacaoService {
     public CongregacaoResponseDTO criar(CongregacaoRequestDTO request) {
         Congregacao congregacao = Congregacao.builder()
                 .nome(request.getNome())
+                .numero(request.getNumero())
                 .cidade(request.getCidade())
                 .estado(request.getEstado().toUpperCase())
                 .build();
@@ -43,10 +44,35 @@ public class CongregacaoService {
         return converterParaResponseDTO(salva);
     }
 
+    @Transactional
+    public CongregacaoResponseDTO atualizar(Long id, CongregacaoRequestDTO request) {
+        Congregacao congregacao = congregacaoRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Congregação não encontrada com o ID: " + id));
+
+        congregacao.setNome(request.getNome());
+        congregacao.setNumero(request.getNumero());
+        congregacao.setCidade(request.getCidade());
+        congregacao.setEstado(request.getEstado().toUpperCase());
+
+        Congregacao atualizada = congregacaoRepository.save(congregacao);
+        
+        // Reaproveita o método auxiliar padronizado do serviço
+        return converterParaResponseDTO(atualizada);
+    }
+
+    @Transactional
+    public void deletar(Long id) {
+        if (!congregacaoRepository.existsById(id)) {
+            throw new IllegalArgumentException("Congregação não encontrada com o ID: " + id);
+        }
+        congregacaoRepository.deleteById(id);
+    }
+
     private CongregacaoResponseDTO converterParaResponseDTO(Congregacao congregacao) {
         return CongregacaoResponseDTO.builder()
                 .id(congregacao.getId())
                 .nome(congregacao.getNome())
+                .numero(congregacao.getNumero())
                 .cidade(congregacao.getCidade())
                 .estado(congregacao.getEstado())
                 .criadoEm(congregacao.getCriadoEm())

@@ -23,6 +23,9 @@ public class Congregacao {
 
     @Column(nullable = false, length = 150)
     private String nome;
+    
+    @Column(nullable = false, length = 150)
+    private String numero;
 
     @Column(nullable = false, length = 100)
     private String cidade;

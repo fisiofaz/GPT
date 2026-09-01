@@ -20,13 +20,27 @@ public class PublicadorController {
     private final PublicadorService publicadorService;
 
     @PostMapping
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_ADMIN_CONGREGACAO', 'ROLE_SERVO_TERRITORIO', 'ROLE_SERVO_PUBLICACOES')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO')")
     public ResponseEntity<PublicadorResponseDTO> criar(@Valid @RequestBody PublicadorRequestDTO request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(publicadorService.criar(request));
     }
 
     @GetMapping("/congregacao/{congregacaoId}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO')")
     public ResponseEntity<List<PublicadorResponseDTO>> listarPorCongregacao(@PathVariable Long congregacaoId) {
         return ResponseEntity.ok(publicadorService.listarPorCongregacao(congregacaoId));
+    }
+    
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO')")
+    public ResponseEntity<PublicadorResponseDTO> atualizar(@PathVariable Long id, @Valid @RequestBody PublicadorRequestDTO request) {
+        return ResponseEntity.ok(publicadorService.atualizar(id, request));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO')")
+    public ResponseEntity<Void> desativar(@PathVariable Long id) {
+        publicadorService.desativar(id);
+        return ResponseEntity.noContent().build();
     }
 }
