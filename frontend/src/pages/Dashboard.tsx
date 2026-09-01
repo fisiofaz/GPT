@@ -14,6 +14,8 @@ import {
   Sparkles,
   ArrowRight,
   Building2,
+  ShieldCheck,
+  UserCog,
 } from "lucide-react";
 
 export const Dashboard: React.FC = () => {
@@ -28,6 +30,13 @@ export const Dashboard: React.FC = () => {
       .toLowerCase()
       .replace(/\b\w/g, (l) => l.toUpperCase());
   };
+
+  const userRoles: string[] = usuario?.roles || [];
+  const isAdminGeral = userRoles.includes("ROLE_ADMIN_GERAL");
+  const isLiderancaLocal =
+    isAdminGeral ||
+    userRoles.includes("ROLE_SUPERINTENDENTE_SERVICO") ||
+    userRoles.includes("ROLE_ANCIAO");
 
   return (
     <div className="min-h-screen bg-[#0b0f19] text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
@@ -114,8 +123,9 @@ export const Dashboard: React.FC = () => {
           </div>
         </section>
 
-        {/* Estatísticas Rápidas */}
+        {/*Estatusca */}
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {/* Estatísticas: Território Livre */}
           <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800/80 flex items-center gap-4 hover:border-slate-700 transition-all">
             <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20">
               <CheckCircle2 className="w-6 h-6" />
@@ -130,6 +140,7 @@ export const Dashboard: React.FC = () => {
             </div>
           </div>
 
+          {/*Estatusca: Território em Andamento */}
           <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800/80 flex items-center gap-4 hover:border-slate-700 transition-all">
             <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center border border-amber-500/20">
               <Clock className="w-6 h-6" />
@@ -142,6 +153,7 @@ export const Dashboard: React.FC = () => {
             </div>
           </div>
 
+          {/*Estatusca: Publicação */}
           <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800/80 flex items-center gap-4 hover:border-slate-700 transition-all">
             <div className="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center border border-indigo-500/20">
               <Package className="w-6 h-6" />
@@ -154,6 +166,7 @@ export const Dashboard: React.FC = () => {
             </div>
           </div>
 
+          {/*Estatusca: Congregação */}
           <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800/80 flex items-center gap-4 hover:border-slate-700 transition-all">
             <div className="w-12 h-12 rounded-xl bg-violet-500/10 text-violet-400 flex items-center justify-center border border-violet-500/20">
               <Building2 className="w-6 h-6" />
@@ -166,6 +179,83 @@ export const Dashboard: React.FC = () => {
             </div>
           </div>
         </section>
+
+        {/* 🏢 SEÇÃO ADMINISTRATIVA / MULTI-TENANT (Condicional por Papel) */}
+        {(isAdminGeral || isLiderancaLocal) && (
+          <section className="space-y-4">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-indigo-400" />
+              <h2 className="text-lg font-bold text-white tracking-tight">
+                Gestão e Governança
+              </h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Card: Gerenciar Congregações (Exclusivo Admin Geral) */}
+              {isAdminGeral && (
+                <div className="group relative overflow-hidden rounded-3xl bg-slate-900/70 border border-slate-800 hover:border-indigo-500/40 p-8 transition-all duration-300 flex flex-col justify-between hover:shadow-2xl hover:shadow-indigo-950/30">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-2xl group-hover:bg-indigo-500/10 transition-all" />
+
+                  <div className="space-y-4 relative z-10">
+                    <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                      <Building2 className="w-7 h-7" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold text-white tracking-tight">
+                        Congregações (Multi-Tenant)
+                      </h3>
+                      <p className="text-slate-400 text-sm mt-2 leading-relaxed">
+                        Cadastre e administre as congregações globais do
+                        sistema, códigos e infraestrutura multi-tenant.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="pt-8 relative z-10">
+                    <button
+                      onClick={() => navigate("/admin/congregacoes")}
+                      className="w-full py-3.5 px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 transition-all cursor-pointer group-hover:gap-3"
+                    >
+                      <span>Gerenciar Congregações</span>
+                      <ArrowUpRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Card: Usuários da Congregação (Admin Geral, Superintendente e Ancião) */}
+              {isLiderancaLocal && (
+                <div className="group relative overflow-hidden rounded-3xl bg-slate-900/70 border border-slate-800 hover:border-cyan-500/40 p-8 transition-all duration-300 flex flex-col justify-between hover:shadow-2xl hover:shadow-cyan-950/30">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 rounded-full blur-2xl group-hover:bg-cyan-500/10 transition-all" />
+
+                  <div className="space-y-4 relative z-10">
+                    <div className="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                      <UserCog className="w-7 h-7" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold text-white tracking-tight">
+                        Usuários da Congregação
+                      </h3>
+                      <p className="text-slate-400 text-sm mt-2 leading-relaxed">
+                        Visualize e gerencie os usuários associados, atribuições
+                        de papéis e permissões locais de acesso.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="pt-8 relative z-10">
+                    <button
+                      onClick={() => navigate("/admin/usuarios-congregacao")}
+                      className="w-full py-3.5 px-5 rounded-2xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-sm shadow-lg shadow-cyan-600/25 flex items-center justify-center gap-2 transition-all cursor-pointer group-hover:gap-3"
+                    >
+                      <span>Gerenciar Usuários</span>
+                      <ArrowUpRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
 
         {/* Cards de Módulos (Ações Principais) */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -284,9 +374,10 @@ export const Dashboard: React.FC = () => {
                 <span>Gerenciar Pedidos</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </button>
-              
             </div>
           </div>
+
+          {/**Card  */}
         </section>
       </main>
     </div>

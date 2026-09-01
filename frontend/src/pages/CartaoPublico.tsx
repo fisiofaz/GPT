@@ -43,9 +43,9 @@ export const CartaoPublico: React.FC = () => {
     if (!territorio || !mapContainerRef.current) return;
 
     let coordenadas: [number, number][] = [];
-    if (territorio.poligonoGeojson) {
+    if (territorio.poligonoGeoJson) {
       try {
-        coordenadas = JSON.parse(territorio.poligonoGeojson);
+        coordenadas = JSON.parse(territorio.poligonoGeoJson);
       } catch (e) {
         console.error("Erro ao ler polígono:", e);
       }
@@ -129,9 +129,9 @@ export const CartaoPublico: React.FC = () => {
   };
 
   const handleAbrirGoogleMaps = () => {
-    if (!territorio?.poligonoGeojson) return;
+    if (!territorio?.poligonoGeoJson) return;
     try {
-      const coords: [number, number][] = JSON.parse(territorio.poligonoGeojson);
+      const coords: [number, number][] = JSON.parse(territorio.poligonoGeoJson);
       if (coords.length > 0) {
         const [lat, lng] = coords[0];
         window.open(
