@@ -191,31 +191,31 @@ export const CatalogoPublicacoes: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#0b0f19] text-slate-100 font-sans pb-16">
-      {/* Header */}
+      {/* Header Responsivo */}
       <header className="sticky top-0 z-40 backdrop-blur-xl bg-[#0b0f19]/80 border-b border-slate-800">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:h-20 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={() => navigate("/publicacoes")}
-              className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 transition-all cursor-pointer"
+              className="p-2 sm:p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 transition-all shrink-0 cursor-pointer"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <div>
-              <h1 className="text-xl font-bold text-white flex items-center gap-2">
-                <BookMarked className="w-5 h-5 text-indigo-400" />
-                Catálogo Geral de Publicações
+            <div className="min-w-0">
+              <h1 className="text-base sm:text-xl font-bold text-white flex items-center gap-2 truncate">
+                <BookMarked className="w-5 h-5 text-indigo-400 shrink-0" />
+                <span className="truncate">Catálogo Geral de Publicações</span>
               </h1>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-400 truncate">
                 Modelos mestres pré-definidos para autopreenchimento
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 shrink-0 w-full sm:w-auto justify-start sm:justify-end">
             <button
               onClick={() => navigate("/publicacoes")}
-              className="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl border border-slate-700 flex items-center gap-2 transition-all cursor-pointer"
+              className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl border border-slate-700 flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer"
             >
               <Boxes className="w-4 h-4 text-indigo-400" />
               <span>Ver Estoque da Congregação</span>
@@ -223,7 +223,7 @@ export const CatalogoPublicacoes: React.FC = () => {
 
             <button
               onClick={abrirModalNovo}
-              className="py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl shadow-lg shadow-indigo-600/30 flex items-center gap-2 transition-all cursor-pointer"
+              className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl shadow-lg shadow-indigo-600/30 flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>Novo Modelo</span>

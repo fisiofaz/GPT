@@ -92,54 +92,59 @@ export const Territorios: React.FC = () => {
     return matchBusca && matchStatus;
   });
 
+
   return (
     <div className="min-h-screen bg-[#0b0f19] text-slate-100 font-sans selection:bg-indigo-500 selection:text-white pb-16">
       {/* Header */}
-      <header className="sticky top-0 z-40 backdrop-blur-xl bg-[#0b0f19]/80 border-b border-slate-800 print:hidden">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigate("/dashboard")}
-              className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 transition-all cursor-pointer"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <div>
-              <h1 className="text-xl font-bold text-white flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-emerald-400" />
-                Gestão de Territórios
-              </h1>
-              <p className="text-xs text-slate-400">
-                {territorios[0]?.congregacaoNome
-                  ? `Congregação: ${territorios[0].congregacaoNome}`
-                  : "Mapas e designações"}
-              </p>
+      <header className="sticky top-0 z-40 backdrop-blur-xl bg-[#0b0f19]/90 border-b border-slate-800 print:hidden">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 py-3 space-y-3">
+          {/* Linha Superior: Voltar, Título e Botão Principal */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <button
+                onClick={() => navigate("/dashboard")}
+                className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition-all cursor-pointer shrink-0"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <div className="min-w-0">
+                <h1 className="text-sm sm:text-lg font-bold text-white flex items-center gap-1.5 truncate">
+                  <MapPin className="w-4 h-4 text-emerald-400 shrink-0" />
+                  Gestão de Territórios
+                </h1>
+                <p className="text-[11px] text-slate-400 truncate">
+                  {territorios[0]?.congregacaoNome
+                    ? `Congregação: ${territorios[0].congregacaoNome}`
+                    : "Mapas e designações"}
+                </p>
+              </div>
             </div>
+
+            <button
+              onClick={() => setModalCriarAberto(true)}
+              className="py-2 px-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl shadow-lg shadow-indigo-600/30 flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden xs:inline">Novo</span>
+            </button>
           </div>
 
-          <div className="flex items-center gap-3">
+          {/* Linha Inferior: Atalhos secundários com rolagem limpa */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
             <button
               onClick={() => setModalMapaGeralAberto(true)}
-              className="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-emerald-400 text-xs font-semibold rounded-xl border border-slate-700 shadow-lg flex items-center gap-2 transition-all cursor-pointer"
+              className="py-1.5 px-3 bg-slate-900 hover:bg-slate-800 text-emerald-400 text-xs font-medium rounded-xl border border-slate-800 flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap shrink-0"
             >
-              <Layers className="w-4 h-4" />
+              <Layers className="w-3.5 h-3.5" />
               <span>Mapa Geral</span>
             </button>
 
             <button
               onClick={handleAbrirRelatorio}
-              className="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-indigo-300 text-xs font-semibold rounded-xl border border-slate-700 shadow-lg flex items-center gap-2 transition-all cursor-pointer"
+              className="py-1.5 px-3 bg-slate-900 hover:bg-slate-800 text-indigo-300 text-xs font-medium rounded-xl border border-slate-800 flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap shrink-0"
             >
-              <FileSpreadsheet className="w-4 h-4 text-indigo-400" />
+              <FileSpreadsheet className="w-3.5 h-3.5 text-indigo-400" />
               <span>Relatório Geral</span>
-            </button>
-
-            <button
-              onClick={() => setModalCriarAberto(true)}
-              className="py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl shadow-lg shadow-indigo-600/30 flex items-center gap-2 transition-all cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Novo Território</span>
             </button>
           </div>
         </div>

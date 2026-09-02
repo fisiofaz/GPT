@@ -51,11 +51,13 @@ export const MapaGeralModal: React.FC<MapaGeralModalProps> = ({
   const getStatusIcon = (status: StatusTerritorio) => {
     switch (status) {
       case "DISPONIVEL":
-        return <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />;
+        return (
+          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+        );
       case "EM_TRABALHO":
-        return <Clock className="w-3.5 h-3.5 text-amber-400" />;
+        return <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />;
       case "EM_ATRASO":
-        return <AlertCircle className="w-3.5 h-3.5 text-rose-400" />;
+        return <AlertCircle className="w-3.5 h-3.5 text-rose-400 shrink-0" />;
       default:
         return null;
     }
@@ -107,9 +109,9 @@ export const MapaGeralModal: React.FC<MapaGeralModalProps> = ({
     const polyMap = new Map<number, L.Polygon>();
 
     territorios.forEach((t) => {
-      if (!t.poligonoGeojson) return;
+      if (!t.poligonoGeoJson) return;
       try {
-        const coords: [number, number][] = JSON.parse(t.poligonoGeojson);
+        const coords: [number, number][] = JSON.parse(t.poligonoGeoJson);
         if (coords.length >= 3) {
           const cor = getStatusColor(t.status);
 
@@ -175,18 +177,18 @@ export const MapaGeralModal: React.FC<MapaGeralModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 print:p-0 print:bg-white print:static">
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-7xl h-[94vh] flex flex-col shadow-2xl overflow-hidden print:border-none print:shadow-none print:p-0 print:bg-white print:text-black">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl w-full max-w-7xl h-[94vh] flex flex-col shadow-2xl overflow-hidden print:border-none print:shadow-none print:p-0 print:bg-white print:text-black">
         {/* Top Header */}
-        <div className="p-4 bg-slate-900 border-b border-slate-800 flex items-center justify-between gap-4 print:hidden">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+        <div className="p-3 sm:p-4 bg-slate-900 border-b border-slate-800 flex items-center justify-between gap-3 print:hidden shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
               <Layers className="w-5 h-5" />
             </div>
-            <div>
-              <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+            <div className="min-w-0">
+              <h2 className="text-sm sm:text-lg font-bold text-white truncate">
                 Mapa Geral da Congregação
               </h2>
-              <p className="text-xs text-slate-400">
+              <p className="text-[11px] sm:text-xs text-slate-400 truncate">
                 {congregacaoNome
                   ? `Congregação: ${congregacaoNome}`
                   : "Visão territorial"}
@@ -194,10 +196,10 @@ export const MapaGeralModal: React.FC<MapaGeralModalProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => window.print()}
-              className="py-2 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700 flex items-center gap-1.5 transition-all cursor-pointer"
+              className="py-2 px-2.5 sm:px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700 flex items-center gap-1.5 transition-all cursor-pointer"
             >
               <Printer className="w-4 h-4" />
               <span className="hidden sm:inline">Imprimir</span>
@@ -211,10 +213,10 @@ export const MapaGeralModal: React.FC<MapaGeralModalProps> = ({
           </div>
         </div>
 
-        {/* Corpo Principal: Lista Lateral + Mapa */}
-        <div className="flex-1 flex overflow-hidden relative">
-          {/* Sidebar Lateral de Territórios */}
-          <aside className="w-80 bg-slate-950/90 border-r border-slate-800 flex flex-col z-10 print:hidden">
+        {/* Corpo Principal: Empilhado no Mobile (flex-col) e Lado a Lado no Desktop (lg:flex-row) */}
+        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
+          {/* Sidebar Lateral / Superior de Territórios */}
+          <aside className="w-full lg:w-80 bg-slate-950/90 border-b lg:border-b-0 lg:border-r border-slate-800 flex flex-col z-10 print:hidden h-2/5 lg:h-full shrink-0">
             <div className="p-3 border-b border-slate-800 space-y-2.5">
               <div className="relative">
                 <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -227,7 +229,7 @@ export const MapaGeralModal: React.FC<MapaGeralModalProps> = ({
                 />
               </div>
 
-              <div className="flex gap-1 overflow-x-auto pb-1">
+              <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none">
                 {["TODOS", "DISPONIVEL", "EM_TRABALHO", "EM_ATRASO"].map(
                   (st) => (
                     <button
@@ -252,12 +254,12 @@ export const MapaGeralModal: React.FC<MapaGeralModalProps> = ({
 
             <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
               {territoriosFiltrados.length === 0 ? (
-                <div className="py-8 text-center text-xs text-slate-500">
+                <div className="py-6 text-center text-xs text-slate-500">
                   Nenhum território encontrado.
                 </div>
               ) : (
                 territoriosFiltrados.map((t) => {
-                  const temPoligono = Boolean(t.poligonoGeojson);
+                  const temPoligono = Boolean(t.poligonoGeoJson);
                   const isAtivo = territorioAtivoId === t.id;
 
                   return (
@@ -308,24 +310,24 @@ export const MapaGeralModal: React.FC<MapaGeralModalProps> = ({
           </aside>
 
           {/* Área do Mapa */}
-          <div className="flex-1 relative z-0">
+          <div className="flex-1 relative z-0 h-3/5 lg:h-full">
             <div ref={mapContainerRef} className="w-full h-full" />
 
             {/* Legenda Flutuante */}
-            <div className="absolute bottom-4 right-4 z-1000 bg-slate-900/90 backdrop-blur-md p-3 rounded-2xl border border-slate-800 shadow-xl space-y-1.5 text-xs">
+            <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 z-400 bg-slate-900/90 backdrop-blur-md p-2.5 sm:p-3 rounded-2xl border border-slate-800 shadow-xl space-y-1.5 text-xs">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                 Status
               </span>
               <div className="flex items-center gap-2 text-slate-300">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
                 <span>Disponível</span>
               </div>
               <div className="flex items-center gap-2 text-slate-300">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0" />
                 <span>Em Uso</span>
               </div>
               <div className="flex items-center gap-2 text-slate-300">
-                <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0" />
                 <span>Em Atraso</span>
               </div>
             </div>
@@ -333,11 +335,11 @@ export const MapaGeralModal: React.FC<MapaGeralModalProps> = ({
         </div>
 
         {/* Rodapé */}
-        <div className="p-3 bg-slate-950 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400 print:hidden">
+        <div className="p-3 bg-slate-950 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400 print:hidden shrink-0">
           <span>
             Territórios mapeados:{" "}
             <strong className="text-white">
-              {territorios.filter((t) => t.poligonoGeojson).length}
+              {territorios.filter((t) => t.poligonoGeoJson).length}
             </strong>{" "}
             de <strong className="text-white">{territorios.length}</strong>
           </span>
