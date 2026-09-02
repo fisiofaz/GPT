@@ -408,6 +408,60 @@ export const Dashboard: React.FC = () => {
               </button>
             </div>
           </div>
+
+          {/* Atalho para Gestão de Publicadores */}
+          <div className="p-8 rounded-3xl bg-slate-900/70 border border-slate-800 hover:border-violet-500/40 transition-all flex flex-col justify-between shadow-xl">
+            <div className="space-y-4">
+              <div className="w-14 h-14 rounded-2xl bg-violet-500/10 border border-violet-500/20 text-violet-400 flex items-center justify-center">
+                <UserCog className="w-7 h-7" />
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold text-white">
+                  Gestão de Publicadores
+                </h3>
+                <p className="text-sm text-slate-400 mt-2">
+                  Acompanhe o cadastro e o envolvimento dos publicadores na
+                  congregação.
+                </p>
+              </div>
+            </div>
+            <div className="pt-8">
+              <button
+                onClick={() => navigate("/publicadores")}
+                className="w-full py-3.5 px-5 rounded-2xl bg-violet-600 hover:bg-violet-500 text-white font-semibold text-sm shadow-lg shadow-violet-600/25 flex items-center justify-center gap-2 transition-all cursor-pointer"
+              >
+                <span>Acessar Publicadores</span>
+                <ArrowUpRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Atalho para Gestão de Pedidos */}
+          <div className="p-8 rounded-3xl bg-slate-900/70 border border-slate-800 hover:border-violet-500/40 transition-all flex flex-col justify-between shadow-xl">
+            <div className="space-y-4">
+              <div className="w-14 h-14 rounded-2xl bg-violet-500/10 border border-violet-500/20 text-violet-400 flex items-center justify-center">
+                <FileText className="w-7 h-7" />
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold text-white">
+                  Gestão de Pedidos
+                </h3>
+                <p className="text-sm text-slate-400 mt-2">
+                  Acompanhe solicitações de publicadores e o envio de remessas
+                  para Betel.
+                </p>
+              </div>
+            </div>
+            <div className="pt-8">
+              <button
+                onClick={() => navigate("/pedidos")}
+                className="w-full py-3.5 px-5 rounded-2xl bg-violet-600 hover:bg-violet-500 text-white font-semibold text-sm shadow-lg shadow-violet-600/25 flex items-center justify-center gap-2 transition-all cursor-pointer"
+              >
+                <span>Acessar Pedidos</span>
+                <ArrowUpRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
         </section>
       </main>
     </div>

@@ -109,22 +109,23 @@ export const Publicacoes: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#0b0f19] text-slate-100 font-sans pb-16">
-      {/* Header */}
+      {/* Header Responsivo */}
       <header className="sticky top-0 z-40 backdrop-blur-xl bg-[#0b0f19]/80 border-b border-slate-800 print:hidden">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          {/* Lado Esquerdo: Botão Voltar e Títulos */}
+          <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={() => navigate("/dashboard")}
-              className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 transition-all cursor-pointer"
+              className="p-2 sm:p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 transition-all shrink-0 cursor-pointer"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <div>
-              <h1 className="text-xl font-bold text-white flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-indigo-400" />
-                Estoque de Publicações
+            <div className="min-w-0">
+              <h1 className="text-base sm:text-xl font-bold text-white flex items-center gap-2 truncate">
+                <BookOpen className="w-5 h-5 text-indigo-400 shrink-0" />
+                <span className="truncate">Estoque de Publicações</span>
               </h1>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-400 truncate">
                 {publicacoes[0]?.congregacaoNome
                   ? `Congregação: ${publicacoes[0].congregacaoNome}`
                   : "Controle de balcão e remessas"}
@@ -132,10 +133,11 @@ export const Publicacoes: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          {/* Lado Direito: Ações do Topo */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 shrink-0 w-full sm:w-auto justify-start sm:justify-end">
             <button
               onClick={() => navigate("/catalogo")}
-              className="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl border border-slate-700 flex items-center gap-2 transition-all cursor-pointer"
+              className="py-2.5 px-3.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl border border-slate-700 flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer"
             >
               <BookMarked className="w-4 h-4 text-indigo-400" />
               <span>Catálogo Geral</span>
@@ -146,10 +148,10 @@ export const Publicacoes: React.FC = () => {
                 setModalHistoricoAberto(true);
                 carregarHistorico();
               }}
-              className="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-indigo-300 text-xs font-semibold rounded-xl border border-slate-700 shadow-lg flex items-center gap-2 transition-all cursor-pointer"
+              className="py-2.5 px-3.5 bg-slate-800 hover:bg-slate-700 text-indigo-300 text-xs font-semibold rounded-xl border border-slate-700 shadow-lg flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer"
             >
               <History className="w-4 h-4 text-indigo-400" />
-              <span>Histórico de Movimentações</span>
+              <span>Histórico</span>
             </button>
 
             <button
@@ -157,7 +159,7 @@ export const Publicacoes: React.FC = () => {
                 setItemEmEdicao(null);
                 setModalFormAberto(true);
               }}
-              className="py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl shadow-lg shadow-indigo-600/30 flex items-center gap-2 transition-all cursor-pointer"
+              className="py-2.5 px-3.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl shadow-lg shadow-indigo-600/30 flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>Novo Item</span>

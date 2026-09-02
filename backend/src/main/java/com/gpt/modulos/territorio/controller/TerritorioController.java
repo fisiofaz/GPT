@@ -63,8 +63,9 @@ public class TerritorioController {
         return ResponseEntity.ok(territorioService.listarHistorico(id));
     }
     
-    // Listar histórico geral de toda a congregação
-    @GetMapping("/congregacao/{congregacaoId}/historico-geral")
+    // Listar histórico geral de toda a congregação (S-13)
+    @GetMapping("/congregacao/{congregacaoId}/historico")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO', 'ROLE_SERVO_TERRITORIO')")
     public ResponseEntity<List<HistoricoTerritorioResponseDTO>> listarHistoricoGeral(@PathVariable Long congregacaoId) {
         return ResponseEntity.ok(territorioService.listarHistoricoGeral(congregacaoId));
     }
