@@ -1,4 +1,5 @@
 # Backend
+backend/.env
 backend/target/
 backend/.mvn/
 backend/mvnw
