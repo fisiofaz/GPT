@@ -44,4 +44,41 @@ class BackendApplicationTests {
         assertThat(congregacao.getNumero())
                 .isEqualTo("000");
     }
+    
+    @Test
+    void devePersistirNovaCongregacao() {
+
+        Congregacao novaCongregacao = Congregacao.builder()
+                .nome("Congregação de Teste")
+                .numero("999")
+                .cidade("Santa Maria")
+                .estado("RS")
+                .numeroCircuito("CIR-TESTE")
+                .build();
+
+        Congregacao salva = congregacaoRepository.save(novaCongregacao);
+
+        assertThat(salva.getId()).isNotNull();
+
+        Congregacao encontrada = congregacaoRepository.findById(salva.getId())
+                .orElseThrow();
+
+        assertThat(encontrada.getNome())
+                .isEqualTo("Congregação de Teste");
+
+        assertThat(encontrada.getNumero())
+                .isEqualTo("999");
+
+        assertThat(encontrada.getCidade())
+                .isEqualTo("Santa Maria");
+
+        assertThat(encontrada.getEstado())
+                .isEqualTo("RS");
+
+        assertThat(encontrada.getNumeroCircuito())
+                .isEqualTo("CIR-TESTE");
+
+        assertThat(encontrada.getCriadoEm())
+                .isNotNull();
+    }
 }
