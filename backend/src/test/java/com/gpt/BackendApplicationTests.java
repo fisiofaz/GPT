@@ -22,6 +22,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -140,5 +141,33 @@ class BackendApplicationTests {
                 .andExpect(jsonPath("$.cidade").value("Santa Maria"))
                 .andExpect(jsonPath("$.estado").value("RS"))
                 .andExpect(jsonPath("$.numero").value("000"));
+    }
+    
+    @Test
+    void deveCriarCongregacaoAtravésDaApi() throws Exception {
+
+        String requestJson = """
+                {
+                    "nome": "Congregação API Teste",
+                    "numero": "997",
+                    "cidade": "Santa Maria",
+                    "estado": "RS"
+                }
+                """;
+
+        mockMvc.perform(post("/congregacoes")
+                        .with(user("admin")
+                                .authorities(
+                                        new SimpleGrantedAuthority("ROLE_ADMIN_GERAL")
+                                ))
+                        .contentType("application/json")
+                        .content(requestJson))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").isNumber())
+                .andExpect(jsonPath("$.nome").value("Congregação API Teste"))
+                .andExpect(jsonPath("$.numero").value("997"))
+                .andExpect(jsonPath("$.cidade").value("Santa Maria"))
+                .andExpect(jsonPath("$.estado").value("RS"))
+                .andExpect(jsonPath("$.criadoEm").exists());
     }
 }
