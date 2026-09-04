@@ -15,12 +15,21 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.test.web.servlet.MockMvc;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Testcontainers
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
+@AutoConfigureMockMvc
 class BackendApplicationTests {
 
     @Container
@@ -33,6 +42,9 @@ class BackendApplicationTests {
     
     @Autowired
     private CongregacaoService congregacaoService;
+    
+    @Autowired
+    private MockMvc mockMvc;
 
     @Test
     void deveConsultarCongregacaoCriadaPelaMigration() {
@@ -112,5 +124,21 @@ class BackendApplicationTests {
                 .isEqualTo("RS");
         assertThat(response.getCriadoEm())
                 .isNotNull();
+    }
+    
+    @Test
+    void deveBuscarCongregacaoPorIdAtravésDaApi() throws Exception {
+
+        mockMvc.perform(get("/congregacoes/1")
+                        .with(user("admin")
+                                .authorities(
+                                        new SimpleGrantedAuthority("ROLE_ADMIN_GERAL")
+                                )))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.nome").value("Congregação Central"))
+                .andExpect(jsonPath("$.cidade").value("Santa Maria"))
+                .andExpect(jsonPath("$.estado").value("RS"))
+                .andExpect(jsonPath("$.numero").value("000"));
     }
 }
