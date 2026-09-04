@@ -24,6 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -197,5 +198,19 @@ class BackendApplicationTests {
                 .andExpect(jsonPath("$.numero").value("996"))
                 .andExpect(jsonPath("$.cidade").value("Porto Alegre"))
                 .andExpect(jsonPath("$.estado").value("RS"));
+    }
+    
+    @Test
+    void deveDeletarCongregacaoAtravésDaApi() throws Exception {
+
+        mockMvc.perform(delete("/congregacoes/1")
+                        .with(user("admin")
+                                .authorities(
+                                        new SimpleGrantedAuthority("ROLE_ADMIN_GERAL")
+                                )))
+                .andExpect(status().isNoContent());
+
+        assertThat(congregacaoRepository.findById(1L))
+                .isEmpty();
     }
 }
