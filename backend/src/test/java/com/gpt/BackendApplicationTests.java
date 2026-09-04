@@ -23,6 +23,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -169,5 +170,32 @@ class BackendApplicationTests {
                 .andExpect(jsonPath("$.cidade").value("Santa Maria"))
                 .andExpect(jsonPath("$.estado").value("RS"))
                 .andExpect(jsonPath("$.criadoEm").exists());
+    }
+    
+    @Test
+    void deveAtualizarCongregacaoAtravésDaApi() throws Exception {
+
+        String requestJson = """
+                {
+                    "nome": "Congregação Atualizada pela API",
+                    "numero": "996",
+                    "cidade": "Porto Alegre",
+                    "estado": "RS"
+                }
+                """;
+
+        mockMvc.perform(put("/congregacoes/1")
+                        .with(user("admin")
+                                .authorities(
+                                        new SimpleGrantedAuthority("ROLE_ADMIN_GERAL")
+                                ))
+                        .contentType("application/json")
+                        .content(requestJson))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.nome").value("Congregação Atualizada pela API"))
+                .andExpect(jsonPath("$.numero").value("996"))
+                .andExpect(jsonPath("$.cidade").value("Porto Alegre"))
+                .andExpect(jsonPath("$.estado").value("RS"));
     }
 }
