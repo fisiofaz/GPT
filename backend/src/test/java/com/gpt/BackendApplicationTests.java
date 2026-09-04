@@ -266,4 +266,25 @@ class BackendApplicationTests {
                         .content(requestJson))
                 .andExpect(status().isForbidden());
     }
+    
+    @Test
+    void deveRejeitarCriacaoDeCongregacaoComDadosInvalidos() throws Exception {
+        String requestJson = """
+                {
+                    "nome": "",
+                    "numero": "993",
+                    "cidade": "Santa Maria",
+                    "estado": "RS"
+                }
+                """;
+
+        mockMvc.perform(post("/congregacoes")
+                        .with(user("admin")
+                                .authorities(
+                                        new SimpleGrantedAuthority("ROLE_ADMIN_GERAL")
+                                ))
+                        .contentType("application/json")
+                        .content(requestJson))
+                .andExpect(status().isBadRequest());
+    }
 }
