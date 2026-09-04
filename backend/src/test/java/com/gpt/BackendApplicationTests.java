@@ -213,4 +213,19 @@ class BackendApplicationTests {
         assertThat(congregacaoRepository.findById(1L))
                 .isEmpty();
     }
+    
+    @Test
+    void deveListarTodasAsCongregacoesAtravésDaApi() throws Exception {
+        mockMvc.perform(get("/congregacoes")
+                        .with(user("admin")
+                                .authorities(
+                                        new SimpleGrantedAuthority("ROLE_ADMIN_GERAL")
+                                )))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$[0].id").isNumber())
+                .andExpect(jsonPath("$[0].nome").isNotEmpty())
+                .andExpect(jsonPath("$[0].cidade").isNotEmpty())
+                .andExpect(jsonPath("$[0].estado").value("RS"));
+    }
 }
