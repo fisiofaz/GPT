@@ -2,6 +2,9 @@ package com.gpt;
 
 import com.gpt.modulos.congregacao.model.Congregacao;
 import com.gpt.modulos.congregacao.repository.CongregacaoRepository;
+import com.gpt.modulos.congregacao.dto.CongregacaoRequestDTO;
+import com.gpt.modulos.congregacao.dto.CongregacaoResponseDTO;
+import com.gpt.modulos.congregacao.service.CongregacaoService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -25,6 +28,9 @@ class BackendApplicationTests {
 
     @Autowired
     private CongregacaoRepository congregacaoRepository;
+    
+    @Autowired
+    private CongregacaoService congregacaoService;
 
     @Test
     void deveConsultarCongregacaoCriadaPelaMigration() {
@@ -79,6 +85,30 @@ class BackendApplicationTests {
                 .isEqualTo("CIR-TESTE");
 
         assertThat(encontrada.getCriadoEm())
+                .isNotNull();
+    }
+    
+    @Test
+    void deveCriarCongregacaoAtravésDoService() {
+
+        CongregacaoRequestDTO request = new CongregacaoRequestDTO();
+        request.setNome("Congregação Service Teste");
+        request.setNumero("998");
+        request.setCidade("Santa Maria");
+        request.setEstado("rs");
+
+        CongregacaoResponseDTO response = congregacaoService.criar(request);
+
+        assertThat(response.getId()).isNotNull();
+        assertThat(response.getNome())
+                .isEqualTo("Congregação Service Teste");
+        assertThat(response.getNumero())
+                .isEqualTo("998");
+        assertThat(response.getCidade())
+                .isEqualTo("Santa Maria");
+        assertThat(response.getEstado())
+                .isEqualTo("RS");
+        assertThat(response.getCriadoEm())
                 .isNotNull();
     }
 }
