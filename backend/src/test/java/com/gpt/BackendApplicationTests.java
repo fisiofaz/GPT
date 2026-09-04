@@ -228,4 +228,21 @@ class BackendApplicationTests {
                 .andExpect(jsonPath("$[0].cidade").isNotEmpty())
                 .andExpect(jsonPath("$[0].estado").value("RS"));
     }
+    
+    @Test
+    void deveNegarCriacaoDeCongregacaoSemAutenticacao() throws Exception {
+        String requestJson = """
+                {
+                    "nome": "Congregação Sem Autenticação",
+                    "numero": "995",
+                    "cidade": "Santa Maria",
+                    "estado": "RS"
+                }
+                """;
+
+        mockMvc.perform(post("/congregacoes")
+                        .contentType("application/json")
+                        .content(requestJson))
+        		.andExpect(status().isForbidden());
+    }
 }
