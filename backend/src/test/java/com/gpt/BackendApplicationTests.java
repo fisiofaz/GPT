@@ -245,4 +245,25 @@ class BackendApplicationTests {
                         .content(requestJson))
         		.andExpect(status().isForbidden());
     }
+    
+    @Test
+    void deveNegarCriacaoDeCongregacaoSemPermissao() throws Exception {
+        String requestJson = """
+                {
+                    "nome": "Congregação Sem Permissão",
+                    "numero": "994",
+                    "cidade": "Santa Maria",
+                    "estado": "RS"
+                }
+                """;
+
+        mockMvc.perform(post("/congregacoes")
+                        .with(user("usuario")
+                                .authorities(
+                                        new SimpleGrantedAuthority("ROLE_ANCIAO")
+                                ))
+                        .contentType("application/json")
+                        .content(requestJson))
+                .andExpect(status().isForbidden());
+    }
 }
