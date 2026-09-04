@@ -33,7 +33,7 @@ public class Congregacao {
     @Column(nullable = false, length = 2)
     private String estado;
     
-    @Column(length = 30)
+    @Column(nullable = false,length = 30)
     private String numeroCircuito;
 
     @CreationTimestamp

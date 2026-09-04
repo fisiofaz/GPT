@@ -201,14 +201,14 @@ class CongregacaoControllerIntegrationTest {
     }
 
     @Test
-    void deveRetornarBadRequestAoBuscarCongregacaoInexistente() throws Exception {
-        mockMvc.perform(get("/congregacoes/999999")
-                        .with(user("admin")
-                                .authorities(
-                                        new SimpleGrantedAuthority("ROLE_ADMIN_GERAL")
-                                )))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message")
-                        .value("Congregação não encontrada com o ID: 999999"));
+    void deveRetornarNotFoundAoBuscarCongregacaoInexistente() throws Exception {
+	    	mockMvc.perform(get("/congregacoes/999999")
+	                .with(user("admin")
+	                        .authorities(
+	                                new SimpleGrantedAuthority("ROLE_ADMIN_GERAL")
+	                        )))
+	        .andExpect(status().isNotFound())
+	        .andExpect(jsonPath("$.message")
+	                .value("Congregação não encontrada com o ID: 999999"));
     }
 }
