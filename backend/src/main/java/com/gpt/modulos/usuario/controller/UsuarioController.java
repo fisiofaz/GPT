@@ -48,7 +48,7 @@ public class UsuarioController {
     
     @PostMapping
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO')")
-    public ResponseEntity<UsuarioResponseDTO> criarUsuario(@RequestBody UsuarioRequestDTO dto) {
+    public ResponseEntity<UsuarioResponseDTO> criarUsuario(@Valid @RequestBody UsuarioRequestDTO dto) {
         UsuarioResponseDTO novoUsuario = usuarioService.criar(dto);
         return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED).body(novoUsuario);
     }
