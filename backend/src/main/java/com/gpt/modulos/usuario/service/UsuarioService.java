@@ -40,6 +40,25 @@ public class UsuarioService {
     	    throw new IllegalArgumentException("Selecione uma congregação para este usuário.");
     	}
     	
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        Usuario usuarioAutenticado = (Usuario) authentication.getPrincipal();
+
+        boolean isAdminGeral = usuarioAutenticado.getRoles().stream()
+                .anyMatch(role -> "ROLE_ADMIN_GERAL".equals(role.getNome()));
+
+        if (!isAdminGeral) {
+            Long congregacaoUsuarioId = usuarioAutenticado.getCongregacao() != null
+                    ? usuarioAutenticado.getCongregacao().getId()
+                    : null;
+
+            if (congregacaoUsuarioId == null || !congregacaoUsuarioId.equals(dto.getCongregacaoId())) {
+                throw new AccessDeniedException(
+                        "Você não tem permissão para criar usuários em outra congregação."
+                );
+            }
+        }
+        
         if (usuarioRepository.existsByEmail(dto.getEmail())) {
         	throw new BusinessException("Já existe um usuário cadastrado com este e-mail.");
         }
