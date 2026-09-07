@@ -54,8 +54,8 @@ public class UsuarioService {
 
             if (congregacaoUsuarioId == null || !congregacaoUsuarioId.equals(dto.getCongregacaoId())) {
             	throw new AccessDeniedException(
-            	        "Você não tem permissão para criar usuários em outra congregação."
-            	);
+                        "Você não tem permissão para criar usuários em outra congregação."
+            			);
             }
         }
         
@@ -112,6 +112,19 @@ public class UsuarioService {
                     || !congregacaoUsuarioAutenticadoId.equals(congregacaoUsuarioAlvoId)) {
                 throw new AccessDeniedException(
                         "Você não tem permissão para atualizar usuários de outra congregação."
+                );
+            }
+        }
+        
+        if (!isAdminGeral) {
+            Long congregacaoUsuarioAtualId = usuario.getCongregacao() != null
+                    ? usuario.getCongregacao().getId()
+                    : null;
+
+            if (congregacaoUsuarioAtualId == null
+                    || !congregacaoUsuarioAtualId.equals(dto.getCongregacaoId())) {
+                throw new AccessDeniedException(
+                        "Você não pode alterar a congregação de um usuário."
                 );
             }
         }
