@@ -35,12 +35,13 @@ public class AuthService {
             throw new IllegalArgumentException("E-mail já cadastrado");
         }
 
-        Congregacao congregacao = null;
-        if (request.getCongregacaoId() != null) {
-            congregacao = congregacaoRepository.findById(request.getCongregacaoId())
-                    .orElseThrow(() -> new IllegalArgumentException("Congregação não encontrada"));
+        if (request.getCongregacaoId() == null) {
+            throw new IllegalArgumentException("Selecione uma congregação para este usuário.");
         }
 
+        Congregacao congregacao = congregacaoRepository.findById(request.getCongregacaoId())
+                .orElseThrow(() -> new IllegalArgumentException("Congregação não encontrada"));
+        
         Set<Role> roles = new HashSet<>();
         for (String roleName : request.getRoles()) {
             Role role = roleRepository.findByNome(roleName)

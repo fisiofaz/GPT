@@ -6,6 +6,7 @@ import com.gpt.modulos.usuario.service.UsuarioService;
 import jakarta.validation.Valid;
 
 import com.gpt.modulos.usuario.dto.UsuarioRequestDTO;
+import com.gpt.modulos.usuario.dto.UsuarioUpdateDTO;
 
 import lombok.RequiredArgsConstructor;
 
@@ -61,9 +62,9 @@ public class UsuarioController {
     
     @PutMapping("/{id}")
     public ResponseEntity<UsuarioResponseDTO> atualizar(
-            @PathVariable Long id, 
-            @Valid @RequestBody UsuarioRequestDTO dto) {
-        
+            @PathVariable Long id,
+            @Valid @RequestBody UsuarioUpdateDTO dto) {
+
         UsuarioResponseDTO response = usuarioService.atualizar(id, dto);
         return ResponseEntity.ok(response);
     }
