@@ -61,6 +61,7 @@ public class UsuarioController {
     }
     
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO')")
     public ResponseEntity<UsuarioResponseDTO> atualizar(
             @PathVariable Long id,
             @Valid @RequestBody UsuarioUpdateDTO dto) {
