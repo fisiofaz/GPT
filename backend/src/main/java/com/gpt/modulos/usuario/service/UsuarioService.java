@@ -15,6 +15,9 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -107,7 +110,28 @@ public class UsuarioService {
     
     @Transactional(readOnly = true)
     public List<UsuarioResponseDTO> listarPorCongregacao(Long congregacaoId) {
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        Usuario usuarioAutenticado = (Usuario) authentication.getPrincipal();
+
+        boolean isAdminGeral = usuarioAutenticado.getRoles().stream()
+                .anyMatch(role -> "ROLE_ADMIN_GERAL".equals(role.getNome()));
+
+        if (!isAdminGeral) {
+            Long congregacaoUsuarioId = usuarioAutenticado.getCongregacao() != null
+                    ? usuarioAutenticado.getCongregacao().getId()
+                    : null;
+
+            if (congregacaoUsuarioId == null || !congregacaoUsuarioId.equals(congregacaoId)) {
+                throw new AccessDeniedException(
+                        "Você não tem permissão para consultar usuários desta congregação."
+                );
+            }
+        }
+
         List<Usuario> usuarios = usuarioRepository.findByCongregacaoId(congregacaoId);
+
         return usuarios.stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
