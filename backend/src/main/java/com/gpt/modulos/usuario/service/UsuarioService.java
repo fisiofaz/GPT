@@ -53,9 +53,9 @@ public class UsuarioService {
                     : null;
 
             if (congregacaoUsuarioId == null || !congregacaoUsuarioId.equals(dto.getCongregacaoId())) {
-                throw new AccessDeniedException(
-                        "Você não tem permissão para criar usuários em outra congregação."
-                );
+            	throw new AccessDeniedException(
+            	        "Você não tem permissão para criar usuários em outra congregação."
+            	);
             }
         }
         
@@ -91,6 +91,30 @@ public class UsuarioService {
     public UsuarioResponseDTO atualizar(Long id, UsuarioUpdateDTO dto) {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado com ID: " + id));
+        
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        Usuario usuarioAutenticado = (Usuario) authentication.getPrincipal();
+
+        boolean isAdminGeral = usuarioAutenticado.getRoles().stream()
+                .anyMatch(role -> "ROLE_ADMIN_GERAL".equals(role.getNome()));
+
+        if (!isAdminGeral) {
+            Long congregacaoUsuarioAutenticadoId = usuarioAutenticado.getCongregacao() != null
+                    ? usuarioAutenticado.getCongregacao().getId()
+                    : null;
+
+            Long congregacaoUsuarioAlvoId = usuario.getCongregacao() != null
+                    ? usuario.getCongregacao().getId()
+                    : null;
+
+            if (congregacaoUsuarioAutenticadoId == null
+                    || !congregacaoUsuarioAutenticadoId.equals(congregacaoUsuarioAlvoId)) {
+                throw new AccessDeniedException(
+                        "Você não tem permissão para atualizar usuários de outra congregação."
+                );
+            }
+        }
         
         if (usuarioRepository.existsByEmailAndIdNot(dto.getEmail(), id)) {
             throw new BusinessException("Já existe outro usuário cadastrado com este e-mail.");
