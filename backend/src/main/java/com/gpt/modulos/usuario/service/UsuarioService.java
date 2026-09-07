@@ -34,6 +34,21 @@ public class UsuarioService {
     private final RoleRepository roleRepository;             
     private final PasswordEncoder passwordEncoder;
     
+    private void validarRolesPermitidas(Set<String> roles) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        Usuario usuarioAutenticado = (Usuario) authentication.getPrincipal();
+
+        boolean isAdminGeral = usuarioAutenticado.getRoles().stream()
+                .anyMatch(role -> "ROLE_ADMIN_GERAL".equals(role.getNome()));
+
+        if (!isAdminGeral && roles.contains("ROLE_ADMIN_GERAL")) {
+            throw new AccessDeniedException(
+                    "Você não tem permissão para atribuir a role ROLE_ADMIN_GERAL."
+            );
+        }
+    }
+    
     @Transactional
     public UsuarioResponseDTO criar(UsuarioRequestDTO dto) {
     	if (dto.getCongregacaoId() == null) {
@@ -74,6 +89,7 @@ public class UsuarioService {
 
         usuario.setCongregacao(congregacao);
         
+        validarRolesPermitidas(dto.getRoles());
         Set<Role> roles = roleRepository.findByNomeIn(dto.getRoles());
 
         if (roles.size() != dto.getRoles().size()) {
@@ -132,7 +148,7 @@ public class UsuarioService {
         if (usuarioRepository.existsByEmailAndIdNot(dto.getEmail(), id)) {
             throw new BusinessException("Já existe outro usuário cadastrado com este e-mail.");
         }
-        
+                
         if (dto.getCongregacaoId() == null) {
             throw new IllegalArgumentException("Selecione uma congregação para este usuário.");
         }
@@ -149,9 +165,13 @@ public class UsuarioService {
 
         usuario.setCongregacao(congregacao);
 
+        
 
         if (dto.getRoles() != null && !dto.getRoles().isEmpty()) {
-            Set<Role> roles = roleRepository.findByNomeIn(dto.getRoles());
+            
+        	validarRolesPermitidas(dto.getRoles());
+        	
+        	Set<Role> roles = roleRepository.findByNomeIn(dto.getRoles());
 
             if (roles.size() != dto.getRoles().size()) {
                 throw new IllegalArgumentException("Uma ou mais roles informadas não existem.");
