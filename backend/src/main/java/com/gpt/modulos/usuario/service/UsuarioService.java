@@ -222,6 +222,12 @@ public class UsuarioService {
     	Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         Usuario usuarioAutenticado = (Usuario) authentication.getPrincipal();
+        
+        if (usuarioAutenticado.getId().equals(usuario.getId())) {
+            throw new IllegalArgumentException(
+                    "Você não pode inativar o próprio usuário."
+            );
+        }
 
         boolean isAdminGeral = usuarioAutenticado.getRoles().stream()
                 .anyMatch(role -> "ROLE_ADMIN_GERAL".equals(role.getNome()));
