@@ -215,8 +215,33 @@ public class UsuarioService {
 
     @Transactional
     public void inativar(Long id) {
-        Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado com ID: " + id));
+    	Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Usuário não encontrado com ID: " + id));
+    	
+    	Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        Usuario usuarioAutenticado = (Usuario) authentication.getPrincipal();
+
+        boolean isAdminGeral = usuarioAutenticado.getRoles().stream()
+                .anyMatch(role -> "ROLE_ADMIN_GERAL".equals(role.getNome()));
+
+        if (!isAdminGeral) {
+            Long congregacaoUsuarioAutenticadoId = usuarioAutenticado.getCongregacao() != null
+                    ? usuarioAutenticado.getCongregacao().getId()
+                    : null;
+
+            Long congregacaoUsuarioAlvoId = usuario.getCongregacao() != null
+                    ? usuario.getCongregacao().getId()
+                    : null;
+
+            if (congregacaoUsuarioAutenticadoId == null
+                    || !congregacaoUsuarioAutenticadoId.equals(congregacaoUsuarioAlvoId)) {
+                throw new AccessDeniedException(
+                        "Você não tem permissão para inativar usuários de outra congregação."
+                );
+            }
+        }
         usuario.setAtivo(false);
         usuarioRepository.save(usuario);
     }
