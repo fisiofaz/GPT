@@ -111,6 +111,17 @@ public class UsuarioService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         Usuario usuarioAutenticado = (Usuario) authentication.getPrincipal();
+        
+        if (usuarioAutenticado.getId().equals(usuario.getId())
+                && !usuarioAutenticado.getRoles().stream()
+                .map(Role::getNome)
+                .collect(Collectors.toSet())
+                .equals(dto.getRoles())) {
+
+            throw new AccessDeniedException(
+                    "Você não pode alterar suas próprias roles."
+            );
+        }
 
         boolean isAdminGeral = usuarioAutenticado.getRoles().stream()
                 .anyMatch(role -> "ROLE_ADMIN_GERAL".equals(role.getNome()));
