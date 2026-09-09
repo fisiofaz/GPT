@@ -1,0 +1,10 @@
+CREATE TABLE IF NOT EXISTS tb_pessoa (
+    id BIGSERIAL PRIMARY KEY,
+    nome VARCHAR(150) NOT NULL,
+    data_nascimento DATE,
+    telefone VARCHAR(20),
+    email VARCHAR(150),
+    situacao VARCHAR(20) NOT NULL DEFAULT 'ATIVO',
+    criado_em TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
+    atualizado_em TIMESTAMP WITHOUT TIME ZONE
+);
