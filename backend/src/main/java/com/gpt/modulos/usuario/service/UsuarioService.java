@@ -207,6 +207,21 @@ public class UsuarioService {
         }
 
         Usuario atualizado = usuarioRepository.save(usuario);
+        
+        boolean isSuperintendente = usuarioAutenticado.getRoles().stream()
+                .anyMatch(role -> "ROLE_SUPERINTENDENTE_SERVICO".equals(role.getNome()));
+
+        boolean novoUsuarioEhSuperintendente =
+                dto.getRoles().contains("ROLE_SUPERINTENDENTE_SERVICO");
+
+        if (isSuperintendente && novoUsuarioEhSuperintendente) {
+            usuarioAutenticado.getRoles().removeIf(
+                    role -> "ROLE_SUPERINTENDENTE_SERVICO".equals(role.getNome())
+            );
+
+            usuarioRepository.save(usuarioAutenticado);
+        }
+        
         return toDTO(atualizado);
     }
     
