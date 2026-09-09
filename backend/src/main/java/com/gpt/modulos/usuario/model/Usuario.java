@@ -33,7 +33,6 @@ public class Usuario {
     @Column(nullable = false)
     private String senha;
 
-    // Relacionamento com a congregação (Tenant) - Pode ser nulo para Admin Geral
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "congregacao_id")
     private Congregacao congregacao;
