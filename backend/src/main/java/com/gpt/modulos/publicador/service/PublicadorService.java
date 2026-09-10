@@ -115,4 +115,20 @@ public class PublicadorService {
         pessoaRepository.save(pessoa);
         publicadorRepository.save(publicador);
     }
+    
+    @Transactional
+    public void reativar(Long id) {
+
+        Publicador publicador = publicadorRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Publicador não encontrado com ID: " + id));
+
+        publicador.setAtivo(true);
+
+        Pessoa pessoa = publicador.getPessoa();
+        pessoa.setSituacao(SituacaoPessoa.ATIVO);
+
+        pessoaRepository.save(pessoa);
+        publicadorRepository.save(publicador);
+    }
 }
