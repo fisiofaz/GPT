@@ -43,4 +43,11 @@ public class PublicadorController {
         publicadorService.desativar(id);
         return ResponseEntity.noContent().build();
     }
+    
+    @PatchMapping("/{id}/reativar")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO')")
+    public ResponseEntity<Void> reativar(@PathVariable Long id) {
+        publicadorService.reativar(id);
+        return ResponseEntity.noContent().build();
+    }
 }
