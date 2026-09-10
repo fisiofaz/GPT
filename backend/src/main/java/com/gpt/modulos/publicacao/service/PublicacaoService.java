@@ -150,7 +150,7 @@ public class PublicacaoService {
                 salva.getQuantidadeAnterior(),
                 salva.getQuantidadePosterior(),
                 publicador != null ? publicador.getId() : null,
-                publicador != null ? publicador.getNome() : null,
+                publicador != null ? publicador.getPessoa().getNome() : null,
                 usuarioFinal != null ? usuarioFinal.getNome() : "Sistema",
                 salva.getObservacoes(),
                 salva.getDataMovimentacao()
@@ -171,7 +171,7 @@ public class PublicacaoService {
                         m.getQuantidadeAnterior(),
                         m.getQuantidadePosterior(),
                         m.getPublicador() != null ? m.getPublicador().getId() : null,
-                        m.getPublicador() != null ? m.getPublicador().getNome() : null,
+                        m.getPublicador() != null ? m.getPublicador().getPessoa().getNome() : null,
                         m.getResponsavel() != null ? m.getResponsavel().getNome() : "Sistema",
                         m.getObservacoes(),
                         m.getDataMovimentacao()

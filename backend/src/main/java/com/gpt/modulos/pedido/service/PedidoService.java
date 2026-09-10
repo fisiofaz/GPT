@@ -46,10 +46,6 @@ public class PedidoService {
     private final MovimentacaoEstoqueRepository movimentacaoEstoqueRepo;
     private final UsuarioRepository usuarioRepo;
 
-    // ==========================================
-    // FLUXO 1: PEDIDOS DE PUBLICADORES
-    // ==========================================
-
     @Transactional
     public PedidoPublicadorDTO.Response criarPedidoPublicador(PedidoPublicadorDTO.Request dto) {
         Publicador publicador = publicadorRepo.findById(dto.getPublicadorId())
@@ -98,10 +94,6 @@ public class PedidoService {
         pedidoPublicadorRepo.save(pedido);
     }
 
-    // ==========================================
-    // FLUXO 2: PEDIDO CONSOLIDADO PARA BETEL
-    // ==========================================
-
     @Transactional
     public PedidoBetelDTO.Response criarPedidoBetel(PedidoBetelDTO.CriarRequest dto) {
         Congregacao congregacao = congregacaoRepo.findById(dto.getCongregacaoId())
@@ -134,7 +126,6 @@ public class PedidoService {
 
         PedidoBetel salvo = pedidoBetelRepo.save(pedidoBetel);
 
-        // Vincula os pedidos de publicadores incluídos neste pedido
         if (dto.getPedidosPublicadoresIds() != null && !dto.getPedidosPublicadoresIds().isEmpty()) {
             List<PedidoPublicador> pedidosPub = pedidoPublicadorRepo.findAllById(dto.getPedidosPublicadoresIds());
             for (PedidoPublicador pp : pedidosPub) {
@@ -171,16 +162,12 @@ public class PedidoService {
         return toPedidoBetelResponse(pedidoBetelRepo.save(pedido));
     }
 
-    // ==========================================
-    // FLUXO 3: RECEBIMENTO & ENTRADA NO ESTOQUE
-    // ==========================================
-
     @Transactional
     public PedidoBetelDTO.Response registrarRecebimento(Long pedidoBetelId, PedidoBetelDTO.ConferirPedidoRequest dto) {
         PedidoBetel pedido = pedidoBetelRepo.findById(pedidoBetelId)
                 .orElseThrow(() -> new EntityNotFoundException("Pedido Betel não encontrado."));
 
-        // Recupera o usuário logado para auditoria
+
         Usuario responsavel = obterUsuarioLogado();
 
         boolean todoRecebido = true;
@@ -197,18 +184,16 @@ public class PedidoService {
             if (conf.getQuantidadeRecebida() > 0) {
                 algumRecebido = true;
 
-                // 1. Atualiza o estoque da congregação
                 Publicacao publicacao = item.getPublicacao();
                 int estoqueAnterior = publicacao.getQuantidadeEstoque() != null ? publicacao.getQuantidadeEstoque() : 0;
                 int novoEstoque = estoqueAnterior + conf.getQuantidadeRecebida();
                 publicacao.setQuantidadeEstoque(novoEstoque);
                 publicacaoRepo.save(publicacao);
 
-                // 2. Registra na tabela de auditoria com todas as colunas NOT NULL preenchidas
                 MovimentacaoEstoque mov = MovimentacaoEstoque.builder()
                         .publicacao(publicacao)
                         .congregacao(pedido.getCongregacao())
-                        .responsavel(responsavel) // <-- Preenchimento obrigatório
+                        .responsavel(responsavel)
                         .tipo(TipoMovimentacao.ENTRADA)
                         .quantidade(conf.getQuantidadeRecebida())
                         .quantidadeAnterior(estoqueAnterior)
@@ -230,7 +215,6 @@ public class PedidoService {
             pedido.setObservacoes(dto.getObservacoes());
         }
 
-        // Atualiza pedidos especiais de publicadores vinculados para ATENDIDO
         List<PedidoPublicador> pedidosPubVinculados = pedidoPublicadorRepo.findByPedidoBetelId(pedidoBetelId);
         for (PedidoPublicador pp : pedidosPubVinculados) {
             pp.setStatus(StatusPedidoPublicador.ATENDIDO);
@@ -263,7 +247,6 @@ public class PedidoService {
         pedido.setMesAnoReferencia(dto.getMesAnoReferencia());
         pedido.setObservacoes(dto.getObservacoes());
 
-        // Limpa itens antigos e reconstrói
         pedido.getItens().clear();
         for (PedidoBetelDTO.ItemRequest itemDto : dto.getItens()) {
             Publicacao publicacao = publicacaoRepo.findById(itemDto.getPublicacaoId())
@@ -292,7 +275,6 @@ public class PedidoService {
             throw new IllegalStateException("Pedidos já finalizados/recebidos no estoque não podem ser excluídos diretamente.");
         }
 
-        // Desvincula pedidos de publicadores para voltarem a ficar PENDENTE
         List<PedidoPublicador> vinculados = pedidoPublicadorRepo.findByPedidoBetelId(id);
         for (PedidoPublicador pp : vinculados) {
             pp.setPedidoBetel(null);
@@ -303,17 +285,11 @@ public class PedidoService {
         pedidoBetelRepo.delete(pedido);
     }
 
-   
-
-    // ==========================================
-    // MAPPERS PRIVADOS
-    // ==========================================
-
     private PedidoPublicadorDTO.Response toPedidoPublicadorResponse(PedidoPublicador entity) {
         return PedidoPublicadorDTO.Response.builder()
                 .id(entity.getId())
                 .publicadorId(entity.getPublicador().getId())
-                .publicadorNome(entity.getPublicador().getNome())
+                .publicadorNome(entity.getPublicador().getPessoa().getNome())
                 .publicacaoId(entity.getPublicacao().getId())
                 .publicacaoCodigo(entity.getPublicacao().getCodigo())
                 .publicacaoTitulo(entity.getPublicacao().getTitulo())

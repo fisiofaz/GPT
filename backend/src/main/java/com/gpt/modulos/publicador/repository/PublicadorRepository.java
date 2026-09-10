@@ -9,5 +9,5 @@ import java.util.List;
 
 @Repository
 public interface PublicadorRepository extends JpaRepository<Publicador, Long> {
-    List<Publicador> findByCongregacaoIdAndAtivoTrueOrderByNomeAsc(Long congregacaoId);
+	List<Publicador> findByCongregacaoIdAndAtivoTrueOrderByPessoa_NomeAsc(Long congregacaoId);
 }

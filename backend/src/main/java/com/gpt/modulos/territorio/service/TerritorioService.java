@@ -153,7 +153,10 @@ public class TerritorioService {
         
         if (h.getPublicador() != null) {
             idPublicador = h.getPublicador().getId();
-            nomePublicador = h.getPublicador().getNome() != null ? h.getPublicador().getNome() : "Sem nome";
+            nomePublicador = h.getPublicador().getPessoa() != null
+                    && h.getPublicador().getPessoa().getNome() != null
+                    ? h.getPublicador().getPessoa().getNome()
+                    : "Sem nome";
         }
 
         String numeroTerritorio = "-";

@@ -1,6 +1,8 @@
 package com.gpt.modulos.publicador.model;
 
 import com.gpt.modulos.congregacao.model.Congregacao;
+import com.gpt.modulos.pessoa.model.Pessoa;
+
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -20,17 +22,15 @@ public class Publicador {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(nullable = false, length = 150)
-    private String nome;
-
-    @Column(length = 20)
-    private String telefone;
-
+    
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "pessoa_id", nullable = false, unique = true)
+    private Pessoa pessoa;
+    
     @Column(nullable = false)
     @Builder.Default
     private Boolean ativo = true;
-
+    
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "congregacao_id", nullable = false)
     private Congregacao congregacao;
