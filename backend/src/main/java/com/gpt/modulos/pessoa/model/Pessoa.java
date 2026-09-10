@@ -11,6 +11,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
 import lombok.AllArgsConstructor;
@@ -68,5 +69,10 @@ public class Pessoa {
         if (atualizadoEm == null) {
             atualizadoEm = agora;
         }
+    }
+    
+    @PreUpdate
+    protected void preUpdate() {
+        atualizadoEm = LocalDateTime.now();
     }
 }
