@@ -65,7 +65,9 @@ public class PublicadorService {
         return PublicadorResponseDTO.builder()
                 .id(publicador.getId())
                 .nome(publicador.getPessoa().getNome())
+                .dataNascimento(publicador.getPessoa().getDataNascimento())
                 .telefone(publicador.getPessoa().getTelefone())
+                .email(publicador.getPessoa().getEmail())
                 .ativo(publicador.getAtivo())
                 .congregacaoId(publicador.getCongregacao().getId())
                 .build();
