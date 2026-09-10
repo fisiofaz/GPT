@@ -33,7 +33,9 @@ public class PublicadorService {
 
         Pessoa pessoa = Pessoa.builder()
                 .nome(request.getNome().trim())
+                .dataNascimento(request.getDataNascimento())
                 .telefone(request.getTelefone())
+                .email(request.getEmail())
                 .build();
         
         pessoa = pessoaRepository.save(pessoa);
