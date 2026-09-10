@@ -3,6 +3,7 @@ package com.gpt.modulos.publicador.service;
 import com.gpt.modulos.congregacao.model.Congregacao;
 import com.gpt.modulos.congregacao.repository.CongregacaoRepository;
 import com.gpt.modulos.pessoa.model.Pessoa;
+import com.gpt.modulos.pessoa.model.SituacaoPessoa;
 import com.gpt.modulos.pessoa.repository.PessoaRepository;
 import com.gpt.modulos.publicador.dto.PublicadorRequestDTO;
 import com.gpt.modulos.publicador.dto.PublicadorResponseDTO;
@@ -107,6 +108,11 @@ public class PublicadorService {
                 		"Publicador não encontrado com ID: " + id));
         
         publicador.setAtivo(false);
+        
+        Pessoa pessoa = publicador.getPessoa();
+        pessoa.setSituacao(SituacaoPessoa.INATIVO);
+
+        pessoaRepository.save(pessoa);
         publicadorRepository.save(publicador);
     }
 }
