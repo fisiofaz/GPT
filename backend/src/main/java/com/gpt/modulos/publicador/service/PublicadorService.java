@@ -85,7 +85,9 @@ public class PublicadorService {
         Pessoa pessoa = publicador.getPessoa();
         
         pessoa.setNome(request.getNome().trim());
+        pessoa.setDataNascimento(request.getDataNascimento());
         pessoa.setTelefone(request.getTelefone());
+        pessoa.setEmail(request.getEmail());
 
         publicador.setCongregacao(congregacao);
         
