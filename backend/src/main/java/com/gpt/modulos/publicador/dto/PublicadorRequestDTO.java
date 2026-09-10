@@ -1,5 +1,8 @@
 package com.gpt.modulos.publicador.dto;
 
+import java.time.LocalDate;
+
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -14,8 +17,14 @@ public class PublicadorRequestDTO {
     @Size(max = 150, message = "O nome não pode exceder 150 caracteres")
     private String nome;
 
+    private LocalDate dataNascimento;
+
     @Size(max = 20, message = "O telefone não pode exceder 20 caracteres")
     private String telefone;
+
+    @Email(message = "O e-mail informado é inválido")
+    @Size(max = 150, message = "O e-mail não pode exceder 150 caracteres")
+    private String email;
 
     @NotNull(message = "A congregação é obrigatória")
     private Long congregacaoId;
