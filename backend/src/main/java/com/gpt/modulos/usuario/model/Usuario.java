@@ -1,8 +1,11 @@
 package com.gpt.modulos.usuario.model;
 
 import com.gpt.modulos.congregacao.model.Congregacao;
+import com.gpt.modulos.pessoa.model.Pessoa;
+
 import jakarta.persistence.*;
 import lombok.*;
+
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -23,6 +26,14 @@ public class Usuario {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(
+        name = "pessoa_id",
+        nullable = false,
+        unique = true
+    )
+    private Pessoa pessoa;
 
     @Column(nullable = false, length = 150)
     private String nome;

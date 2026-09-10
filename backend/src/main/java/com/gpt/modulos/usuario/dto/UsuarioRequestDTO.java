@@ -25,5 +25,5 @@ public class UsuarioRequestDTO {
     @NotEmpty(message = "O usuário deve ter ao menos uma role atribuída")
     private Set<String> roles;
 
-    private Long congregacaoId; // Opcional caso seja Admin Geral
+    private Long congregacaoId;
 }
