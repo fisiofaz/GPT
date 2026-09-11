@@ -52,7 +52,7 @@ public class AuthService {
         Usuario novoUsuario = Usuario.builder()
                 .nome(request.getNome())
                 .email(request.getEmail())
-                .senha(passwordEncoder.encode(request.getSenha())) // Criptografia nativa em BCrypt
+                .senha(passwordEncoder.encode(request.getSenha()))
                 .congregacao(congregacao)
                 .ativo(true)
                 .roles(roles)

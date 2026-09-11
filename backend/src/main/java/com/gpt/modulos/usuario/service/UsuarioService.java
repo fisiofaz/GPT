@@ -9,6 +9,10 @@ import com.gpt.modulos.usuario.model.Role;
 import com.gpt.modulos.usuario.model.Usuario;
 import com.gpt.modulos.usuario.repository.RoleRepository;
 import com.gpt.modulos.usuario.repository.UsuarioRepository;
+import com.gpt.modulos.pessoa.model.Pessoa;
+import com.gpt.modulos.pessoa.repository.PessoaRepository;
+import com.gpt.modulos.publicador.model.Publicador;
+import com.gpt.modulos.publicador.repository.PublicadorRepository;
 import com.gpt.exceptions.BusinessException;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -31,9 +35,12 @@ public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final CongregacaoRepository congregacaoRepository; 
-    private final RoleRepository roleRepository;             
+    private final RoleRepository roleRepository;
+    private final PessoaRepository pessoaRepository;
+    private final PublicadorRepository publicadorRepository;
     private final PasswordEncoder passwordEncoder;
     
+
     private void validarRolesPermitidas(Set<String> roles) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
@@ -78,26 +85,39 @@ public class UsuarioService {
         	throw new BusinessException("Já existe um usuário cadastrado com este e-mail.");
         }
 
-        Usuario usuario = new Usuario();
-        usuario.setNome(dto.getNome());
-        usuario.setEmail(dto.getEmail());
-        usuario.setSenha(passwordEncoder.encode(dto.getSenha()));
-        usuario.setAtivo(true); 
-        
         Congregacao congregacao = congregacaoRepository.findById(dto.getCongregacaoId())
                 .orElseThrow(() -> new EntityNotFoundException("Congregação não encontrada."));
 
-        usuario.setCongregacao(congregacao);
-        
         validarRolesPermitidas(dto.getRoles());
+
         Set<Role> roles = roleRepository.findByNomeIn(dto.getRoles());
 
         if (roles.size() != dto.getRoles().size()) {
             throw new IllegalArgumentException("Uma ou mais roles informadas não existem.");
         }
 
+        Pessoa pessoa = new Pessoa();
+        pessoa.setNome(dto.getNome());
+        pessoa.setEmail(dto.getEmail());
+
+        Pessoa pessoaSalva = pessoaRepository.save(pessoa);
+
+        Publicador publicador = new Publicador();
+        publicador.setPessoa(pessoaSalva);
+        publicador.setCongregacao(congregacao);
+        publicador.setAtivo(true);
+
+        publicadorRepository.save(publicador);
+
+        Usuario usuario = new Usuario();
+        usuario.setPessoa(pessoaSalva);
+        usuario.setNome(dto.getNome());
+        usuario.setEmail(dto.getEmail());
+        usuario.setSenha(passwordEncoder.encode(dto.getSenha()));
+        usuario.setAtivo(true);
+        usuario.setCongregacao(congregacao);
         usuario.setRoles(roles);
-        
+
         Usuario salvo = usuarioRepository.save(usuario);
 
         boolean isSuperintendente = usuarioAutenticado.getRoles().stream()
@@ -179,6 +199,11 @@ public class UsuarioService {
             throw new IllegalArgumentException("Selecione uma congregação para este usuário.");
         }
         
+        Pessoa pessoa = usuario.getPessoa();
+
+        pessoa.setNome(dto.getNome());
+        pessoa.setEmail(dto.getEmail());
+
         usuario.setNome(dto.getNome());
         usuario.setEmail(dto.getEmail());
 
