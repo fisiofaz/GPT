@@ -10,7 +10,6 @@ import com.gpt.modulos.usuario.model.Usuario;
 import com.gpt.modulos.usuario.repository.RoleRepository;
 import com.gpt.modulos.usuario.repository.UsuarioRepository;
 import com.gpt.modulos.pessoa.model.Pessoa;
-import com.gpt.modulos.pessoa.repository.PessoaRepository;
 import com.gpt.modulos.publicador.model.Publicador;
 import com.gpt.modulos.publicador.repository.PublicadorRepository;
 import com.gpt.exceptions.BusinessException;
@@ -36,7 +35,6 @@ public class UsuarioService {
     private final UsuarioRepository usuarioRepository;
     private final CongregacaoRepository congregacaoRepository; 
     private final RoleRepository roleRepository;
-    private final PessoaRepository pessoaRepository;
     private final PublicadorRepository publicadorRepository;
     private final PasswordEncoder passwordEncoder;
     
@@ -58,60 +56,76 @@ public class UsuarioService {
     
     @Transactional
     public UsuarioResponseDTO criar(UsuarioRequestDTO dto) {
-    	if (dto.getCongregacaoId() == null) {
-    	    throw new IllegalArgumentException("Selecione uma congregação para este usuário.");
-    	}
-    	
+    	    	
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         Usuario usuarioAutenticado = (Usuario) authentication.getPrincipal();
 
         boolean isAdminGeral = usuarioAutenticado.getRoles().stream()
                 .anyMatch(role -> "ROLE_ADMIN_GERAL".equals(role.getNome()));
+        
+        Publicador publicador = publicadorRepository.findById(dto.getPublicadorId())
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Publicador não encontrado com ID: " + dto.getPublicadorId()
+                ));
+        
+        Pessoa pessoa = publicador.getPessoa();
+        
+        if (pessoa == null) {
+            throw new BusinessException(
+                    "O publicador informado não possui uma pessoa vinculada."
+            );
+        }
+ 
+        if (!Boolean.TRUE.equals(publicador.getAtivo())) {
+            throw new BusinessException(
+                    "Não é possível conceder acesso a um publicador inativo."
+            );
+        }
 
+        if (usuarioRepository.existsByPessoaId(pessoa.getId())) {
+            throw new BusinessException(
+                    "Este publicador já possui acesso ao sistema."
+            );
+        }
+        
+        if (usuarioRepository.existsByEmail(dto.getEmail())) {
+            throw new BusinessException(
+                    "Já existe um usuário cadastrado com este e-mail."
+            );
+        }
+        
+        Congregacao congregacao = publicador.getCongregacao();
+        
         if (!isAdminGeral) {
+
             Long congregacaoUsuarioId = usuarioAutenticado.getCongregacao() != null
                     ? usuarioAutenticado.getCongregacao().getId()
                     : null;
 
-            if (congregacaoUsuarioId == null || !congregacaoUsuarioId.equals(dto.getCongregacaoId())) {
-            	throw new AccessDeniedException(
+            if (congregacaoUsuarioId == null
+                    || !congregacaoUsuarioId.equals(congregacao.getId())) {
+
+                throw new AccessDeniedException(
                         "Você não tem permissão para criar usuários em outra congregação."
-            			);
+                );
             }
         }
-        
-        if (usuarioRepository.existsByEmail(dto.getEmail())) {
-        	throw new BusinessException("Já existe um usuário cadastrado com este e-mail.");
-        }
-
-        Congregacao congregacao = congregacaoRepository.findById(dto.getCongregacaoId())
-                .orElseThrow(() -> new EntityNotFoundException("Congregação não encontrada."));
 
         validarRolesPermitidas(dto.getRoles());
 
         Set<Role> roles = roleRepository.findByNomeIn(dto.getRoles());
 
         if (roles.size() != dto.getRoles().size()) {
-            throw new IllegalArgumentException("Uma ou mais roles informadas não existem.");
+            throw new IllegalArgumentException(
+                    "Uma ou mais roles informadas não existem."
+            );
         }
 
-        Pessoa pessoa = new Pessoa();
-        pessoa.setNome(dto.getNome());
-        pessoa.setEmail(dto.getEmail());
-
-        Pessoa pessoaSalva = pessoaRepository.save(pessoa);
-
-        Publicador publicador = new Publicador();
-        publicador.setPessoa(pessoaSalva);
-        publicador.setCongregacao(congregacao);
-        publicador.setAtivo(true);
-
-        publicadorRepository.save(publicador);
-
         Usuario usuario = new Usuario();
-        usuario.setPessoa(pessoaSalva);
-        usuario.setNome(dto.getNome());
+        
+        usuario.setPessoa(pessoa);
+        usuario.setNome(pessoa.getNome());
         usuario.setEmail(dto.getEmail());
         usuario.setSenha(passwordEncoder.encode(dto.getSenha()));
         usuario.setAtivo(true);
@@ -202,8 +216,7 @@ public class UsuarioService {
         Pessoa pessoa = usuario.getPessoa();
 
         pessoa.setNome(dto.getNome());
-        pessoa.setEmail(dto.getEmail());
-
+        
         usuario.setNome(dto.getNome());
         usuario.setEmail(dto.getEmail());
 
@@ -364,9 +377,7 @@ public class UsuarioService {
             }
         }
         
-        usuario.getRoles().clear();
-        usuarioRepository.save(usuario);
-        
+       
         usuarioRepository.delete(usuario);
     }
 
