@@ -56,19 +56,19 @@ public class UsuarioService {
     
     @Transactional
     public UsuarioResponseDTO criar(UsuarioRequestDTO dto) {
-    	    	
+
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         Usuario usuarioAutenticado = (Usuario) authentication.getPrincipal();
 
         boolean isAdminGeral = usuarioAutenticado.getRoles().stream()
                 .anyMatch(role -> "ROLE_ADMIN_GERAL".equals(role.getNome()));
-        
+
         Publicador publicador = publicadorRepository.findById(dto.getPublicadorId())
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Publicador não encontrado com ID: " + dto.getPublicadorId()
                 ));
-        
+ 
         Pessoa pessoa = publicador.getPessoa();
         
         if (pessoa == null) {
@@ -76,7 +76,7 @@ public class UsuarioService {
                     "O publicador informado não possui uma pessoa vinculada."
             );
         }
- 
+
         if (!Boolean.TRUE.equals(publicador.getAtivo())) {
             throw new BusinessException(
                     "Não é possível conceder acesso a um publicador inativo."
