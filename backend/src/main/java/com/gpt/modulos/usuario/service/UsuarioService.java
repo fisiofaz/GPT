@@ -1,7 +1,6 @@
 package com.gpt.modulos.usuario.service;
 
 import com.gpt.modulos.congregacao.model.Congregacao;
-import com.gpt.modulos.congregacao.repository.CongregacaoRepository;
 import com.gpt.modulos.usuario.dto.UsuarioUpdateDTO;
 import com.gpt.modulos.usuario.dto.UsuarioResponseDTO;
 import com.gpt.modulos.usuario.dto.UsuarioRequestDTO;
@@ -33,7 +32,6 @@ import java.util.stream.Collectors;
 public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
-    private final CongregacaoRepository congregacaoRepository; 
     private final RoleRepository roleRepository;
     private final PublicadorRepository publicadorRepository;
     private final PasswordEncoder passwordEncoder;
@@ -191,29 +189,25 @@ public class UsuarioService {
                 );
             }
         }
-        
-        if (!isAdminGeral) {
-            Long congregacaoUsuarioAtualId = usuario.getCongregacao() != null
-                    ? usuario.getCongregacao().getId()
-                    : null;
 
-            if (congregacaoUsuarioAtualId == null
-                    || !congregacaoUsuarioAtualId.equals(dto.getCongregacaoId())) {
-                throw new AccessDeniedException(
-                        "Você não pode alterar a congregação de um usuário."
-                );
-            }
-        }
-        
         if (usuarioRepository.existsByEmailAndIdNot(dto.getEmail(), id)) {
             throw new BusinessException("Já existe outro usuário cadastrado com este e-mail.");
         }
-                
-        if (dto.getCongregacaoId() == null) {
-            throw new IllegalArgumentException("Selecione uma congregação para este usuário.");
-        }
-        
+
         Pessoa pessoa = usuario.getPessoa();
+
+        Publicador publicador = publicadorRepository.findByPessoaId(pessoa.getId())
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Publicador não encontrado para a pessoa do usuário."
+                ));
+
+        if (publicador.getCongregacao() == null) {
+            throw new BusinessException(
+                    "O publicador não possui uma congregação vinculada."
+            );
+        }
+
+        usuario.setCongregacao(publicador.getCongregacao());
 
         pessoa.setNome(dto.getNome());
         
@@ -223,13 +217,6 @@ public class UsuarioService {
         if (dto.getSenha() != null && !dto.getSenha().isBlank()) {
             usuario.setSenha(passwordEncoder.encode(dto.getSenha()));
         }
-        
-        Congregacao congregacao = congregacaoRepository.findById(dto.getCongregacaoId())
-                .orElseThrow(() -> new EntityNotFoundException("Congregação não encontrada."));
-
-        usuario.setCongregacao(congregacao);
-
-        
 
         if (dto.getRoles() != null && !dto.getRoles().isEmpty()) {
             

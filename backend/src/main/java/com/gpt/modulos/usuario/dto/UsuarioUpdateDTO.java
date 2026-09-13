@@ -23,6 +23,4 @@ public class UsuarioUpdateDTO {
 
     @NotEmpty(message = "O usuário deve ter ao menos uma role atribuída")
     private Set<String> roles;
-
-    private Long congregacaoId;
 }
