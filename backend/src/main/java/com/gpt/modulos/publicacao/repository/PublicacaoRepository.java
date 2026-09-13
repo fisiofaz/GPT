@@ -14,8 +14,7 @@ public interface PublicacaoRepository extends JpaRepository<Publicacao, Long> {
     List<Publicacao> findByCongregacaoIdAndAtivoTrueOrderByTituloAsc(Long congregacaoId);
     Optional<Publicacao> findByCodigoIgnoreCaseAndCongregacaoId(String codigo, Long congregacaoId);
     boolean existsByCodigoIgnoreCaseAndCongregacaoId(String codigo, Long congregacaoId);
-    
-    // 📊 Substitua 'p.quantidade' pelo nome real do atributo na entidade (ex: p.quantidadeEstoque ou p.estoque)
+
     @Query("SELECT COALESCE(SUM(p.quantidadeEstoque), 0) FROM Publicacao p WHERE p.congregacao.id = :congregacaoId AND p.ativo = true")
     long sumEstoqueByCongregacaoId(@Param("congregacaoId") Long congregacaoId);
 
