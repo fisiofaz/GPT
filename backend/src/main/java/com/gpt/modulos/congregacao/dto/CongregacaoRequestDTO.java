@@ -12,13 +12,14 @@ import lombok.Setter;
 public class CongregacaoRequestDTO {
 
     @NotBlank(message = "O nome da congregação é obrigatório")
-    @Size(max = 150, message = "O nome não pode ter mais de 150 caracteres")
+    @Size(max = 150, message = "O nome não pode ter mais de 10 caracteres")
     private String nome;
     
     @NotBlank(message = "O número da congregação é obrigatório")
-    @Size(max = 10, message = "O número não pode ter mais de 150 caracteres")
+    @Size(max = 10, message = "O número não pode ter mais de 10 caracteres")
     private String numero;
 
+    @NotBlank(message = "O número do circuito é obrigatório")
     @Size(max = 30, message = "O número do circuito não pode ter mais de 30 caracteres")
     private String numeroCircuito;
     
