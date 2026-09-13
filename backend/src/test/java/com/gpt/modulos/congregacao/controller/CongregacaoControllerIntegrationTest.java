@@ -79,11 +79,12 @@ class CongregacaoControllerIntegrationTest {
     void deveCriarCongregacaoAtravésDaApi() throws Exception {
         String requestJson = """
                 {
-                    "nome": "Congregação API Teste",
-                    "numero": "997",
-                    "cidade": "Santa Maria",
-                    "estado": "RS"
-                }
+				    "nome": "Congregação API Teste",
+				    "numero": "997",
+				    "numeroCircuito": "CIR-997",
+				    "cidade": "Santa Maria",
+				    "estado": "RS"
+				}
                 """;
 
         mockMvc.perform(post("/congregacoes")
@@ -108,6 +109,7 @@ class CongregacaoControllerIntegrationTest {
                 {
                     "nome": "Congregação Atualizada pela API",
                     "numero": "996",
+                    "numeroCircuito": "CIR-996",
                     "cidade": "Porto Alegre",
                     "estado": "RS"
                 }
@@ -147,6 +149,7 @@ class CongregacaoControllerIntegrationTest {
                 {
                     "nome": "Congregação Sem Autenticação",
                     "numero": "995",
+                    "numeroCircuito": "CIR-996",
                     "cidade": "Santa Maria",
                     "estado": "RS"
                 }
@@ -164,6 +167,7 @@ class CongregacaoControllerIntegrationTest {
                 {
                     "nome": "Congregação Sem Permissão",
                     "numero": "994",
+                    "numeroCircuito": "CIR-996",
                     "cidade": "Santa Maria",
                     "estado": "RS"
                 }
@@ -185,6 +189,7 @@ class CongregacaoControllerIntegrationTest {
                 {
                     "nome": "",
                     "numero": "993",
+                    "numeroCircuito": "CIR-996",
                     "cidade": "Santa Maria",
                     "estado": "RS"
                 }

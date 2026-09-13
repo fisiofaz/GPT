@@ -1,7 +1,6 @@
 package com.gpt.config.security;
 
 import com.gpt.modulos.usuario.model.Usuario;
-import com.gpt.modulos.usuario.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -13,14 +12,18 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class SecurityUtils {
 
-    private final UsuarioRepository usuarioRepository;
-
     public Optional<Usuario> getUsuarioLogado() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+
+        if (auth == null || !auth.isAuthenticated()) {
             return Optional.empty();
         }
-        return usuarioRepository.findByEmail(auth.getName());
+
+        if (auth.getPrincipal() instanceof Usuario usuario) {
+            return Optional.of(usuario);
+        }
+
+        return Optional.empty();
     }
 
     public Long getCongregacaoIdLogada() {
