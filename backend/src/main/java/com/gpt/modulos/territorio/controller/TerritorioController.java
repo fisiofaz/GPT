@@ -28,6 +28,13 @@ public class TerritorioController {
         TerritorioResponseDTO response = territorioService.criar(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+    
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO')")
+    public ResponseEntity<Void> deletar(@PathVariable Long id) {
+        territorioService.deletar(id);
+        return ResponseEntity.noContent().build();
+    }
 
     @GetMapping("/congregacao/{congregacaoId}")
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO', 'ROLE_SERVO_TERRITORIO')")

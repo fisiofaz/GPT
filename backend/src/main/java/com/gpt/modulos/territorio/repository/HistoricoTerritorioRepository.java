@@ -13,7 +13,9 @@ import java.util.Optional;
 @Repository
 public interface HistoricoTerritorioRepository extends JpaRepository<HistoricoTerritorio, Long> {
 
-    Optional<HistoricoTerritorio> findByTerritorioIdAndDataDevolucaoIsNull(Long territorioId);
+	boolean existsByTerritorioId(Long territorioId);
+	
+	Optional<HistoricoTerritorio> findByTerritorioIdAndDataDevolucaoIsNull(Long territorioId);
 
     List<HistoricoTerritorio> findByTerritorioIdOrderByDataRetiradaDesc(Long territorioId);
 
@@ -24,7 +26,8 @@ public interface HistoricoTerritorioRepository extends JpaRepository<HistoricoTe
            "LEFT JOIN FETCH h.publicador p " +
            "WHERE t.congregacao.id = :congregacaoId " +
            "ORDER BY h.dataRetirada DESC")
-    List<HistoricoTerritorio> buscarHistoricoGeralPorCongregacao(@Param("congregacaoId") Long congregacaoId);
+    List<HistoricoTerritorio> buscarHistoricoGeralPorCongregacao(
+    		@Param("congregacaoId") Long congregacaoId);
     
     @Query("SELECT COUNT(DISTINCT h.territorio.id) FROM HistoricoTerritorio h JOIN h.territorio t WHERE t.congregacao.id = :congregacaoId AND h.dataDevolucao BETWEEN :inicio AND :fim")
     long countTerritoriosTrabalhadosNoPeriodo(

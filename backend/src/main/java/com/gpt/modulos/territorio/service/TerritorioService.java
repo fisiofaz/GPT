@@ -97,6 +97,27 @@ public class TerritorioService {
     }
     
     @Transactional
+    public void deletar(Long territorioId) {
+
+        Territorio territorio =
+                buscarTerritorioComAcessoPermitido(territorioId);
+
+        if (territorio.getStatus() == StatusTerritorio.EM_TRABALHO) {
+            throw new IllegalStateException(
+                    "O território não pode ser excluído enquanto estiver em trabalho."
+            );
+        }
+
+        if (historicoRepository.existsByTerritorioId(territorioId)) {
+            throw new IllegalStateException(
+                    "O território não pode ser excluído porque possui histórico."
+            );
+        }
+
+        territorioRepository.delete(territorio);
+    }
+    
+    @Transactional
     public TerritorioResponseDTO atualizarPoligono(Long territorioId, String poligonoGeojson) {
     	
     	Territorio territorio =
