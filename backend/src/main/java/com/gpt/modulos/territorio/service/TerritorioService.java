@@ -1,5 +1,6 @@
 package com.gpt.modulos.territorio.service;
 
+import com.gpt.config.security.SecurityUtils;
 import com.gpt.modulos.congregacao.model.Congregacao;
 import com.gpt.modulos.congregacao.repository.CongregacaoRepository;
 import com.gpt.modulos.publicador.model.Publicador;
@@ -15,6 +16,7 @@ import com.gpt.modulos.territorio.repository.HistoricoTerritorioRepository;
 import com.gpt.modulos.territorio.repository.TerritorioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -29,14 +31,55 @@ public class TerritorioService {
     private final HistoricoTerritorioRepository historicoRepository;
     private final CongregacaoRepository congregacaoRepository;
     private final PublicadorRepository publicadorRepository;
+    private final SecurityUtils securityUtils;
+    
+    private boolean isAdminGeral() {
+        return securityUtils.getUsuarioLogado()
+                .map(usuario -> usuario.getRoles().stream()
+                        .anyMatch(role -> "ROLE_ADMIN_GERAL".equals(role.getNome())))
+                .orElse(false);
+    }
+
+    private Long getCongregacaoIdObrigatoria(Long congregacaoIdSolicitada) {
+        if (isAdminGeral()) {
+            return congregacaoIdSolicitada;
+        }
+
+        Long congregacaoIdLogada = securityUtils.getCongregacaoIdLogada();
+
+        if (congregacaoIdLogada == null) {
+            throw new AccessDeniedException(
+                    "Usuário autenticado não possui uma congregação vinculada."
+            );
+        }
+
+        if (!congregacaoIdLogada.equals(congregacaoIdSolicitada)) {
+            throw new AccessDeniedException(
+                    "Você não tem permissão para acessar outra congregação."
+            );
+        }
+
+        return congregacaoIdLogada;
+    }
 
     @Transactional
     public TerritorioResponseDTO criar(TerritorioRequestDTO request) {
-        Congregacao congregacao = congregacaoRepository.findById(request.getCongregacaoId())
-                .orElseThrow(() -> new IllegalArgumentException("Congregação não encontrada com ID: " + request.getCongregacaoId()));
 
-        if (territorioRepository.existsByNumeroAndCongregacaoId(request.getNumero(), request.getCongregacaoId())) {
-            throw new IllegalArgumentException("Já existe um território com o número " + request.getNumero() + " nesta congregação");
+    	Long congregacaoId = getCongregacaoIdObrigatoria(request.getCongregacaoId());
+    	
+        Congregacao congregacao = congregacaoRepository.findById(congregacaoId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                		"Congregação não encontrada com ID: " + congregacaoId
+                ));
+
+        if (territorioRepository.existsByNumeroAndCongregacaoId(
+        		request.getNumero(), congregacaoId)) {
+
+            throw new IllegalArgumentException(
+            		"Já existe um território com o número "
+            				+ request.getNumero()
+            				+ " nesta congregação"
+            );
         }
 
         Territorio territorio = Territorio.builder()
@@ -48,36 +91,71 @@ public class TerritorioService {
                 .congregacao(congregacao)
                 .build();
 
-        return converterParaResponseDTO(territorioRepository.save(territorio));
+        return converterParaResponseDTO(
+        		territorioRepository.save(territorio)
+        );
     }
     
     @Transactional
     public TerritorioResponseDTO atualizarPoligono(Long territorioId, String poligonoGeojson) {
-        Territorio territorio = territorioRepository.findById(territorioId)
-                .orElseThrow(() -> new IllegalArgumentException("Território não encontrado com ID: " + territorioId));
-
+    	
+    	Territorio territorio =
+                buscarTerritorioComAcessoPermitido(territorioId);
+    	
         territorio.setPoligonoGeojson(poligonoGeojson);
-        return converterParaResponseDTO(territorioRepository.save(territorio));
+
+        return converterParaResponseDTO(
+        		territorioRepository.save(territorio)
+       );
     }
 
     @Transactional(readOnly = true)
     public List<TerritorioResponseDTO> listarPorCongregacao(Long congregacaoId) {
-        return territorioRepository.findByCongregacaoId(congregacaoId).stream()
+
+    	Long congregacaoIdPermitida =
+                getCongregacaoIdObrigatoria(congregacaoId);
+    	
+        return territorioRepository
+        		.findByCongregacaoId(congregacaoIdPermitida)
+        		.stream()
                 .map(this::converterParaResponseDTO)
                 .collect(Collectors.toList());
     }
 
     @Transactional
     public HistoricoTerritorioResponseDTO retirarTerritorio(Long territorioId, MovimentacaoTerritorioDTO request) {
-        Territorio territorio = territorioRepository.findById(territorioId)
-                .orElseThrow(() -> new IllegalArgumentException("Território não encontrado com ID: " + territorioId));
+    	
+    	Territorio territorio =
+    	            buscarTerritorioComAcessoPermitido(territorioId);
 
         if (territorio.getStatus() != StatusTerritorio.DISPONIVEL) {
-            throw new IllegalStateException("O território não está disponível para retirada");
+            throw new IllegalStateException(
+            		"O território não está disponível para retirada"
+            );
         }
 
-        Publicador publicador = publicadorRepository.findById(request.getPublicadorId())
-                .orElseThrow(() -> new IllegalArgumentException("Publicador não encontrado com ID: " + request.getPublicadorId()));
+        Publicador publicador = publicadorRepository.findById(
+        		request.getPublicadorId()
+        ).orElseThrow(() -> new IllegalArgumentException(
+        		"Publicador não encontrado com ID: "
+        				+ request.getPublicadorId()
+        ));
+        
+        Long congregacaoTerritorioId =
+                territorio.getCongregacao().getId();
+
+        Long congregacaoPublicadorId =
+                publicador.getCongregacao() != null
+                        ? publicador.getCongregacao().getId()
+                        : null;
+
+        if (congregacaoPublicadorId == null
+                || !congregacaoTerritorioId.equals(congregacaoPublicadorId)) {
+
+            throw new AccessDeniedException(
+                    "O publicador não pertence à mesma congregação do território."
+            );
+        }
 
         territorio.setStatus(StatusTerritorio.EM_TRABALHO);
         territorioRepository.save(territorio);
@@ -89,48 +167,101 @@ public class TerritorioService {
                 .observacoes(request.getObservacoes())
                 .build();
 
-        return converterParaHistoricoDTO(historicoRepository.save(historico));
+        return converterParaHistoricoDTO(
+        		historicoRepository.save(historico)
+        );
     }
 
     @Transactional
     public HistoricoTerritorioResponseDTO devolverTerritorio(Long territorioId, String observacoes) {
-        Territorio territorio = territorioRepository.findById(territorioId)
-                .orElseThrow(() -> new IllegalArgumentException("Território não encontrado com ID: " + territorioId));
+    	
+    	Territorio territorio =
+                buscarTerritorioComAcessoPermitido(territorioId);
 
-        HistoricoTerritorio historico = historicoRepository.findByTerritorioIdAndDataDevolucaoIsNull(territorioId)
-                .orElseThrow(() -> new IllegalStateException("Não há registro de retirada pendente de devolução para este território"));
+        HistoricoTerritorio historico = 
+        		historicoRepository
+        			.findByTerritorioIdAndDataDevolucaoIsNull(territorioId)
+        			.orElseThrow(() -> new IllegalStateException(
+        					"Não há registro de retirada pendente de devolução para este território"
+        			));
 
         historico.setDataDevolucao(LocalDateTime.now());
+        
         if (observacoes != null && !observacoes.isBlank()) {
-            historico.setObservacoes(historico.getObservacoes() != null 
-                    ? historico.getObservacoes() + " | Devolução: " + observacoes 
-                    : "Devolução: " + observacoes);
+            historico.setObservacoes(
+            		historico.getObservacoes() != null 
+                    	? historico.getObservacoes()
+                    			+ " | Devolução: " + observacoes 
+                    	: "Devolução: " + observacoes
+            );
         }
 
         territorio.setStatus(StatusTerritorio.DISPONIVEL);
         territorioRepository.save(territorio);
 
-        return converterParaHistoricoDTO(historicoRepository.save(historico));
+        return converterParaHistoricoDTO(
+        		historicoRepository.save(historico)
+        );
     }
 
     @Transactional(readOnly = true)
     public List<HistoricoTerritorioResponseDTO> listarHistorico(Long territorioId) {
-        return historicoRepository.findByTerritorioIdOrderByDataRetiradaDesc(territorioId).stream()
+    	
+    	buscarTerritorioComAcessoPermitido(territorioId);
+    	
+        return historicoRepository
+        		.findByTerritorioIdOrderByDataRetiradaDesc(territorioId)
+        		.stream()
                 .map(this::converterParaHistoricoDTO)
                 .collect(Collectors.toList());
     }
-    
+
+    @Transactional(readOnly = true)
     public TerritorioResponseDTO buscarPorId(Long id) {
-        Territorio territorio = territorioRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Território não encontrado com ID: " + id));
+
+    	Territorio territorio =
+                buscarTerritorioComAcessoPermitido(id);
+
         return converterParaResponseDTO(territorio);
     }
 
     @Transactional(readOnly = true)
     public List<HistoricoTerritorioResponseDTO> listarHistoricoGeral(Long congregacaoId) {
-        return historicoRepository.buscarHistoricoGeralPorCongregacao(congregacaoId).stream()
+    	
+    	Long congregacaoIdPermitida =
+                getCongregacaoIdObrigatoria(congregacaoId);
+    	
+        return historicoRepository
+        		.buscarHistoricoGeralPorCongregacao(congregacaoIdPermitida)
+        		.stream()
                 .map(this::converterParaHistoricoDTO)
                 .collect(Collectors.toList());
+    }
+    
+    private Territorio buscarTerritorioComAcessoPermitido(Long territorioId) {
+
+        if (isAdminGeral()) {
+            return territorioRepository.findById(territorioId)
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Território não encontrado com ID: " + territorioId
+                    ));
+        }
+
+        Long congregacaoId = securityUtils.getCongregacaoIdLogada();
+
+        if (congregacaoId == null) {
+            throw new AccessDeniedException(
+                    "Usuário autenticado não possui uma congregação vinculada."
+            );
+        }
+
+        return territorioRepository.findByIdAndCongregacaoId(
+                        territorioId,
+                        congregacaoId
+                )
+                .orElseThrow(() -> new AccessDeniedException(
+                        "Você não tem permissão para acessar este território."
+                ));
     }
 
     private TerritorioResponseDTO converterParaResponseDTO(Territorio territorio) {
