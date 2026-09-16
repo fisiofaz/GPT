@@ -7,8 +7,12 @@ import type {
   HistoricoTerritorio,
 } from "../types/territorio";
 
+type GeoJsonPolygon = {
+  type: "Polygon";
+  coordinates: [number, number][][];
+};
+
 export const territorioService = {
-  // Listagem
   listarPorCongregacao: async (
     congregacaoId: number,
   ): Promise<Territorio[]> => {
@@ -18,13 +22,11 @@ export const territorioService = {
     return response.data;
   },
 
-  // Busca pública por ID (para cartão web / celular)
   buscarPublico: async (id: number): Promise<Territorio> => {
     const response = await api.get<Territorio>(`/territorios/publico/${id}`);
     return response.data;
   },
 
-  // Cadastro / Criação
   criar: async (dados: TerritorioRequest): Promise<Territorio> => {
     const response = await api.post<Territorio>("/territorios", dados);
     return response.data;
@@ -33,7 +35,6 @@ export const territorioService = {
     return territorioService.criar(dados);
   },
 
-  // Atualização
   atualizar: async (
     id: number,
     dados: Partial<TerritorioRequest>,
@@ -42,12 +43,10 @@ export const territorioService = {
     return response.data;
   },
 
-  // Exclusão / Deletar
   deletar: async (id: number): Promise<void> => {
     await api.delete(`/territorios/${id}`);
   },
 
-  // Designação / Retirada
   retirar: async (
     territorioId: number,
     dados: DesignacaoRequest,
@@ -65,7 +64,6 @@ export const territorioService = {
     return territorioService.retirar(territorioId, dados);
   },
 
-  // Devolução
   devolver: async (
     territorioId: number,
     dadosOuObs?: DevolucaoRequest | string,
@@ -81,21 +79,16 @@ export const territorioService = {
     return response.data;
   },
 
-  // Atualizar Polígono GeoJSON
   salvarPoligono: async (
     id: number,
-    poligonoGeoJson: string | null,
+    poligonoGeoJson: GeoJsonPolygon,
   ): Promise<Territorio> => {
-    const response = await api.patch<Territorio>(
-      `/territorios/${id}/mapa`,
-      {
-        poligonoGeojson: poligonoGeoJson,
-      },
-  );
+    const response = await api.patch<Territorio>(`/territorios/${id}/mapa`, {
+      poligonoGeojson: poligonoGeoJson,
+    });
     return response.data;
   },
 
-  // Relatório S-13 / Histórico Geral
   listarHistoricoGeral: async (
     congregacaoId: number,
   ): Promise<HistoricoTerritorio[]> => {

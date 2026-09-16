@@ -1,6 +1,11 @@
 import type { Territorio } from "../types/territorio";
 import type { Publicador } from "../types/publicador";
 
+type GeoJsonPolygon = {
+  type: "Polygon";
+  coordinates: [number, number][][];
+};
+
 export const gerarLinkWhatsAppTerritorio = (
   territorio: Territorio,
   publicador?: Publicador,
@@ -9,12 +14,17 @@ export const gerarLinkWhatsAppTerritorio = (
 
   if (territorio.poligonoGeoJson) {
     try {
-      const coords: [number, number][] = JSON.parse(territorio.poligonoGeoJson);
+      const parsed = JSON.parse(territorio.poligonoGeoJson) as GeoJsonPolygon;
+      
+      if (
+        parsed.type === "Polygon" &&
+        Array.isArray(parsed.coordinates) &&
+        parsed.coordinates.length > 0 &&
+        parsed.coordinates[0].length >= 4
+      ) {
+        const [longitude, latitude] = parsed.coordinates[0][0];
 
-      if (coords.length > 0) {
-        const [lat, lng] = coords[0];
-
-        linkGps = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+        linkGps = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
       }
     } catch {
       linkGps = "";

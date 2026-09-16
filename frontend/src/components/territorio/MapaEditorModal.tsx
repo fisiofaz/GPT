@@ -15,6 +15,11 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
+type GeoJsonPolygon = {
+  type: "Polygon";
+  coordinates: [number, number][][];
+};
+
 interface MapaEditorModalProps {
   territorio: Territorio;
   onClose: () => void;
@@ -44,11 +49,25 @@ export const MapaEditorModal: React.FC<MapaEditorModalProps> = ({
 
     if (territorio.poligonoGeoJson) {
       try {
-        const parsed = JSON.parse(territorio.poligonoGeoJson);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          pontosIniciais = parsed;
-          initialCenter = parsed[0];
-          initialZoom = 16;
+        const parsed = JSON.parse(territorio.poligonoGeoJson) as GeoJsonPolygon;
+
+        if (
+          parsed.type === "Polygon" &&
+          Array.isArray(parsed.coordinates) &&
+          parsed.coordinates.length > 0 &&
+          parsed.coordinates[0].length >= 4
+        ) {
+          const coordenadasGeoJson = parsed.coordinates[0];
+
+          pontosIniciais = coordenadasGeoJson.map(([longitude, latitude]) => [
+            latitude,
+            longitude,
+          ]);
+
+          if (pontosIniciais.length > 0) {
+            initialCenter = pontosIniciais[0];
+            initialZoom = 16;
+          }
         }
       } catch (e) {
         console.error("Erro ao ler GeoJSON existente:", e);
@@ -151,10 +170,31 @@ export const MapaEditorModal: React.FC<MapaEditorModalProps> = ({
   };
 
   const handleSalvar = async () => {
+    if (pontos.length < 3) {
+      return;
+    }
     setSalvando(true);
     try {
-      const payload = pontos.length >= 3 ? JSON.stringify(pontos) : null;
-      await territorioService.salvarPoligono(territorio.id, payload);
+      const primeiroPonto = pontos[0];
+
+      const pontosFechados =
+        pontos[pontos.length - 1][0] === primeiroPonto[0] &&
+        pontos[pontos.length - 1][1] === primeiroPonto[1]
+          ? pontos
+          : [...pontos, primeiroPonto];
+      
+      const geoJson: GeoJsonPolygon = {
+        type: "Polygon",
+        coordinates: [
+          pontosFechados.map(([latitude, longitude]) => [longitude, latitude]),
+        ],
+      };
+      
+      await territorioService.salvarPoligono(
+        territorio.id,
+        geoJson,
+      );
+
       onSalvo();
       onClose();
     } catch (err) {

@@ -11,6 +11,11 @@ import {
 import { territorioService } from "../services/territorioService";
 import type { Territorio } from "../types/territorio";
 
+type GeoJsonPolygon = {
+  type: "Polygon";
+  coordinates: [number, number][][];
+};
+
 export const CartaoPublico: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -45,9 +50,21 @@ export const CartaoPublico: React.FC = () => {
     let coordenadas: [number, number][] = [];
     if (territorio.poligonoGeoJson) {
       try {
-        coordenadas = JSON.parse(territorio.poligonoGeoJson);
+        const parsed = JSON.parse(territorio.poligonoGeoJson) as GeoJsonPolygon;
+
+        if (
+          parsed.type === "Polygon" &&
+          Array.isArray(parsed.coordinates) &&
+          parsed.coordinates.length > 0 &&
+          parsed.coordinates[0].length >= 4
+        ) {
+          coordenadas = parsed.coordinates[0].map(
+            ([longitude, latitude]) =>
+              [latitude, longitude] as [number, number],
+          );
+        }
       } catch (e) {
-        console.error("Erro ao ler polígono:", e);
+        console.error("Erro ao ler polígono GeoJSON:", e);
       }
     }
 
@@ -131,11 +148,18 @@ export const CartaoPublico: React.FC = () => {
   const handleAbrirGoogleMaps = () => {
     if (!territorio?.poligonoGeoJson) return;
     try {
-      const coords: [number, number][] = JSON.parse(territorio.poligonoGeoJson);
-      if (coords.length > 0) {
-        const [lat, lng] = coords[0];
+      const parsed = JSON.parse(territorio.poligonoGeoJson) as GeoJsonPolygon;
+
+      if (
+        parsed.type === "Polygon" &&
+        Array.isArray(parsed.coordinates) &&
+        parsed.coordinates.length > 0 &&
+        parsed.coordinates[0].length >= 4
+      ) {
+        const [longitude, latitude] = parsed.coordinates[0][0];
+
         window.open(
-          `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`,
+          `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`,
           "_blank",
         );
       }

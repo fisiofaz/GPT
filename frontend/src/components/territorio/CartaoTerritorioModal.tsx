@@ -3,6 +3,11 @@ import L from "leaflet";
 import { X, Printer, ExternalLink, MapPin } from "lucide-react";
 import type { Territorio } from "../../types/territorio";
 
+type GeoJsonPolygon = {
+  type: "Polygon";
+  coordinates: [number, number][][];
+};
+
 interface CartaoTerritorioModalProps {
   territorio: Territorio;
   onClose: () => void;
@@ -16,9 +21,21 @@ export const CartaoTerritorioModal: React.FC<CartaoTerritorioModalProps> = ({
   const mapInstanceRef = useRef<L.Map | null>(null);
 
   let coordenadas: [number, number][] = [];
+  
   if (territorio.poligonoGeoJson) {
     try {
-      coordenadas = JSON.parse(territorio.poligonoGeoJson);
+      const parsed = JSON.parse(territorio.poligonoGeoJson) as GeoJsonPolygon;
+
+      if (
+        parsed.type === "Polygon" &&
+        Array.isArray(parsed.coordinates) &&
+        parsed.coordinates.length > 0 &&
+        parsed.coordinates[0].length >= 4
+      ) {
+        coordenadas = parsed.coordinates[0].map(
+          ([longitude, latitude]) => [latitude, longitude] as [number, number],
+        );
+      }
     } catch (e) {
       console.error("Erro ao fazer parse do polígono:", e);
     }
