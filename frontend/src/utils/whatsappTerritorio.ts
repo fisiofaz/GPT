@@ -7,9 +7,9 @@ export const gerarLinkWhatsAppTerritorio = (
 ): string => {
   let linkGps = "";
 
-  if (territorio.poligonoGeojson) {
+  if (territorio.poligonoGeoJson) {
     try {
-      const coords: [number, number][] = JSON.parse(territorio.poligonoGeojson);
+      const coords: [number, number][] = JSON.parse(territorio.poligonoGeoJson);
 
       if (coords.length > 0) {
         const [lat, lng] = coords[0];

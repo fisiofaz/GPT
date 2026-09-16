@@ -42,9 +42,9 @@ export const MapaEditorModal: React.FC<MapaEditorModalProps> = ({
     let initialZoom = 15;
     let pontosIniciais: [number, number][] = [];
 
-    if (territorio.poligonoGeojson) {
+    if (territorio.poligonoGeoJson) {
       try {
-        const parsed = JSON.parse(territorio.poligonoGeojson);
+        const parsed = JSON.parse(territorio.poligonoGeoJson);
         if (Array.isArray(parsed) && parsed.length > 0) {
           pontosIniciais = parsed;
           initialCenter = parsed[0];
@@ -154,7 +154,7 @@ export const MapaEditorModal: React.FC<MapaEditorModalProps> = ({
     setSalvando(true);
     try {
       const payload = pontos.length >= 3 ? JSON.stringify(pontos) : null;
-      await territorioService.atualizarMapa(territorio.id, payload);
+      await territorioService.salvarPoligono(territorio.id, payload);
       onSalvo();
       onClose();
     } catch (err) {

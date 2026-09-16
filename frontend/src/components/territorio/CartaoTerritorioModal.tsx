@@ -16,9 +16,9 @@ export const CartaoTerritorioModal: React.FC<CartaoTerritorioModalProps> = ({
   const mapInstanceRef = useRef<L.Map | null>(null);
 
   let coordenadas: [number, number][] = [];
-  if (territorio.poligonoGeojson) {
+  if (territorio.poligonoGeoJson) {
     try {
-      coordenadas = JSON.parse(territorio.poligonoGeojson);
+      coordenadas = JSON.parse(territorio.poligonoGeoJson);
     } catch (e) {
       console.error("Erro ao fazer parse do polígono:", e);
     }

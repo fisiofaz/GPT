@@ -84,14 +84,14 @@ export const territorioService = {
   // Atualizar Polígono GeoJSON
   salvarPoligono: async (
     id: number,
-    poligonoGeoJson: string,
+    poligonoGeoJson: string | null,
   ): Promise<Territorio> => {
     const response = await api.patch<Territorio>(
-      `/territorios/${id}/poligono`,
+      `/territorios/${id}/mapa`,
       {
-        poligonoGeoJson,
+        poligonoGeojson: poligonoGeoJson,
       },
-    );
+  );
     return response.data;
   },
 
