@@ -1,10 +1,13 @@
 package com.gpt.modulos.territorio.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gpt.config.security.SecurityUtils;
 import com.gpt.modulos.congregacao.model.Congregacao;
 import com.gpt.modulos.congregacao.repository.CongregacaoRepository;
 import com.gpt.modulos.publicador.model.Publicador;
 import com.gpt.modulos.publicador.repository.PublicadorRepository;
+import com.gpt.modulos.territorio.dto.GeoJsonPolygonDTO;
 import com.gpt.modulos.territorio.dto.HistoricoTerritorioResponseDTO;
 import com.gpt.modulos.territorio.dto.MovimentacaoTerritorioDTO;
 import com.gpt.modulos.territorio.dto.TerritorioRequestDTO;
@@ -32,6 +35,7 @@ public class TerritorioService {
     private final CongregacaoRepository congregacaoRepository;
     private final PublicadorRepository publicadorRepository;
     private final SecurityUtils securityUtils;
+    private final ObjectMapper objectMapper;
     
     private boolean isAdminGeral() {
         return securityUtils.getUsuarioLogado()
@@ -118,12 +122,22 @@ public class TerritorioService {
     }
     
     @Transactional
-    public TerritorioResponseDTO atualizarPoligono(Long territorioId, String poligonoGeojson) {
+    public TerritorioResponseDTO atualizarPoligono(Long territorioId, GeoJsonPolygonDTO poligonoGeojson) {
     	
     	Territorio territorio =
                 buscarTerritorioComAcessoPermitido(territorioId);
     	
-        territorio.setPoligonoGeojson(poligonoGeojson);
+    	validarGeoJsonPolygon(poligonoGeojson);
+    	
+    	try {
+            String json = objectMapper.writeValueAsString(poligonoGeojson);
+            territorio.setPoligonoGeojson(json);
+        } catch (JsonProcessingException e) {
+            throw new IllegalArgumentException(
+                    "Não foi possível serializar o GeoJSON do território.",
+                    e
+            );
+        }
 
         return converterParaResponseDTO(
         		territorioRepository.save(territorio)
@@ -152,6 +166,15 @@ public class TerritorioService {
         if (territorio.getStatus() != StatusTerritorio.DISPONIVEL) {
             throw new IllegalStateException(
             		"O território não está disponível para retirada"
+            );
+        }
+        
+        if (historicoRepository
+                .findByTerritorioIdAndDataDevolucaoIsNull(territorioId)
+                .isPresent()) {
+
+            throw new IllegalStateException(
+                    "O território já possui uma retirada em andamento."
             );
         }
 
@@ -283,6 +306,71 @@ public class TerritorioService {
                 .orElseThrow(() -> new AccessDeniedException(
                         "Você não tem permissão para acessar este território."
                 ));
+    }
+    
+    private void validarGeoJsonPolygon(GeoJsonPolygonDTO geoJson) {
+
+        if (!"Polygon".equals(geoJson.getType())) {
+            throw new IllegalArgumentException(
+                    "O GeoJSON deve possuir o tipo 'Polygon'."
+            );
+        }
+
+        if (geoJson.getCoordinates() == null
+                || geoJson.getCoordinates().isEmpty()) {
+
+            throw new IllegalArgumentException(
+                    "O Polygon deve possuir pelo menos um anel de coordenadas."
+            );
+        }
+
+        List<List<Double>> anel =
+                geoJson.getCoordinates().get(0);
+
+        if (anel == null || anel.size() < 4) {
+            throw new IllegalArgumentException(
+                    "O Polygon deve possuir pelo menos 4 posições, incluindo o fechamento do anel."
+            );
+        }
+
+        for (List<Double> ponto : anel) {
+
+            if (ponto == null || ponto.size() != 2) {
+                throw new IllegalArgumentException(
+                        "Cada coordenada deve possuir longitude e latitude."
+                );
+            }
+
+            Double longitude = ponto.get(0);
+            Double latitude = ponto.get(1);
+
+            if (longitude == null || latitude == null) {
+                throw new IllegalArgumentException(
+                        "Longitude e latitude são obrigatórias."
+                );
+            }
+
+            if (longitude < -180 || longitude > 180) {
+                throw new IllegalArgumentException(
+                        "Longitude inválida: " + longitude
+                );
+            }
+
+            if (latitude < -90 || latitude > 90) {
+                throw new IllegalArgumentException(
+                        "Latitude inválida: " + latitude
+                );
+            }
+        }
+
+        List<Double> primeiro = anel.get(0);
+        List<Double> ultimo = anel.get(anel.size() - 1);
+
+        if (!primeiro.equals(ultimo)) {
+            throw new IllegalArgumentException(
+                    "O Polygon deve possuir o primeiro ponto repetido no final para fechar o anel."
+            );
+        }
     }
 
     private TerritorioResponseDTO converterParaResponseDTO(Territorio territorio) {

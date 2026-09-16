@@ -1,5 +1,6 @@
 package com.gpt.modulos.territorio.controller;
 
+import com.gpt.modulos.territorio.dto.AtualizarPoligonoRequestDTO;
 import com.gpt.modulos.territorio.dto.HistoricoTerritorioResponseDTO;
 import com.gpt.modulos.territorio.dto.MovimentacaoTerritorioDTO;
 import com.gpt.modulos.territorio.dto.TerritorioRequestDTO;
@@ -23,14 +24,14 @@ public class TerritorioController {
     private final TerritorioService territorioService;
 
     @PostMapping
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO')")
     public ResponseEntity<TerritorioResponseDTO> criar(@Valid @RequestBody TerritorioRequestDTO request) {
         TerritorioResponseDTO response = territorioService.criar(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
     
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO',)")
     public ResponseEntity<Void> deletar(@PathVariable Long id) {
         territorioService.deletar(id);
         return ResponseEntity.noContent().build();
@@ -43,7 +44,7 @@ public class TerritorioController {
     }
 
     @PostMapping("/{id}/retirar")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO','ROLE_SERVO_TERRITORIO')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO','ROLE_SERVO_TERRITORIO')")
     public ResponseEntity<HistoricoTerritorioResponseDTO> retirar(
             @PathVariable Long id,
             @Valid @RequestBody MovimentacaoTerritorioDTO request) {
@@ -51,7 +52,7 @@ public class TerritorioController {
     }
 
     @PostMapping("/{id}/devolver")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO','ROLE_SERVO_TERRITORIO')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO','ROLE_ANCIAO', 'ROLE_SERVO_TERRITORIO')")
     public ResponseEntity<HistoricoTerritorioResponseDTO> devolver(
             @PathVariable Long id,
             @RequestBody(required = false) Map<String, String> payload) {
@@ -72,12 +73,17 @@ public class TerritorioController {
     }
 
     @PatchMapping("/{id}/mapa")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO', 'ROLE_SERVO_TERRITORIO')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO')")
     public ResponseEntity<TerritorioResponseDTO> atualizarPoligono(
             @PathVariable Long id,
-            @RequestBody Map<String, String> payload) {
-        String poligonoGeojson = payload != null ? payload.get("poligonoGeojson") : null;
-        return ResponseEntity.ok(territorioService.atualizarPoligono(id, poligonoGeojson));
+            @Valid @RequestBody AtualizarPoligonoRequestDTO request) {
+    	
+    	return ResponseEntity.ok(
+                territorioService.atualizarPoligono(
+                        id,
+                        request.getPoligonoGeojson()
+                )
+        );
     }
 
     @GetMapping("/publico/{id}")
