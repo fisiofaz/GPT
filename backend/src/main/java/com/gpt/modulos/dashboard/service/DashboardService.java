@@ -1,8 +1,8 @@
 package com.gpt.modulos.dashboard.service;
 
 import com.gpt.modulos.dashboard.dto.DashboardStatsDTO;
+import com.gpt.modulos.movimentacao.repository.PublicacaoEstoqueRepository;
 import com.gpt.modulos.territorio.repository.HistoricoTerritorioRepository;
-import com.gpt.modulos.publicacao.repository.PublicacaoRepository;
 import com.gpt.modulos.pedido.repository.PedidoPublicadorRepository;
 import com.gpt.modulos.territorio.repository.TerritorioRepository;
 import com.gpt.modulos.congregacao.repository.CongregacaoRepository;
@@ -24,7 +24,7 @@ public class DashboardService {
 
     private final TerritorioRepository territorioRepository;
     private final HistoricoTerritorioRepository historicoTerritorioRepository;
-    private final PublicacaoRepository publicacaoRepository;
+    private final PublicacaoEstoqueRepository publicacaoEstoqueRepository;
     private final PedidoPublicadorRepository pedidoPublicadorRepository;
     private final CongregacaoRepository congregacaoRepository;
 
@@ -35,23 +35,19 @@ public class DashboardService {
         LocalDateTime inicioAnoServico = LocalDate.of(anoInicio, Month.SEPTEMBER, 1).atStartOfDay();
         LocalDateTime fimAnoServico = LocalDate.of(anoInicio + 1, Month.AUGUST, 31).atTime(23, 59, 59);
 
-        // 1. Territórios
         long disponiveis = territorioRepository.countByCongregacaoIdAndStatus(congregacaoId, StatusTerritorio.DISPONIVEL);
         long emAndamento = territorioRepository.countByCongregacaoIdAndStatus(congregacaoId, StatusTerritorio.EM_TRABALHO);
         long trabalhadosAnoServico = historicoTerritorioRepository.countTerritoriosTrabalhadosNoPeriodo(
                 congregacaoId, inicioAnoServico, fimAnoServico
         );
 
-        // 2. Publicações (Estoque)
-        long estoqueTotal = publicacaoRepository.sumEstoqueByCongregacaoId(congregacaoId);
+        long estoqueTotal =
+                publicacaoEstoqueRepository.sumQuantidadeByCongregacaoId(congregacaoId);
 
-        // 3. Total de Pedidos (Ex: Somando pedidos de publicadores da congregação)
         long totalPedidos = pedidoPublicadorRepository.countByCongregacaoId(congregacaoId);
 
-        // 4. Congregações Ativas (Global)
         long congregacoesAtivas = congregacaoRepository.count();
 
-        // 5. Histórico de Consumo (Últimos 6 meses)
         List<DashboardStatsDTO.HistoricoConsumoDTO> historicoConsumo = new ArrayList<>();
         for (int i = 5; i >= 0; i--) {
             LocalDate mesReferencia = hoje.minusMonths(i);

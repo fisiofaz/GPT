@@ -1,7 +1,8 @@
-package com.gpt.modulos.publicacao.model;
+package com.gpt.modulos.movimentacao.model;
 
 import com.gpt.modulos.congregacao.model.Congregacao;
-import com.gpt.modulos.publicacao.enums.TipoMovimentacao;
+import com.gpt.modulos.movimentacao.enums.TipoMovimentacao;
+import com.gpt.modulos.publicacao.model.Publicacao;
 import com.gpt.modulos.publicador.model.Publicador;
 import com.gpt.modulos.usuario.model.Usuario;
 import jakarta.persistence.*;

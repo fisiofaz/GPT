@@ -1,4 +1,4 @@
-package com.gpt.modulos.publicacao.dto;
+package com.gpt.modulos.movimentacao.dto;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;

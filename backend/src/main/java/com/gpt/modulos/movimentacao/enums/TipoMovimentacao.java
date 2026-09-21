@@ -1,4 +1,4 @@
-package com.gpt.modulos.publicacao.enums;
+package com.gpt.modulos.movimentacao.enums;
 
 public enum TipoMovimentacao {
     ENTRADA, 

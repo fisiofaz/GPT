@@ -1,13 +1,16 @@
-package com.gpt.modulos.publicacao.repository;
+package com.gpt.modulos.movimentacao.repository;
 
-import com.gpt.modulos.publicacao.model.MovimentacaoEstoque;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import com.gpt.modulos.movimentacao.model.MovimentacaoEstoque;
 import java.util.List;
 
 @Repository
 public interface MovimentacaoEstoqueRepository extends JpaRepository<MovimentacaoEstoque, Long> {
+		
     List<MovimentacaoEstoque> findByCongregacaoIdOrderByDataMovimentacaoDesc(Long congregacaoId);
+    
     List<MovimentacaoEstoque> findByPublicacaoIdOrderByDataMovimentacaoDesc(Long publicacaoId);
+    
 }
