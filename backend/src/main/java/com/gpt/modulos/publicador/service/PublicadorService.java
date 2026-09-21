@@ -2,6 +2,9 @@ package com.gpt.modulos.publicador.service;
 
 import com.gpt.modulos.congregacao.model.Congregacao;
 import com.gpt.modulos.congregacao.repository.CongregacaoRepository;
+import com.gpt.modulos.pessoa.model.Pessoa;
+import com.gpt.modulos.pessoa.model.SituacaoPessoa;
+import com.gpt.modulos.pessoa.repository.PessoaRepository;
 import com.gpt.modulos.publicador.dto.PublicadorRequestDTO;
 import com.gpt.modulos.publicador.dto.PublicadorResponseDTO;
 import com.gpt.modulos.publicador.model.Publicador;
@@ -20,15 +23,26 @@ public class PublicadorService {
 
     private final PublicadorRepository publicadorRepository;
     private final CongregacaoRepository congregacaoRepository;
+    private final PessoaRepository pessoaRepository;
 
     @Transactional
     public PublicadorResponseDTO criar(PublicadorRequestDTO request) {
+    	
         Congregacao congregacao = congregacaoRepository.findById(request.getCongregacaoId())
-                .orElseThrow(() -> new EntityNotFoundException("Congregação não encontrada com ID: " + request.getCongregacaoId()));
+                .orElseThrow(() -> new EntityNotFoundException(
+                		"Congregação não encontrada com ID: " + request.getCongregacaoId()));
 
-        Publicador publicador = Publicador.builder()
+        Pessoa pessoa = Pessoa.builder()
                 .nome(request.getNome().trim())
+                .dataNascimento(request.getDataNascimento())
                 .telefone(request.getTelefone())
+                .email(request.getEmail())
+                .build();
+        
+        pessoa = pessoaRepository.save(pessoa);
+        
+        Publicador publicador = Publicador.builder()
+                .pessoa(pessoa)
                 .ativo(true)
                 .congregacao(congregacao)
                 .build();
@@ -39,43 +53,82 @@ public class PublicadorService {
 
     @Transactional(readOnly = true)
     public List<PublicadorResponseDTO> listarPorCongregacao(Long congregacaoId) {
-        return publicadorRepository.findByCongregacaoIdAndAtivoTrueOrderByNomeAsc(congregacaoId)
+        
+    	return publicadorRepository
+    			.findByCongregacaoIdAndAtivoTrueOrderByPessoa_NomeAsc(congregacaoId)
                 .stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
     }
 
-    private PublicadorResponseDTO toDTO(Publicador p) {
+    private PublicadorResponseDTO toDTO(Publicador publicador) {
+
         return PublicadorResponseDTO.builder()
-                .id(p.getId())
-                .nome(p.getNome())
-                .telefone(p.getTelefone())
-                .ativo(p.getAtivo())
-                .congregacaoId(p.getCongregacao().getId())
+                .id(publicador.getId())
+                .nome(publicador.getPessoa().getNome())
+                .dataNascimento(publicador.getPessoa().getDataNascimento())
+                .telefone(publicador.getPessoa().getTelefone())
+                .email(publicador.getPessoa().getEmail())
+                .ativo(publicador.getAtivo())
+                .congregacaoId(publicador.getCongregacao().getId())
                 .build();
     }
     
     @Transactional
     public PublicadorResponseDTO atualizar(Long id, PublicadorRequestDTO request) {
+    	
         Publicador publicador = publicadorRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Publicador não encontrado com ID: " + id));
+                .orElseThrow(() -> new EntityNotFoundException(
+                		"Publicador não encontrado com ID: " + id));
 
         Congregacao congregacao = congregacaoRepository.findById(request.getCongregacaoId())
-                .orElseThrow(() -> new EntityNotFoundException("Congregação não encontrada com ID: " + request.getCongregacaoId()));
+                .orElseThrow(() -> new EntityNotFoundException(
+                		"Congregação não encontrada com ID: " + request.getCongregacaoId()));
 
-        publicador.setNome(request.getNome().trim());
-        publicador.setTelefone(request.getTelefone());
+        Pessoa pessoa = publicador.getPessoa();
+        
+        pessoa.setNome(request.getNome().trim());
+        pessoa.setDataNascimento(request.getDataNascimento());
+        pessoa.setTelefone(request.getTelefone());
+        pessoa.setEmail(request.getEmail());
+
         publicador.setCongregacao(congregacao);
-
-        publicador = publicadorRepository.save(publicador);
+        
+        pessoaRepository.save(pessoa);
+        publicadorRepository.save(publicador);
+        
         return toDTO(publicador);
     }
 
     @Transactional
     public void desativar(Long id) {
+    	
         Publicador publicador = publicadorRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Publicador não encontrado com ID: " + id));
+                .orElseThrow(() -> new EntityNotFoundException(
+                		"Publicador não encontrado com ID: " + id));
+        
         publicador.setAtivo(false);
+        
+        Pessoa pessoa = publicador.getPessoa();
+        pessoa.setSituacao(SituacaoPessoa.INATIVO);
+
+        pessoaRepository.save(pessoa);
+        publicadorRepository.save(publicador);
+    }
+    
+    @Transactional
+    public void reativar(Long id) {
+
+        Publicador publicador = publicadorRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Publicador não encontrado com ID: " + id));
+
+        publicador.setAtivo(true);
+
+        Pessoa pessoa = publicador.getPessoa();
+        pessoa.setSituacao(SituacaoPessoa.ATIVO);
+
+        pessoaRepository.save(pessoa);
         publicadorRepository.save(publicador);
     }
 }

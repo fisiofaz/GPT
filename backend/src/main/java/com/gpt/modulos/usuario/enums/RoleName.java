@@ -6,5 +6,4 @@ public enum RoleName {
     ROLE_ANCIAO,
     ROLE_SERVO_TERRITORIO,
     ROLE_SERVO_PUBLICACOES,
-    ROLE_PUBLICADOR
 }

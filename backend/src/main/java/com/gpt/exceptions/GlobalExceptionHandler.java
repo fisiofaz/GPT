@@ -75,4 +75,16 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("message", ex.getMessage() != null ? ex.getMessage() : "Ocorreu um erro interno no servidor."));
     }
+    
+ // 400 - Regras de negócio
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<Map<String, String>> handleBusinessException(BusinessException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of(
+                        "message",
+                        ex.getMessage() != null
+                                ? ex.getMessage()
+                                : "Operação não permitida."
+                ));
+    }
 }

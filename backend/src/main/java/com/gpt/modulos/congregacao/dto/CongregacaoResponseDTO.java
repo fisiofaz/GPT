@@ -18,7 +18,9 @@ public class CongregacaoResponseDTO {
     private Long id;
     private String nome;
     private String numero;
+    private String numeroCircuito;
     private String cidade;
     private String estado;
     private LocalDateTime criadoEm;
+    private LocalDateTime atualizadoEm;
 }

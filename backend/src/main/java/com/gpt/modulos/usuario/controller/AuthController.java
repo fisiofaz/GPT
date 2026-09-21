@@ -2,7 +2,6 @@ package com.gpt.modulos.usuario.controller;
 
 import com.gpt.modulos.usuario.dto.LoginRequestDTO;
 import com.gpt.modulos.usuario.dto.LoginResponseDTO;
-import com.gpt.modulos.usuario.dto.RegistroRequestDTO;
 import com.gpt.modulos.usuario.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -22,12 +21,6 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(@Valid @RequestBody LoginRequestDTO request) {
         LoginResponseDTO response = authService.autenticar(request);
-        return ResponseEntity.ok(response);
-    }
-
-    @PostMapping("/register")
-    public ResponseEntity<LoginResponseDTO> registrar(@Valid @RequestBody RegistroRequestDTO request) {
-        LoginResponseDTO response = authService.registrar(request);
         return ResponseEntity.ok(response);
     }
 }

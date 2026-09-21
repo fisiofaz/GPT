@@ -1,0 +1,2 @@
+DELETE FROM tb_role
+WHERE nome = 'ROLE_PUBLICADOR';

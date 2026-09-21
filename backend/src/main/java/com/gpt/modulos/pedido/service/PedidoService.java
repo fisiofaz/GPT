@@ -2,6 +2,9 @@ package com.gpt.modulos.pedido.service;
 
 import com.gpt.modulos.congregacao.model.Congregacao;
 import com.gpt.modulos.congregacao.repository.CongregacaoRepository;
+import com.gpt.modulos.movimentacao.dto.MovimentacaoEstoqueDTO;
+import com.gpt.modulos.movimentacao.enums.TipoMovimentacao;
+import com.gpt.modulos.movimentacao.service.MovimentacaoService;
 import com.gpt.modulos.pedido.dto.PedidoBetelDTO;
 import com.gpt.modulos.pedido.dto.PedidoPublicadorDTO;
 import com.gpt.modulos.pedido.enums.OrigemItemPedido;
@@ -12,10 +15,7 @@ import com.gpt.modulos.pedido.model.PedidoBetel;
 import com.gpt.modulos.pedido.model.PedidoPublicador;
 import com.gpt.modulos.pedido.repository.PedidoBetelRepository;
 import com.gpt.modulos.pedido.repository.PedidoPublicadorRepository;
-import com.gpt.modulos.publicacao.enums.TipoMovimentacao;
-import com.gpt.modulos.publicacao.model.MovimentacaoEstoque;
 import com.gpt.modulos.publicacao.model.Publicacao;
-import com.gpt.modulos.publicacao.repository.MovimentacaoEstoqueRepository;
 import com.gpt.modulos.publicacao.repository.PublicacaoRepository;
 import com.gpt.modulos.publicador.model.Publicador;
 import com.gpt.modulos.publicador.repository.PublicadorRepository;
@@ -24,6 +24,7 @@ import com.gpt.modulos.usuario.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -32,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -43,19 +45,30 @@ public class PedidoService {
     private final PublicadorRepository publicadorRepo;
     private final PublicacaoRepository publicacaoRepo;
     private final CongregacaoRepository congregacaoRepo;
-    private final MovimentacaoEstoqueRepository movimentacaoEstoqueRepo;
     private final UsuarioRepository usuarioRepo;
-
-    // ==========================================
-    // FLUXO 1: PEDIDOS DE PUBLICADORES
-    // ==========================================
+    private final MovimentacaoService movimentacaoService;
 
     @Transactional
-    public PedidoPublicadorDTO.Response criarPedidoPublicador(PedidoPublicadorDTO.Request dto) {
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO', 'ROLE_SERVO_PUBLICACOES')")
+    public PedidoPublicadorDTO.Response criarPedidoPublicador(PedidoPublicadorDTO.Request dto) {    	
+
+        if (dto.getQuantidade() == null || dto.getQuantidade() <= 0) {
+            throw new IllegalArgumentException(
+                    "A quantidade do pedido deve ser maior que zero."
+            );
+        }
+        
         Publicador publicador = publicadorRepo.findById(dto.getPublicadorId())
                 .orElseThrow(() -> new EntityNotFoundException("Publicador não encontrado."));
         Publicacao publicacao = publicacaoRepo.findById(dto.getPublicacaoId())
                 .orElseThrow(() -> new EntityNotFoundException("Publicação não encontrada."));
+        
+        if (!Boolean.TRUE.equals(publicacao.getAtivo())) {
+            throw new IllegalStateException(
+                    "Não é possível criar pedido para uma publicação inativa."
+            );
+        }
+        
         Congregacao congregacao = congregacaoRepo.findById(dto.getCongregacaoId())
                 .orElseThrow(() -> new EntityNotFoundException("Congregação não encontrada."));
 
@@ -91,19 +104,48 @@ public class PedidoService {
 
     @Transactional
     public void marcarPedidoPublicadorAtendido(Long id) {
+    	
         PedidoPublicador pedido = pedidoPublicadorRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Pedido de publicador não encontrado."));
+        
+        if (pedido.getStatus() != StatusPedidoPublicador.PENDENTE) {
+            throw new IllegalStateException(
+                    "Somente pedidos pendentes podem ser atendidos."
+            );
+        }
+        
+        Usuario responsavel = obterUsuarioLogado();
+        
+        if (responsavel == null) {
+            throw new IllegalStateException(
+                    "Usuário autenticado não encontrado."
+            );
+        }
+        
+        MovimentacaoEstoqueDTO movimentacaoDTO =
+                new MovimentacaoEstoqueDTO(
+                        TipoMovimentacao.SAIDA,
+                        pedido.getQuantidade(),
+                        pedido.getPublicador().getId(),
+                        "Saída referente ao Pedido de Publicador ID: "
+                                + pedido.getId()
+                );
+
+        movimentacaoService.movimentar(
+                pedido.getPublicacao().getId(),
+                pedido.getCongregacao().getId(),
+                movimentacaoDTO,
+                responsavel
+        );
+        
         pedido.setStatus(StatusPedidoPublicador.ATENDIDO);
         pedido.setDataAtendimento(LocalDateTime.now());
         pedidoPublicadorRepo.save(pedido);
     }
 
-    // ==========================================
-    // FLUXO 2: PEDIDO CONSOLIDADO PARA BETEL
-    // ==========================================
-
     @Transactional
     public PedidoBetelDTO.Response criarPedidoBetel(PedidoBetelDTO.CriarRequest dto) {
+    	
         Congregacao congregacao = congregacaoRepo.findById(dto.getCongregacaoId())
                 .orElseThrow(() -> new EntityNotFoundException("Congregação não encontrada."));
 
@@ -118,9 +160,25 @@ public class PedidoService {
                 .build();
 
         for (PedidoBetelDTO.ItemRequest itemDto : dto.getItens()) {
+        	
+        	 if (itemDto.getQuantidadeSolicitada() == null
+                     || itemDto.getQuantidadeSolicitada() <= 0) {
+                 throw new IllegalArgumentException(
+                         "A quantidade solicitada deve ser maior que zero."
+                 );
+             }
+        	 
             Publicacao publicacao = publicacaoRepo.findById(itemDto.getPublicacaoId())
                     .orElseThrow(() -> new EntityNotFoundException("Publicação ID " + itemDto.getPublicacaoId() + " não encontrada."));
-
+            
+            if (!Boolean.TRUE.equals(publicacao.getAtivo())) {
+                throw new IllegalStateException(
+                        "A publicação ID "
+                                + publicacao.getId()
+                                + " está inativa."
+                );
+            }
+            
             ItemPedidoBetel item = ItemPedidoBetel.builder()
                     .pedidoBetel(pedidoBetel)
                     .publicacao(publicacao)
@@ -134,13 +192,38 @@ public class PedidoService {
 
         PedidoBetel salvo = pedidoBetelRepo.save(pedidoBetel);
 
-        // Vincula os pedidos de publicadores incluídos neste pedido
         if (dto.getPedidosPublicadoresIds() != null && !dto.getPedidosPublicadoresIds().isEmpty()) {
+        	
             List<PedidoPublicador> pedidosPub = pedidoPublicadorRepo.findAllById(dto.getPedidosPublicadoresIds());
+            
+            if (pedidosPub.size() != dto.getPedidosPublicadoresIds().size()) {
+                throw new EntityNotFoundException(
+                        "Um ou mais pedidos de publicador não foram encontrados."
+                );
+            }
+            
             for (PedidoPublicador pp : pedidosPub) {
+            	
+            	if (!pp.getCongregacao().getId().equals(congregacao.getId())) {
+                    throw new IllegalArgumentException(
+                            "O pedido de publicador ID "
+                                    + pp.getId()
+                                    + " pertence a outra congregação."
+                    );
+                }
+            	
+            	if (pp.getStatus() != StatusPedidoPublicador.PENDENTE) {
+                    throw new IllegalStateException(
+                            "O pedido de publicador ID "
+                                    + pp.getId()
+                                    + " não está pendente."
+                    );
+                }
+            	
                 pp.setPedidoBetel(salvo);
                 pp.setStatus(StatusPedidoPublicador.INCLUIDO_NO_PEDIDO);
             }
+            
             pedidoPublicadorRepo.saveAll(pedidosPub);
         }
 
@@ -164,81 +247,159 @@ public class PedidoService {
 
     @Transactional
     public PedidoBetelDTO.Response marcarComoEnviado(Long id) {
+    	
         PedidoBetel pedido = pedidoBetelRepo.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Pedido Betel não encontrado."));
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Pedido Betel não encontrado."
+                ));
+
+        if (pedido.getStatus() != StatusPedidoBetel.RASCUNHO) {
+            throw new IllegalStateException(
+                    "Somente pedidos em rascunho podem ser enviados."
+            );
+        }
+        
+        if (pedido.getItens() == null || pedido.getItens().isEmpty()) {
+            throw new IllegalStateException(
+                    "Não é possível enviar um pedido Betel sem itens."
+            );
+        }
+
         pedido.setStatus(StatusPedidoBetel.ENVIADO);
         pedido.setDataEnvio(LocalDateTime.now());
-        return toPedidoBetelResponse(pedidoBetelRepo.save(pedido));
+
+        return toPedidoBetelResponse(
+                pedidoBetelRepo.save(pedido)
+        );
     }
 
-    // ==========================================
-    // FLUXO 3: RECEBIMENTO & ENTRADA NO ESTOQUE
-    // ==========================================
-
     @Transactional
-    public PedidoBetelDTO.Response registrarRecebimento(Long pedidoBetelId, PedidoBetelDTO.ConferirPedidoRequest dto) {
+    public PedidoBetelDTO.Response registrarRecebimento(
+            Long pedidoBetelId,
+            PedidoBetelDTO.ConferirPedidoRequest dto
+    ) {
         PedidoBetel pedido = pedidoBetelRepo.findById(pedidoBetelId)
-                .orElseThrow(() -> new EntityNotFoundException("Pedido Betel não encontrado."));
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Pedido Betel não encontrado."
+                ));
 
-        // Recupera o usuário logado para auditoria
         Usuario responsavel = obterUsuarioLogado();
 
-        boolean todoRecebido = true;
-        boolean algumRecebido = false;
+        if (responsavel == null) {
+            throw new IllegalStateException(
+                    "Usuário autenticado não encontrado."
+            );
+        }
 
-        for (PedidoBetelDTO.ConferirItemRequest conf : dto.getItensRecebidos()) {
-            ItemPedidoBetel item = pedido.getItens().stream()
+        if (pedido.getStatus() == StatusPedidoBetel.CANCELADO) {
+            throw new IllegalStateException(
+                    "Não é possível receber um pedido cancelado."
+            );
+        }
+
+        if (pedido.getStatus() == StatusPedidoBetel.RASCUNHO) {
+            throw new IllegalStateException(
+                    "O pedido precisa ser enviado antes do recebimento."
+            );
+        }
+
+        if (pedido.getStatus() == StatusPedidoBetel.RECEBIDO_TOTAL) {
+            throw new IllegalStateException(
+                    "O pedido já foi recebido e encerrado."
+            );
+        }
+
+        if (dto.getItensRecebidos().size() != pedido.getItens().size()) {
+            throw new IllegalArgumentException(
+                    "É necessário informar o recebimento de todos os itens do pedido."
+            );
+        }
+        
+        Set<Long> idsRecebidos = dto.getItensRecebidos()
+                .stream()
+                .map(PedidoBetelDTO.ConferirItemRequest::getItemId)
+                .collect(Collectors.toSet());
+
+        for (PedidoBetelDTO.ConferirItemRequest conf
+                : dto.getItensRecebidos()) {
+
+            ItemPedidoBetel item = pedido.getItens()
+                    .stream()
                     .filter(i -> i.getId().equals(conf.getItemId()))
                     .findFirst()
-                    .orElseThrow(() -> new EntityNotFoundException("Item ID " + conf.getItemId() + " não pertence ao pedido."));
+                    .orElseThrow(() -> new EntityNotFoundException(
+                            "Item ID "
+                                    + conf.getItemId()
+                                    + " não pertence ao pedido."
+                    ));
 
-            item.setQuantidadeRecebida(conf.getQuantidadeRecebida());
+            int quantidadeAnterior =
+                    item.getQuantidadeRecebida() != null
+                            ? item.getQuantidadeRecebida()
+                            : 0;
 
-            if (conf.getQuantidadeRecebida() > 0) {
-                algumRecebido = true;
+            int quantidadeRecebida =
+                    conf.getQuantidadeRecebida();
 
-                // 1. Atualiza o estoque da congregação
-                Publicacao publicacao = item.getPublicacao();
-                int estoqueAnterior = publicacao.getQuantidadeEstoque() != null ? publicacao.getQuantidadeEstoque() : 0;
-                int novoEstoque = estoqueAnterior + conf.getQuantidadeRecebida();
-                publicacao.setQuantidadeEstoque(novoEstoque);
-                publicacaoRepo.save(publicacao);
-
-                // 2. Registra na tabela de auditoria com todas as colunas NOT NULL preenchidas
-                MovimentacaoEstoque mov = MovimentacaoEstoque.builder()
-                        .publicacao(publicacao)
-                        .congregacao(pedido.getCongregacao())
-                        .responsavel(responsavel) // <-- Preenchimento obrigatório
-                        .tipo(TipoMovimentacao.ENTRADA)
-                        .quantidade(conf.getQuantidadeRecebida())
-                        .quantidadeAnterior(estoqueAnterior)
-                        .quantidadePosterior(novoEstoque)
-                        .dataMovimentacao(LocalDateTime.now())
-                        .observacoes("Entrada automática via Remessa Betel - Pedido: " + (pedido.getNumeroPedido() != null ? pedido.getNumeroPedido() : pedido.getId()))
-                        .build();
-                movimentacaoEstoqueRepo.save(mov);
+            if (quantidadeRecebida < quantidadeAnterior) {
+                throw new IllegalArgumentException(
+                        "A quantidade recebida não pode ser menor que "
+                                + "a quantidade já registrada para o item "
+                                + conf.getItemId()
+                );
             }
 
-            if (conf.getQuantidadeRecebida() < item.getQuantidadeSolicitada()) {
-                todoRecebido = false;
+            int quantidadeEntrada =
+                    quantidadeRecebida - quantidadeAnterior;
+
+            item.setQuantidadeRecebida(quantidadeRecebida);
+
+            if (quantidadeEntrada > 0) {
+
+                MovimentacaoEstoqueDTO movimentacaoDTO =
+                        new MovimentacaoEstoqueDTO(
+                                TipoMovimentacao.ENTRADA,
+                                quantidadeEntrada,
+                                null,
+                                "Entrada via recebimento do Pedido Betel: "
+                                        + (
+                                            pedido.getNumeroPedido() != null
+                                                    ? pedido.getNumeroPedido()
+                                                    : pedido.getId()
+                                        )
+                        );
+
+                movimentacaoService.movimentar(
+                        item.getPublicacao().getId(),
+                        pedido.getCongregacao().getId(),
+                        movimentacaoDTO,
+                        responsavel
+                );
             }
         }
 
+        pedido.setStatus(StatusPedidoBetel.RECEBIDO_TOTAL);
         pedido.setDataRecebimento(LocalDateTime.now());
-        pedido.setStatus(todoRecebido ? StatusPedidoBetel.RECEBIDO_TOTAL : (algumRecebido ? StatusPedidoBetel.RECEBIDO_PARCIAL : StatusPedidoBetel.ENVIADO));
+
         if (dto.getObservacoes() != null) {
             pedido.setObservacoes(dto.getObservacoes());
         }
 
-        // Atualiza pedidos especiais de publicadores vinculados para ATENDIDO
-        List<PedidoPublicador> pedidosPubVinculados = pedidoPublicadorRepo.findByPedidoBetelId(pedidoBetelId);
-        for (PedidoPublicador pp : pedidosPubVinculados) {
+        List<PedidoPublicador> pedidosPublicadores =
+                pedidoPublicadorRepo.findByPedidoBetelId(pedidoBetelId);
+
+        for (PedidoPublicador pp : pedidosPublicadores) {
             pp.setStatus(StatusPedidoPublicador.ATENDIDO);
             pp.setDataAtendimento(LocalDateTime.now());
         }
-        pedidoPublicadorRepo.saveAll(pedidosPubVinculados);
 
-        return toPedidoBetelResponse(pedidoBetelRepo.save(pedido));
+        if (!pedidosPublicadores.isEmpty()) {
+            pedidoPublicadorRepo.saveAll(pedidosPublicadores);
+        }
+
+        return toPedidoBetelResponse(
+                pedidoBetelRepo.save(pedido)
+        );
     }
 
     private Usuario obterUsuarioLogado() {
@@ -252,23 +413,42 @@ public class PedidoService {
     
     @Transactional
     public PedidoBetelDTO.Response atualizarPedidoBetel(Long id, PedidoBetelDTO.CriarRequest dto) {
+    	
         PedidoBetel pedido = pedidoBetelRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Pedido Betel não encontrado."));
 
-        if (pedido.getStatus() == StatusPedidoBetel.RECEBIDO_TOTAL) {
-            throw new IllegalStateException("Pedidos já recebidos e com estoque atualizado não podem ser editados.");
+        if (pedido.getStatus() != StatusPedidoBetel.RASCUNHO) {
+            throw new IllegalStateException(
+                    "Somente pedidos Betel em rascunho podem ser editados."
+            );
         }
 
         pedido.setNumeroPedido(dto.getNumeroPedido());
         pedido.setMesAnoReferencia(dto.getMesAnoReferencia());
         pedido.setObservacoes(dto.getObservacoes());
-
-        // Limpa itens antigos e reconstrói
+        
         pedido.getItens().clear();
+        
         for (PedidoBetelDTO.ItemRequest itemDto : dto.getItens()) {
+        	
+        	if (itemDto.getQuantidadeSolicitada() == null
+                    || itemDto.getQuantidadeSolicitada() <= 0) {
+                throw new IllegalArgumentException(
+                        "A quantidade solicitada deve ser maior que zero."
+                );
+            }
+        	
             Publicacao publicacao = publicacaoRepo.findById(itemDto.getPublicacaoId())
                     .orElseThrow(() -> new EntityNotFoundException("Publicação ID " + itemDto.getPublicacaoId() + " não encontrada."));
-
+            
+            if (!Boolean.TRUE.equals(publicacao.getAtivo())) {
+                throw new IllegalStateException(
+                        "A publicação ID "
+                                + publicacao.getId()
+                                + " está inativa."
+                );
+            }
+            
             ItemPedidoBetel item = ItemPedidoBetel.builder()
                     .pedidoBetel(pedido)
                     .publicacao(publicacao)
@@ -285,35 +465,35 @@ public class PedidoService {
 
     @Transactional
     public void excluirPedidoBetel(Long id) {
+    	
         PedidoBetel pedido = pedidoBetelRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Pedido Betel não encontrado."));
 
-        if (pedido.getStatus() == StatusPedidoBetel.RECEBIDO_TOTAL) {
-            throw new IllegalStateException("Pedidos já finalizados/recebidos no estoque não podem ser excluídos diretamente.");
+        if (pedido.getStatus() != StatusPedidoBetel.RASCUNHO) {
+            throw new IllegalStateException(
+                    "Somente pedidos Betel em rascunho podem ser excluídos."
+            );
         }
-
-        // Desvincula pedidos de publicadores para voltarem a ficar PENDENTE
+        
         List<PedidoPublicador> vinculados = pedidoPublicadorRepo.findByPedidoBetelId(id);
+        
         for (PedidoPublicador pp : vinculados) {
             pp.setPedidoBetel(null);
             pp.setStatus(StatusPedidoPublicador.PENDENTE);
         }
-        pedidoPublicadorRepo.saveAll(vinculados);
-
-        pedidoBetelRepo.delete(pedido);
+        
+        if (!vinculados.isEmpty()) {
+            pedidoPublicadorRepo.saveAll(vinculados);
+        }
+        
+       pedidoBetelRepo.delete(pedido);
     }
-
-   
-
-    // ==========================================
-    // MAPPERS PRIVADOS
-    // ==========================================
 
     private PedidoPublicadorDTO.Response toPedidoPublicadorResponse(PedidoPublicador entity) {
         return PedidoPublicadorDTO.Response.builder()
                 .id(entity.getId())
                 .publicadorId(entity.getPublicador().getId())
-                .publicadorNome(entity.getPublicador().getNome())
+                .publicadorNome(entity.getPublicador().getPessoa().getNome())
                 .publicacaoId(entity.getPublicacao().getId())
                 .publicacaoCodigo(entity.getPublicacao().getCodigo())
                 .publicacaoTitulo(entity.getPublicacao().getTitulo())

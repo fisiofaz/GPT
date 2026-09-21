@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/publicacoes") // Se os outros controllers usam apenas o nome do recurso
+@RequestMapping("/publicacoes") 
 @RequiredArgsConstructor
 public class PublicacaoController {
 
@@ -74,23 +74,6 @@ public class PublicacaoController {
     ) {
         Usuario responsavel = obterUsuarioAutenticado(authentication);
         return ResponseEntity.status(HttpStatus.CREATED).body(publicacaoService.cadastrar(dto, responsavel));
-    }
-
-    @PostMapping("/{id}/movimentar")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO', 'ROLE_SERVO_PUBLICACOES')")
-    public ResponseEntity<MovimentacaoResponseDTO> movimentar(
-            @PathVariable Long id,
-            @Valid @RequestBody MovimentacaoEstoqueDTO dto,
-            Authentication authentication
-    ) {
-        Usuario responsavel = obterUsuarioAutenticado(authentication);
-        return ResponseEntity.ok(publicacaoService.movimentarEstoque(id, dto, responsavel));
-    }
-
-    @GetMapping("/congregacao/{congregacaoId}/historico")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO', 'ROLE_SERVO_PUBLICACOES')")
-    public ResponseEntity<List<MovimentacaoResponseDTO>> listarHistoricoGeral(@PathVariable Long congregacaoId) {
-        return ResponseEntity.ok(publicacaoService.listarHistoricoGeral(congregacaoId));
     }
 
     private Usuario obterUsuarioAutenticado(Authentication authentication) {

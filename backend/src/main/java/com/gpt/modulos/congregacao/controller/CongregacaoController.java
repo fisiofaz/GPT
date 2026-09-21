@@ -38,7 +38,6 @@ public class CongregacaoController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
     
-    // Atualizado para chamar o método do Service
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('ROLE_ADMIN_GERAL')")
     public ResponseEntity<Void> deletar(@PathVariable Long id) {
@@ -46,7 +45,6 @@ public class CongregacaoController {
         return ResponseEntity.noContent().build();
     }
     
- // Atualizar congregação existente
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('ROLE_ADMIN_GERAL')")
     public ResponseEntity<CongregacaoResponseDTO> atualizar(

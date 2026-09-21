@@ -71,6 +71,7 @@ public class PedidoController {
     }
 
     @PatchMapping("/betel/{id}/enviar")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO', 'ROLE_SERVO_PUBLICACOES')")
     public ResponseEntity<PedidoBetelDTO.Response> marcarComoEnviado(@PathVariable Long id) {
         return ResponseEntity.ok(pedidoService.marcarComoEnviado(id));
     }

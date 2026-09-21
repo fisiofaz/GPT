@@ -6,6 +6,7 @@ import com.gpt.modulos.usuario.service.UsuarioService;
 import jakarta.validation.Valid;
 
 import com.gpt.modulos.usuario.dto.UsuarioRequestDTO;
+import com.gpt.modulos.usuario.dto.UsuarioUpdateDTO;
 
 import lombok.RequiredArgsConstructor;
 
@@ -23,6 +24,7 @@ public class UsuarioController {
     private final UsuarioService usuarioService;
     
     @GetMapping
+    @PreAuthorize("hasAuthority('ROLE_ADMIN_GERAL')")
     public ResponseEntity<List<UsuarioResponseDTO>> listarTodos() {
         return ResponseEntity.ok(usuarioService.listarTodos());
     }
@@ -47,7 +49,7 @@ public class UsuarioController {
     
     @PostMapping
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO')")
-    public ResponseEntity<UsuarioResponseDTO> criarUsuario(@RequestBody UsuarioRequestDTO dto) {
+    public ResponseEntity<UsuarioResponseDTO> criarUsuario(@Valid @RequestBody UsuarioRequestDTO dto) {
         UsuarioResponseDTO novoUsuario = usuarioService.criar(dto);
         return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED).body(novoUsuario);
     }
@@ -60,10 +62,11 @@ public class UsuarioController {
     }
     
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO')")
     public ResponseEntity<UsuarioResponseDTO> atualizar(
-            @PathVariable Long id, 
-            @Valid @RequestBody UsuarioRequestDTO dto) {
-        
+            @PathVariable Long id,
+            @Valid @RequestBody UsuarioUpdateDTO dto) {
+
         UsuarioResponseDTO response = usuarioService.atualizar(id, dto);
         return ResponseEntity.ok(response);
     }

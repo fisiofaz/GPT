@@ -1,5 +1,7 @@
 package com.gpt.modulos.publicador.dto;
 
+import java.time.LocalDate;
+
 import lombok.*;
 
 @Getter
@@ -10,7 +12,9 @@ import lombok.*;
 public class PublicadorResponseDTO {
     private Long id;
     private String nome;
+    private LocalDate dataNascimento;
     private String telefone;
+    private String email;
     private Boolean ativo;
     private Long congregacaoId;
 }

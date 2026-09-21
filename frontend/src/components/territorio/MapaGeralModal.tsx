@@ -12,6 +12,11 @@ import {
 } from "lucide-react";
 import type { Territorio, StatusTerritorio } from "../../types/territorio";
 
+type GeoJsonPolygon = {
+  type: "Polygon";
+  coordinates: [number, number][][];
+};
+
 interface MapaGeralModalProps {
   territorios: Territorio[];
   congregacaoNome?: string;
@@ -111,8 +116,21 @@ export const MapaGeralModal: React.FC<MapaGeralModalProps> = ({
     territorios.forEach((t) => {
       if (!t.poligonoGeoJson) return;
       try {
-        const coords: [number, number][] = JSON.parse(t.poligonoGeoJson);
-        if (coords.length >= 3) {
+          const parsed = JSON.parse(
+            t.poligonoGeoJson,
+          ) as GeoJsonPolygon;
+
+        if (
+          parsed.type === "Polygon" &&
+          Array.isArray(parsed.coordinates) &&
+          parsed.coordinates.length > 0 &&
+          parsed.coordinates[0].length >= 4
+        ) {
+          const coords = parsed.coordinates[0].map(
+            ([longitude, latitude]) =>
+              [latitude, longitude] as [number, number],
+          );
+
           const cor = getStatusColor(t.status);
 
           const polygon = L.polygon(coords, {

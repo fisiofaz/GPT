@@ -28,7 +28,7 @@ export default function UsuarioFormPage() {
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
-  const [roleSelecionada, setRoleSelecionada] = useState("ROLE_PUBLICADOR");
+  const [roleSelecionada, setRoleSelecionada] = useState("");
   const [congregacaoId, setCongregacaoId] = useState("");
   const [congregacoes, setCongregacoes] = useState<Congregacao[]>([]);
   const [carregando, setCarregando] = useState(false);
@@ -192,12 +192,13 @@ export default function UsuarioFormPage() {
               value={roleSelecionada}
               onChange={(e) => setRoleSelecionada(e.target.value)}
               className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition-all cursor-pointer"
+              required
             >
-              <option value="ROLE_PUBLICADOR">Publicador / Membro</option>
+              <option value="">Selecione um perfil de acesso...</option>
               <option value="ROLE_SUPERINTENDENTE_SERVICO">
                 Superintendente de Serviço
               </option>
-              <option value="ROLE_ADMIN_GERAL">Admin Geral (Sistema)</option>
+              <option value="ROLE_ADMIN_GERAL">Administrador do Sistema</option>
               <option value="ROLE_SERVO_TERRITORIO">
                 Servo Ministerial de Território
               </option>
