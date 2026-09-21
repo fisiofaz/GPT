@@ -12,16 +12,14 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class DashboardStatsDTO {
-    // Métricas de Territórios
+
     private Long territoriosDisponiveis;
     private Long territoriosTrabalhadosAnoServico; 
     private Long territoriosEmAndamento;           
 
-    // Métricas de Publicações e Pedidos
     private Long totalItensEstoque;
     private Long totalPedidos;
 
-    // Métricas Administrativas (Apenas Admin Geral)
     private Long totalCongregacoesAtivas;
 
     private List<HistoricoConsumoDTO> historicoConsumo;
