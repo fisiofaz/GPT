@@ -1,10 +1,13 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
-import { X, Check, Trash2, Undo, MapPin, Loader2, Info } from "lucide-react";
+import { Check, Info, Loader2, MapPin, Trash2, Undo, X } from "lucide-react";
+
 import type { Territorio } from "../../types/territorio";
 import { territorioService } from "../../services/territorioService";
 
-// Correção dos ícones padrão do Leaflet no build Vite/Webpack
+import { Button } from "../ui/Button";
+
+// Correção dos ícones padrão do Leaflet no build Vite.
 delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)
   ._getIconUrl;
 
@@ -26,24 +29,26 @@ interface MapaEditorModalProps {
   onSalvo: () => void;
 }
 
-export const MapaEditorModal: React.FC<MapaEditorModalProps> = ({
+const CENTRO_PADRAO: [number, number] = [-29.716099, -53.806924];
+
+export function MapaEditorModal({
   territorio,
   onClose,
   onSalvo,
-}) => {
+}: MapaEditorModalProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
-  const polygonLayerRef = useRef<L.Polygon | null>(null);
+  const polygonLayerRef = useRef<L.Polygon | L.Polyline | null>(null);
   const markersGroupRef = useRef<L.LayerGroup | null>(null);
 
   const [pontos, setPontos] = useState<[number, number][]>([]);
   const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
 
-  // Inicializar o mapa e carregar polígono existente (se houver)
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
-    let initialCenter: [number, number] = [29.716099, -53.806924]; // Centro padrão
+    let initialCenter: [number, number] = CENTRO_PADRAO;
     let initialZoom = 15;
     let pontosIniciais: [number, number][] = [];
 
@@ -69,8 +74,8 @@ export const MapaEditorModal: React.FC<MapaEditorModalProps> = ({
             initialZoom = 16;
           }
         }
-      } catch (e) {
-        console.error("Erro ao ler GeoJSON existente:", e);
+      } catch (error) {
+        console.error("Erro ao ler GeoJSON existente:", error);
       }
     }
 
@@ -78,73 +83,77 @@ export const MapaEditorModal: React.FC<MapaEditorModalProps> = ({
       initialCenter,
       initialZoom,
     );
+
     mapInstanceRef.current = map;
 
-    // Adiciona camada do OpenStreetMap
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution:
         '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       maxZoom: 19,
     }).addTo(map);
 
-    // Força o Leaflet a recalcular as dimensões para alinhar perfeitamente o clique
-    setTimeout(() => {
+    const atualizarTamanhoMapa = () => {
       map.invalidateSize();
-    }, 200);
+    };
+
+    const timeout = window.setTimeout(atualizarTamanhoMapa, 200);
 
     const markersGroup = L.layerGroup().addTo(map);
     markersGroupRef.current = markersGroup;
 
-    // Captura cliques no mapa para adicionar vértices
-    map.on("click", (e: L.LeafletMouseEvent) => {
-      const { lat, lng } = e.latlng;
+    map.on("click", (event: L.LeafletMouseEvent) => {
+      const { lat, lng } = event.latlng;
+
+      setErro(null);
       setPontos((prev) => [...prev, [lat, lng]]);
     });
 
     if (pontosIniciais.length > 0) {
       setPontos(pontosIniciais);
+
       const bounds = L.latLngBounds(pontosIniciais);
-      map.fitBounds(bounds, { padding: [40, 40] });
+      map.fitBounds(bounds, {
+        padding: [40, 40],
+      });
     }
 
     return () => {
+      window.clearTimeout(timeout);
       map.remove();
       mapInstanceRef.current = null;
+      markersGroupRef.current = null;
+      polygonLayerRef.current = null;
     };
   }, [territorio]);
 
-  // Atualizar o desenho do contorno e marcadores sempre que a lista de pontos mudar
   useEffect(() => {
     const map = mapInstanceRef.current;
+
     if (!map) return;
 
-    // Limpar marcadores anteriores
     if (markersGroupRef.current) {
       markersGroupRef.current.clearLayers();
     }
 
-    // Remover polígono anterior
     if (polygonLayerRef.current) {
       polygonLayerRef.current.remove();
       polygonLayerRef.current = null;
     }
 
-    // Criar marcadores visuais para cada vértice clicado
-    pontos.forEach((coord, idx) => {
+    pontos.forEach((coord, index) => {
       const circleMarker = L.circleMarker(coord, {
         radius: 5,
         color: "#1d4ed8",
         fillColor: "#3b82f6",
         fillOpacity: 1,
         weight: 2,
-      }).bindTooltip(`Ponto ${idx + 1}`, { permanent: false });
+      }).bindTooltip(`Ponto ${index + 1}`, {
+        permanent: false,
+      });
 
-      if (markersGroupRef.current) {
-        circleMarker.addTo(markersGroupRef.current);
-      }
+      markersGroupRef.current?.addLayer(circleMarker);
     });
 
-    // Desenhar apenas o contorno sem preenchimento azul (fill: false)
     if (pontos.length >= 3) {
       polygonLayerRef.current = L.polygon(pontos, {
         color: "#2563eb",
@@ -152,157 +161,196 @@ export const MapaEditorModal: React.FC<MapaEditorModalProps> = ({
         fill: false,
       }).addTo(map);
     } else if (pontos.length === 2) {
-      const linhaProvisoria = L.polyline(pontos, {
+      polygonLayerRef.current = L.polyline(pontos, {
         color: "#2563eb",
         weight: 3,
         dashArray: "6, 6",
       }).addTo(map);
-      polygonLayerRef.current = linhaProvisoria as unknown as L.Polygon;
     }
   }, [pontos]);
 
   const handleDesfazerUltimo = () => {
+    setErro(null);
     setPontos((prev) => prev.slice(0, -1));
   };
 
   const handleLimparTudo = () => {
+    setErro(null);
     setPontos([]);
   };
 
   const handleSalvar = async () => {
     if (pontos.length < 3) {
+      setErro("Marque pelo menos 3 pontos no mapa antes de salvar.");
       return;
     }
+
     setSalvando(true);
+    setErro(null);
+
     try {
       const primeiroPonto = pontos[0];
 
+      const ultimoPonto = pontos[pontos.length - 1];
+
       const pontosFechados =
-        pontos[pontos.length - 1][0] === primeiroPonto[0] &&
-        pontos[pontos.length - 1][1] === primeiroPonto[1]
+        ultimoPonto[0] === primeiroPonto[0] &&
+        ultimoPonto[1] === primeiroPonto[1]
           ? pontos
           : [...pontos, primeiroPonto];
-      
+
       const geoJson: GeoJsonPolygon = {
         type: "Polygon",
         coordinates: [
           pontosFechados.map(([latitude, longitude]) => [longitude, latitude]),
         ],
       };
-      
-      await territorioService.salvarPoligono(
-        territorio.id,
-        geoJson,
-      );
+
+      await territorioService.salvarPoligono(territorio.id, geoJson);
 
       onSalvo();
       onClose();
-    } catch (err) {
-      console.error("Erro ao salvar os limites do mapa:", err);
-      alert("Erro ao salvar os limites do mapa.");
+    } catch (error) {
+      console.error("Erro ao salvar os limites do mapa:", error);
+      setErro("Não foi possível salvar os limites do mapa. Tente novamente.");
     } finally {
       setSalvando(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6">
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-5xl h-[90vh] flex flex-col shadow-2xl overflow-hidden">
-        {/* Cabeçalho */}
-        <div className="p-4 sm:px-6 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm sm:p-6">
+      <div
+        className="flex h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="mapa-editor-titulo"
+      >
+        <header className="flex items-center justify-between gap-4 border-b border-slate-200 bg-white px-4 py-3 sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-sm font-semibold text-slate-700">
               {territorio.numero}
             </div>
-            <div>
-              <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-emerald-400" />
-                Delimitar Mapa: {territorio.nome}
+
+            <div className="min-w-0">
+              <h2
+                id="mapa-editor-titulo"
+                className="flex items-center gap-2 text-base font-semibold text-slate-900 sm:text-lg"
+              >
+                <MapPin
+                  size={18}
+                  className="shrink-0 text-slate-600"
+                  aria-hidden="true"
+                />
+                <span className="truncate">
+                  Delimitar mapa: {territorio.nome}
+                </span>
               </h2>
-              <p className="text-xs text-slate-400 flex items-center gap-1">
-                <Info className="w-3.5 h-3.5 text-slate-500" />
-                Clique nos cantos das ruas para traçar os limites da quadra.
+
+              <p className="mt-0.5 flex items-center gap-1 text-xs text-slate-500">
+                <Info size={13} aria-hidden="true" />
+                Clique nos cantos das ruas para traçar os limites.
               </p>
             </div>
           </div>
 
           <button
+            type="button"
             onClick={onClose}
-            className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors"
+            className="shrink-0 rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
+            aria-label="Fechar editor do mapa"
           >
-            <X className="w-5 h-5" />
+            <X size={20} aria-hidden="true" />
           </button>
-        </div>
+        </header>
 
-        {/* Mapa Interativo */}
-        <div className="flex-1 relative z-0">
-          <div ref={mapContainerRef} className="w-full h-full" />
+        <div className="relative z-0 min-h-0 flex-1">
+          <div ref={mapContainerRef} className="h-full w-full" />
 
-          {/* Barra Flutuante de Ações e Controles */}
-          <div className="absolute top-4 right-4 z-1000 flex flex-col sm:flex-row gap-2 bg-slate-900/90 backdrop-blur-md p-2 rounded-2xl border border-slate-800 shadow-xl">
-            <button
+          <div className="absolute right-4 top-4 z-1000 flex flex-col gap-2 rounded-xl border border-slate-200 bg-white/95 p-2 shadow-lg backdrop-blur-sm sm:flex-row">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
               onClick={handleDesfazerUltimo}
-              disabled={pontos.length === 0}
-              className="py-2 px-3 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-300 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-all"
+              disabled={pontos.length === 0 || salvando}
             >
-              <Undo className="w-3.5 h-3.5" />
-              <span>Desfazer Ponto</span>
-            </button>
+              <Undo size={14} />
+              Desfazer
+            </Button>
 
-            <button
+            <Button
+              type="button"
+              variant="danger"
+              size="sm"
               onClick={handleLimparTudo}
-              disabled={pontos.length === 0}
-              className="py-2 px-3 bg-rose-500/10 hover:bg-rose-500/20 disabled:opacity-40 text-rose-400 text-xs font-semibold rounded-xl border border-rose-500/20 flex items-center gap-1.5 transition-all"
+              disabled={pontos.length === 0 || salvando}
             >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>Limpar</span>
-            </button>
+              <Trash2 size={14} />
+              Limpar
+            </Button>
           </div>
         </div>
 
-        {/* Rodapé com Informações e Salvar */}
-        <div className="p-4 bg-slate-950 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="text-xs text-slate-400 text-center sm:text-left">
-            {pontos.length < 3 ? (
-              <span className="text-amber-400">
-                Marque no mínimo 3 pontos no mapa para fechar a área do
-                território. (Atuais: {pontos.length})
-              </span>
-            ) : (
-              <span className="text-emerald-400 font-medium">
-                Polígono fechado com sucesso ({pontos.length} vértices). Pronto
-                para salvar!
-              </span>
-            )}
-          </div>
-
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <button
-              type="button"
-              onClick={onClose}
-              className="w-1/2 sm:w-auto px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition-all"
+        <footer className="border-t border-slate-200 bg-white px-4 py-3 sm:px-6">
+          {erro && (
+            <div
+              className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+              role="alert"
             >
-              Cancelar
-            </button>
+              {erro}
+            </div>
+          )}
 
-            <button
-              type="button"
-              onClick={handleSalvar}
-              disabled={salvando || (pontos.length > 0 && pontos.length < 3)}
-              className="w-1/2 sm:w-auto px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold rounded-xl shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition-all"
-            >
-              {salvando ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-xs sm:text-sm">
+              {pontos.length < 3 ? (
+                <span className="text-amber-600">
+                  Marque no mínimo 3 pontos para fechar a área.{" "}
+                  <strong>Atuais: {pontos.length}</strong>
+                </span>
               ) : (
-                <>
-                  <Check className="w-4 h-4" />
-                  <span>Salvar Mapa</span>
-                </>
+                <span className="font-medium text-emerald-600">
+                  Polígono fechado com sucesso ({pontos.length} vértices).
+                </span>
               )}
-            </button>
+            </div>
+
+            <div className="flex w-full gap-2 sm:w-auto">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={onClose}
+                disabled={salvando}
+                fullWidth
+              >
+                Cancelar
+              </Button>
+
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleSalvar}
+                disabled={salvando || pontos.length < 3}
+                fullWidth
+              >
+                {salvando ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  <>
+                    <Check size={16} />
+                    Salvar mapa
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
-        </div>
+        </footer>
       </div>
     </div>
   );
-};
+}
