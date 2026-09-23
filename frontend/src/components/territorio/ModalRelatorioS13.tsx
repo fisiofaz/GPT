@@ -1,6 +1,7 @@
-import React from "react";
-import { FileSpreadsheet, Printer, X, Loader2 } from "lucide-react";
+import { FileSpreadsheet, Printer, X } from "lucide-react";
+
 import type { HistoricoTerritorio } from "../../types/territorio";
+import { Button } from "../ui/Button";
 
 interface ModalRelatorioS13Props {
   aberto: boolean;
@@ -10,143 +11,192 @@ interface ModalRelatorioS13Props {
   onFechar: () => void;
 }
 
-export const ModalRelatorioS13: React.FC<ModalRelatorioS13Props> = ({
+export function ModalRelatorioS13({
   aberto,
   carregando,
   relatorio,
   congregacaoNome,
   onFechar,
-}) => {
-  if (!aberto) return null;
+}: ModalRelatorioS13Props) {
+  if (!aberto) {
+    return null;
+  }
 
   const formatarData = (dataIso?: string) => {
-    if (!dataIso) return "-";
+    if (!dataIso) {
+      return "-";
+    }
+
     const apenasData = dataIso.split("T")[0];
     const [ano, mes, dia] = apenasData.split("-");
+
     return `${dia}/${mes}/${ano}`;
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-6 print:p-0 print:bg-white print:static">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-8 max-w-5xl w-full shadow-2xl space-y-4 sm:space-y-6 max-h-[92vh] flex flex-col print:border-none print:shadow-none print:max-w-none print:max-h-none print:p-0 print:bg-white print:text-black">
-        {/* Top Header Ajustado para Mobile */}
-        <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-slate-800 print:hidden shrink-0 gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
-              <FileSpreadsheet className="w-5 h-5" />
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-2 sm:p-6 print:static print:bg-white"
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget && !carregando) {
+          onFechar();
+        }
+      }}
+    >
+      <div
+        className="flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-xl border border-slate-200 bg-white"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="relatorio-s13-title"
+      >
+        {/* Cabeçalho da interface */}
+        <div className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-100 px-5 py-4 print:hidden">
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700">
+              <FileSpreadsheet size={18} aria-hidden="true" />
             </div>
+
             <div className="min-w-0">
-              <h2 className="text-sm sm:text-lg font-bold text-white truncate">
-                Relatório Geral (S-13)
+              <h2
+                id="relatorio-s13-title"
+                className="text-base font-semibold text-slate-900"
+              >
+                Relatório geral (S-13)
               </h2>
-              <p className="text-[11px] sm:text-xs text-slate-400 truncate">
+
+              <p className="mt-1 text-sm text-slate-500">
                 Registro completo de designações
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            <button
+          <div className="flex shrink-0 items-center gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
               onClick={() => window.print()}
-              className="py-2 px-2.5 sm:px-4 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl shadow-lg shadow-indigo-600/30 flex items-center gap-1.5 sm:gap-2 transition-all cursor-pointer"
+              disabled={carregando}
             >
-              <Printer className="w-4 h-4" />
+              <Printer size={16} aria-hidden="true" />
               <span className="hidden sm:inline">Imprimir / Salvar PDF</span>
-            </button>
+              <span className="sm:hidden">Imprimir</span>
+            </Button>
+
             <button
+              type="button"
               onClick={onFechar}
-              className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors cursor-pointer"
+              disabled={carregando}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
+              aria-label="Fechar relatório"
             >
-              <X className="w-5 h-5" />
+              <X size={18} aria-hidden="true" />
             </button>
           </div>
         </div>
 
-        {/* Cabeçalho de Impressão */}
-        <div className="hidden print:block mb-6 border-b-2 border-black pb-3">
-          <div className="flex justify-between items-start">
+        {/* Cabeçalho específico para impressão */}
+        <div className="hidden border-b-2 border-black pb-3 print:mb-6 print:block">
+          <div className="flex items-start justify-between">
             <div>
-              <h1 className="text-xl font-bold tracking-tight uppercase">
+              <h1 className="text-xl font-bold uppercase tracking-tight">
                 Registro de Designação de Territórios
               </h1>
-              <p className="text-xs text-gray-600 mt-0.5">
+
+              <p className="mt-0.5 text-xs text-gray-600">
                 {congregacaoNome
                   ? `Congregação: ${congregacaoNome}`
                   : "Congregação"}
               </p>
             </div>
+
             <div className="text-right text-xs text-gray-500">
               Data de emissão: {new Date().toLocaleDateString("pt-BR")}
             </div>
           </div>
         </div>
 
-        {/* Corpo com Tabela e Scroll */}
-        <div className="flex-1 overflow-y-auto print:overflow-visible">
+        {/* Conteúdo */}
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 print:overflow-visible print:px-0 print:py-0">
           {carregando ? (
-            <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-3 print:hidden">
-              <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
-              <p className="text-xs">Gerando relatório...</p>
+            <div className="flex min-h-60 flex-col items-center justify-center gap-3 text-slate-500 print:hidden">
+              <div
+                className="h-7 w-7 animate-spin rounded-full border-2 border-slate-200 border-t-slate-600"
+                aria-hidden="true"
+              />
+
+              <p className="text-sm">Gerando relatório...</p>
             </div>
           ) : relatorio.length === 0 ? (
-            <div className="py-16 text-center text-slate-500 text-xs sm:text-sm print:text-black">
+            <div className="flex min-h-48 items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 px-6 text-center text-sm text-slate-500 print:border-none print:bg-white print:text-black">
               Nenhuma designação registrada no histórico da congregação.
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-2xl border border-slate-800 print:border-black print:rounded-none">
-              <table className="w-full text-left text-xs text-slate-300 print:text-black">
-                <thead className="bg-slate-950 text-slate-400 font-semibold border-b border-slate-800 uppercase tracking-wider print:bg-gray-100 print:text-black print:border-black">
+            <div className="overflow-x-auto rounded-lg border border-slate-200 print:overflow-visible print:rounded-none print:border-black">
+              <table className="w-full min-w-190 text-left text-sm text-slate-600 print:min-w-0 print:text-black">
+                <thead className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500 print:border-black print:bg-gray-100 print:text-black">
                   <tr>
-                    <th className="py-3 px-3 sm:px-4 print:py-2 print:px-2 border-r border-slate-800 print:border-gray-300 w-12 sm:w-16 text-center">
+                    <th className="w-16 border-r border-slate-200 px-3 py-3 text-center print:border-gray-300 print:px-2 print:py-2">
                       Nº
                     </th>
-                    <th className="py-3 px-3 sm:px-4 print:py-2 print:px-2 border-r border-slate-800 print:border-gray-300">
+
+                    <th className="border-r border-slate-200 px-3 py-3 print:border-gray-300 print:px-2 print:py-2">
                       Território
                     </th>
-                    <th className="py-3 px-3 sm:px-4 print:py-2 print:px-2 border-r border-slate-800 print:border-gray-300">
+
+                    <th className="border-r border-slate-200 px-3 py-3 print:border-gray-300 print:px-2 print:py-2">
                       Publicador
                     </th>
-                    <th className="py-3 px-3 sm:px-4 print:py-2 print:px-2 border-r border-slate-800 print:border-gray-300 w-24 sm:w-28 text-center">
+
+                    <th className="w-28 border-r border-slate-200 px-3 py-3 text-center print:border-gray-300 print:px-2 print:py-2">
                       Designado
                     </th>
-                    <th className="py-3 px-3 sm:px-4 print:py-2 print:px-2 border-r border-slate-800 print:border-gray-300 w-24 sm:w-28 text-center">
+
+                    <th className="w-28 border-r border-slate-200 px-3 py-3 text-center print:border-gray-300 print:px-2 print:py-2">
                       Devolvido
                     </th>
-                    <th className="py-3 px-3 sm:px-4 print:py-2 print:px-2">
+
+                    <th className="px-3 py-3 print:px-2 print:py-2">
                       Observações
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60 bg-slate-900/50 print:bg-white print:divide-gray-300">
+
+                <tbody className="divide-y divide-slate-100 print:divide-gray-300">
                   {relatorio.map((item) => (
                     <tr
                       key={item.id}
-                      className="hover:bg-slate-800/40 transition-colors print:hover:bg-transparent"
+                      className="transition-colors hover:bg-slate-50 print:hover:bg-transparent"
                     >
-                      <td className="py-3 px-3 sm:px-4 print:py-2 print:px-2 font-bold text-center text-indigo-400 print:text-black border-r border-slate-800 print:border-gray-300">
+                      <td className="border-r border-slate-100 px-3 py-3 text-center font-semibold text-slate-700 print:border-gray-300 print:px-2 print:py-2 print:text-black">
                         {item.territorioNumero || "-"}
                       </td>
-                      <td className="py-3 px-3 sm:px-4 print:py-2 print:px-2 font-semibold text-white print:text-black border-r border-slate-800 print:border-gray-300 whitespace-nowrap">
+
+                      <td className="whitespace-nowrap border-r border-slate-100 px-3 py-3 font-medium text-slate-900 print:border-gray-300 print:px-2 print:py-2">
                         {item.territorioNome || "-"}
                       </td>
-                      <td className="py-3 px-3 sm:px-4 print:py-2 print:px-2 font-medium text-slate-200 print:text-black border-r border-slate-800 print:border-gray-300 whitespace-nowrap">
+
+                      <td className="whitespace-nowrap border-r border-slate-100 px-3 py-3 text-slate-700 print:border-gray-300 print:px-2 print:py-2 print:text-black">
                         {item.publicadorNome}
                       </td>
-                      <td className="py-3 px-3 sm:px-4 print:py-2 print:px-2 text-center text-slate-300 print:text-black border-r border-slate-800 print:border-gray-300 whitespace-nowrap">
+
+                      <td className="whitespace-nowrap border-r border-slate-100 px-3 py-3 text-center print:border-gray-300 print:px-2 print:py-2">
                         {formatarData(item.dataRetirada)}
                       </td>
-                      <td className="py-3 px-3 sm:px-4 print:py-2 print:px-2 text-center whitespace-nowrap border-r border-slate-800 print:border-gray-300">
+
+                      <td className="whitespace-nowrap border-r border-slate-100 px-3 py-3 text-center print:border-gray-300 print:px-2 print:py-2">
                         {item.dataDevolucao ? (
-                          <span className="text-emerald-400 print:text-black font-medium">
+                          <span className="font-medium text-slate-700 print:text-black">
                             {formatarData(item.dataDevolucao)}
                           </span>
                         ) : (
-                          <span className="text-amber-400 print:text-gray-600 font-semibold px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 print:border-none print:bg-transparent text-[10px] sm:text-xs">
+                          <span className="inline-flex rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700 print:bg-transparent print:text-gray-600">
                             Em andamento
                           </span>
                         )}
                       </td>
-                      <td className="py-3 px-3 sm:px-4 print:py-2 print:px-2 text-slate-400 print:text-black max-w-37.5 sm:max-w-xs truncate print:max-w-none print:whitespace-normal">
+
+                      <td className="max-w-xs px-3 py-3 text-slate-500 print:max-w-none print:px-2 print:py-2 print:whitespace-normal print:text-black">
                         {item.observacoes || "-"}
                       </td>
                     </tr>
@@ -157,21 +207,26 @@ export const ModalRelatorioS13: React.FC<ModalRelatorioS13Props> = ({
           )}
         </div>
 
-        {/* Rodapé do Modal */}
-        <div className="pt-3 border-t border-slate-800 flex justify-between items-center print:hidden shrink-0">
-          <span className="text-xs text-slate-500">
+        {/* Rodapé */}
+        <div className="flex shrink-0 items-center justify-between gap-4 border-t border-slate-100 px-5 py-4 print:hidden">
+          <span className="text-sm text-slate-500">
             Total de registros:{" "}
-            <strong className="text-white">{relatorio.length}</strong>
+            <strong className="font-semibold text-slate-900">
+              {relatorio.length}
+            </strong>
           </span>
-          <button
+
+          <Button
             type="button"
+            variant="secondary"
+            size="sm"
             onClick={onFechar}
-            className="px-5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl cursor-pointer"
+            disabled={carregando}
           >
             Fechar
-          </button>
+          </Button>
         </div>
       </div>
     </div>
   );
-};
+}
