@@ -1,16 +1,18 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import L from "leaflet";
 import {
-  X,
+  AlertCircle,
+  CheckCircle2,
+  ChevronRight,
+  Clock,
   Layers,
   Printer,
-  Search,
-  ChevronRight,
-  CheckCircle2,
-  Clock,
-  AlertCircle,
+  X,
 } from "lucide-react";
-import type { Territorio, StatusTerritorio } from "../../types/territorio";
+
+import type { StatusTerritorio, Territorio } from "../../types/territorio";
+import { Button } from "../ui/Button";
+import { SearchInput } from "../ui/SearchInput";
 
 type GeoJsonPolygon = {
   type: "Polygon";
@@ -24,81 +26,132 @@ interface MapaGeralModalProps {
   onSelecionarTerritorio?: (territorio: Territorio) => void;
 }
 
-export const MapaGeralModal: React.FC<MapaGeralModalProps> = ({
+const CENTRO_PADRAO: [number, number] = [-29.716099, -53.806924];
+
+const STATUS_FILTROS: Array<{
+  valor: "TODOS" | StatusTerritorio;
+  label: string;
+}> = [
+  { valor: "TODOS", label: "Todos" },
+  { valor: "DISPONIVEL", label: "Disponível" },
+  { valor: "EM_TRABALHO", label: "Em Uso" },
+  { valor: "EM_ATRASO", label: "Em Atraso" },
+];
+
+function getStatusColor(status: StatusTerritorio): string {
+  switch (status) {
+    case "DISPONIVEL":
+      return "#10b981";
+    case "EM_TRABALHO":
+      return "#f59e0b";
+    case "EM_ATRASO":
+      return "#f43f5e";
+    default:
+      return "#64748b";
+  }
+}
+
+function getStatusLabel(status: StatusTerritorio): string {
+  switch (status) {
+    case "DISPONIVEL":
+      return "Disponível";
+    case "EM_TRABALHO":
+      return "Em Uso";
+    case "EM_ATRASO":
+      return "Em Atraso";
+    default:
+      return status;
+  }
+}
+
+function StatusIcon({ status }: { status: StatusTerritorio }) {
+  switch (status) {
+    case "DISPONIVEL":
+      return (
+        <CheckCircle2
+          size={14}
+          className="shrink-0 text-emerald-600"
+          aria-hidden="true"
+        />
+      );
+
+    case "EM_TRABALHO":
+      return (
+        <Clock
+          size={14}
+          className="shrink-0 text-amber-600"
+          aria-hidden="true"
+        />
+      );
+
+    case "EM_ATRASO":
+      return (
+        <AlertCircle
+          size={14}
+          className="shrink-0 text-rose-600"
+          aria-hidden="true"
+        />
+      );
+
+    default:
+      return null;
+  }
+}
+
+export function MapaGeralModal({
   territorios,
   congregacaoNome,
   onClose,
   onSelecionarTerritorio,
-}) => {
+}: MapaGeralModalProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const polygonsMapRef = useRef<Map<number, L.Polygon>>(new Map());
 
-  const [filtroStatus, setFiltroStatus] = useState<string>("TODOS");
+  const [filtroStatus, setFiltroStatus] = useState<"TODOS" | StatusTerritorio>(
+    "TODOS",
+  );
   const [busca, setBusca] = useState("");
   const [territorioAtivoId, setTerritorioAtivoId] = useState<number | null>(
     null,
   );
 
-  const getStatusColor = (status: StatusTerritorio) => {
-    switch (status) {
-      case "DISPONIVEL":
-        return "#10b981";
-      case "EM_TRABALHO":
-        return "#f59e0b";
-      case "EM_ATRASO":
-        return "#f43f5e";
-      default:
-        return "#64748b";
-    }
-  };
+  const territoriosFiltrados = useMemo(() => {
+    const termo = busca.trim().toLowerCase();
 
-  const getStatusIcon = (status: StatusTerritorio) => {
-    switch (status) {
-      case "DISPONIVEL":
-        return (
-          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-        );
-      case "EM_TRABALHO":
-        return <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />;
-      case "EM_ATRASO":
-        return <AlertCircle className="w-3.5 h-3.5 text-rose-400 shrink-0" />;
-      default:
-        return null;
-    }
-  };
+    return territorios.filter((territorio) => {
+      const matchStatus =
+        filtroStatus === "TODOS" || territorio.status === filtroStatus;
 
-  const getStatusLabel = (status: StatusTerritorio) => {
-    switch (status) {
-      case "DISPONIVEL":
-        return "Disponível";
-      case "EM_TRABALHO":
-        return "Em Uso";
-      case "EM_ATRASO":
-        return "Em Atraso";
-      default:
-        return status;
-    }
-  };
+      const matchBusca =
+        !termo ||
+        territorio.nome.toLowerCase().includes(termo) ||
+        territorio.numero.toLowerCase().includes(termo);
 
-  const territoriosFiltrados = territorios.filter((t) => {
-    const matchStatus = filtroStatus === "TODOS" || t.status === filtroStatus;
-    const matchBusca =
-      t.nome.toLowerCase().includes(busca.toLowerCase()) ||
-      t.numero.toLowerCase().includes(busca.toLowerCase());
-    return matchStatus && matchBusca;
-  });
+      return matchStatus && matchBusca;
+    });
+  }, [territorios, filtroStatus, busca]);
 
-  // Inicializar o mapa e registrar os polígonos
+  const territoriosMapeados = useMemo(
+    () =>
+      territorios.filter((territorio) => Boolean(territorio.poligonoGeoJson)),
+    [territorios],
+  );
+
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
     const map = L.map(mapContainerRef.current, {
       zoomControl: false,
-    }).setView([-29.6842, -53.8069], 14);
+    }).setView(CENTRO_PADRAO, 14);
 
-    L.control.zoom({ position: "topright" }).addTo(map);
     mapInstanceRef.current = map;
+
+    L.control
+      .zoom({
+        position: "topright",
+      })
+      .addTo(map);
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution:
@@ -106,107 +159,156 @@ export const MapaGeralModal: React.FC<MapaGeralModalProps> = ({
       maxZoom: 19,
     }).addTo(map);
 
-    setTimeout(() => {
-      map.invalidateSize();
-    }, 200);
-
     const layerGroup = L.featureGroup().addTo(map);
     const polyMap = new Map<number, L.Polygon>();
 
-    territorios.forEach((t) => {
-      if (!t.poligonoGeoJson) return;
+    territorios.forEach((territorio) => {
+      if (!territorio.poligonoGeoJson) return;
+
       try {
-          const parsed = JSON.parse(
-            t.poligonoGeoJson,
-          ) as GeoJsonPolygon;
+        const parsed = JSON.parse(territorio.poligonoGeoJson) as GeoJsonPolygon;
 
         if (
-          parsed.type === "Polygon" &&
-          Array.isArray(parsed.coordinates) &&
-          parsed.coordinates.length > 0 &&
-          parsed.coordinates[0].length >= 4
+          parsed.type !== "Polygon" ||
+          !Array.isArray(parsed.coordinates) ||
+          parsed.coordinates.length === 0 ||
+          !Array.isArray(parsed.coordinates[0]) ||
+          parsed.coordinates[0].length < 4
         ) {
-          const coords = parsed.coordinates[0].map(
-            ([longitude, latitude]) =>
-              [latitude, longitude] as [number, number],
-          );
-
-          const cor = getStatusColor(t.status);
-
-          const polygon = L.polygon(coords, {
-            color: cor,
-            weight: 3,
-            fill: false,
-          });
-
-          const popupContent = `
-            <div style="font-family: sans-serif; font-size: 12px; color: #1e293b; padding: 2px;">
-              <strong style="font-size: 14px; color: #0f172a;">Território Nº ${t.numero}</strong><br/>
-              <span style="font-weight: 600;">${t.nome}</span><br/>
-              <div style="margin-top: 6px; padding: 2px 6px; border-radius: 4px; display: inline-block; font-weight: bold; background: ${cor}20; color: ${cor};">
-                ${getStatusLabel(t.status)}
-              </div>
-              ${t.descricao ? `<p style="margin-top: 4px; color: #64748b; font-size: 11px;">${t.descricao}</p>` : ""}
-            </div>
-          `;
-
-          polygon.bindPopup(popupContent);
-          polygon.bindTooltip(`Nº ${t.numero} - ${t.nome}`, { sticky: true });
-
-          polygon.on("click", () => {
-            setTerritorioAtivoId(t.id);
-            if (onSelecionarTerritorio) onSelecionarTerritorio(t);
-          });
-
-          polygon.addTo(layerGroup);
-          polyMap.set(t.id, polygon);
+          return;
         }
-      } catch (e) {
-        console.error("Erro ao plotar:", e);
+
+        const coords = parsed.coordinates[0].map(
+          ([longitude, latitude]) => [latitude, longitude] as [number, number],
+        );
+
+        const cor = getStatusColor(territorio.status);
+
+        const polygon = L.polygon(coords, {
+          color: cor,
+          weight: 3,
+          fillColor: cor,
+          fillOpacity: 0.08,
+        });
+
+        const popupContent = `
+          <div style="font-family: sans-serif; font-size: 12px; color: #334155; min-width: 160px;">
+            <strong style="font-size: 14px; color: #0f172a;">
+              Território Nº ${territorio.numero}
+            </strong>
+            <br />
+            <span style="font-weight: 600;">
+              ${territorio.nome}
+            </span>
+
+            <div
+              style="
+                margin-top: 8px;
+                padding: 3px 7px;
+                border-radius: 6px;
+                display: inline-block;
+                font-weight: 600;
+                background: ${cor}18;
+                color: ${cor};
+              "
+            >
+              ${getStatusLabel(territorio.status)}
+            </div>
+
+            ${
+              territorio.descricao
+                ? `
+                  <p style="margin: 7px 0 0; color: #64748b; font-size: 11px;">
+                    ${territorio.descricao}
+                  </p>
+                `
+                : ""
+            }
+          </div>
+        `;
+
+        polygon.bindPopup(popupContent);
+
+        polygon.bindTooltip(`Nº ${territorio.numero} - ${territorio.nome}`, {
+          sticky: true,
+        });
+
+        polygon.on("click", () => {
+          setTerritorioAtivoId(territorio.id);
+          onSelecionarTerritorio?.(territorio);
+        });
+
+        polygon.addTo(layerGroup);
+        polyMap.set(territorio.id, polygon);
+      } catch (error) {
+        console.error(`Erro ao plotar território ${territorio.id}:`, error);
       }
     });
 
     polygonsMapRef.current = polyMap;
 
     if (layerGroup.getLayers().length > 0) {
-      map.fitBounds(layerGroup.getBounds(), { padding: [40, 40] });
+      map.fitBounds(layerGroup.getBounds(), {
+        padding: [40, 40],
+      });
     }
+
+    const timeout = window.setTimeout(() => {
+      map.invalidateSize();
+    }, 200);
 
     return () => {
+      window.clearTimeout(timeout);
       map.remove();
       mapInstanceRef.current = null;
+      polygonsMapRef.current = new Map();
     };
-  }, [territorios]);
+  }, [territorios, onSelecionarTerritorio]);
 
-  // Função para focar suavemente no território selecionado na lista
-  const focarTerritorio = (t: Territorio) => {
-    setTerritorioAtivoId(t.id);
+  const focarTerritorio = (territorio: Territorio) => {
+    setTerritorioAtivoId(territorio.id);
+
     const map = mapInstanceRef.current;
-    const polygon = polygonsMapRef.current.get(t.id);
+    const polygon = polygonsMapRef.current.get(territorio.id);
 
-    if (map && polygon) {
-      map.flyToBounds(polygon.getBounds(), {
-        padding: [60, 60],
-        duration: 1.2,
-      });
-      polygon.openPopup();
-    }
+    if (!map || !polygon) return;
+
+    map.flyToBounds(polygon.getBounds(), {
+      padding: [60, 60],
+      duration: 1.2,
+    });
+
+    polygon.openPopup();
+    onSelecionarTerritorio?.(territorio);
+  };
+
+  const handleImprimir = () => {
+    window.print();
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 print:p-0 print:bg-white print:static">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl w-full max-w-7xl h-[94vh] flex flex-col shadow-2xl overflow-hidden print:border-none print:shadow-none print:p-0 print:bg-white print:text-black">
-        {/* Top Header */}
-        <div className="p-3 sm:p-4 bg-slate-900 border-b border-slate-800 flex items-center justify-between gap-3 print:hidden shrink-0">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
-              <Layers className="w-5 h-5" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm sm:p-6 print:static print:bg-white print:p-0">
+      <div
+        className="flex h-[92vh] w-full max-w-7xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl print:h-auto print:max-w-none print:rounded-none print:border-none print:shadow-none"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="mapa-geral-titulo"
+      >
+        <header className="flex shrink-0 items-center justify-between gap-4 border-b border-slate-200 bg-white px-4 py-3 sm:px-6 print:hidden">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+              <Layers size={20} aria-hidden="true" />
             </div>
+
             <div className="min-w-0">
-              <h2 className="text-sm sm:text-lg font-bold text-white truncate">
-                Mapa Geral da Congregação
+              <h2
+                id="mapa-geral-titulo"
+                className="truncate text-base font-semibold text-slate-900 sm:text-lg"
+              >
+                Mapa geral da congregação
               </h2>
-              <p className="text-[11px] sm:text-xs text-slate-400 truncate">
+
+              <p className="truncate text-xs text-slate-500">
                 {congregacaoNome
                   ? `Congregação: ${congregacaoNome}`
                   : "Visão territorial"}
@@ -214,162 +316,192 @@ export const MapaGeralModal: React.FC<MapaGeralModalProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={() => window.print()}
-              className="py-2 px-2.5 sm:px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700 flex items-center gap-1.5 transition-all cursor-pointer"
+          <div className="flex shrink-0 items-center gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={handleImprimir}
             >
-              <Printer className="w-4 h-4" />
+              <Printer size={15} aria-hidden="true" />
               <span className="hidden sm:inline">Imprimir</span>
-            </button>
+            </Button>
+
             <button
+              type="button"
               onClick={onClose}
-              className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors cursor-pointer"
+              className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
+              aria-label="Fechar mapa geral"
             >
-              <X className="w-5 h-5" />
+              <X size={20} aria-hidden="true" />
             </button>
           </div>
-        </div>
+        </header>
 
-        {/* Corpo Principal: Empilhado no Mobile (flex-col) e Lado a Lado no Desktop (lg:flex-row) */}
-        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
-          {/* Sidebar Lateral / Superior de Territórios */}
-          <aside className="w-full lg:w-80 bg-slate-950/90 border-b lg:border-b-0 lg:border-r border-slate-800 flex flex-col z-10 print:hidden h-2/5 lg:h-full shrink-0">
-            <div className="p-3 border-b border-slate-800 space-y-2.5">
-              <div className="relative">
-                <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="Buscar mapa..."
-                  value={busca}
-                  onChange={(e) => setBusca(e.target.value)}
-                  className="w-full pl-9 pr-3 py-1.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
-                />
-              </div>
+        <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
+          <aside className="z-10 flex h-[42%] w-full shrink-0 flex-col border-b border-slate-200 bg-slate-50 lg:h-full lg:w-80 lg:border-b-0 lg:border-r print:hidden">
+            <div className="space-y-3 border-b border-slate-200 bg-white p-3">
+              <SearchInput
+                value={busca}
+                onChange={(event) => setBusca(event.target.value)}
+                placeholder="Buscar território..."
+                onClear={() => setBusca("")}
+              />
 
-              <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none">
-                {["TODOS", "DISPONIVEL", "EM_TRABALHO", "EM_ATRASO"].map(
-                  (st) => (
-                    <button
-                      key={st}
-                      onClick={() => setFiltroStatus(st)}
-                      className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold whitespace-nowrap transition-all ${
-                        filtroStatus === st
-                          ? "bg-indigo-600 text-white"
-                          : "bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800"
-                      }`}
-                    >
-                      {st === "TODOS"
-                        ? "Todos"
-                        : st === "EM_TRABALHO"
-                          ? "Em Uso"
-                          : st.replace("_", " ")}
-                    </button>
-                  ),
-                )}
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
-              {territoriosFiltrados.length === 0 ? (
-                <div className="py-6 text-center text-xs text-slate-500">
-                  Nenhum território encontrado.
-                </div>
-              ) : (
-                territoriosFiltrados.map((t) => {
-                  const temPoligono = Boolean(t.poligonoGeoJson);
-                  const isAtivo = territorioAtivoId === t.id;
+              <div
+                className="flex gap-1.5 overflow-x-auto pb-1"
+                role="group"
+                aria-label="Filtrar por status"
+              >
+                {STATUS_FILTROS.map((filtro) => {
+                  const ativo = filtroStatus === filtro.valor;
 
                   return (
                     <button
-                      key={t.id}
-                      onClick={() => temPoligono && focarTerritorio(t)}
-                      disabled={!temPoligono}
-                      className={`w-full text-left p-2.5 rounded-xl border transition-all flex items-center justify-between cursor-pointer ${
-                        !temPoligono
-                          ? "opacity-40 bg-slate-900/30 border-slate-900 cursor-not-allowed"
-                          : isAtivo
-                            ? "bg-indigo-600/15 border-indigo-500 shadow-md"
-                            : "bg-slate-900/60 border-slate-800/80 hover:bg-slate-800/60 hover:border-slate-700"
+                      key={filtro.valor}
+                      type="button"
+                      onClick={() => setFiltroStatus(filtro.valor)}
+                      aria-pressed={ativo}
+                      className={`whitespace-nowrap rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                        ativo
+                          ? "border-slate-700 bg-slate-800 text-white"
+                          : "border-slate-200 bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                       }`}
                     >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div
-                          className="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs shrink-0"
-                          style={{
-                            backgroundColor: `${getStatusColor(t.status)}15`,
-                            color: getStatusColor(t.status),
-                            border: `1px solid ${getStatusColor(t.status)}30`,
-                          }}
-                        >
-                          {t.numero}
-                        </div>
-                        <div className="truncate">
-                          <p className="text-xs font-semibold text-slate-200 truncate">
-                            {t.nome}
-                          </p>
-                          <span className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
-                            {getStatusIcon(t.status)}
-                            {temPoligono
-                              ? getStatusLabel(t.status)
-                              : "Sem polígono"}
-                          </span>
-                        </div>
-                      </div>
-
-                      {temPoligono && (
-                        <ChevronRight className="w-4 h-4 text-slate-500 shrink-0" />
-                      )}
+                      {filtro.label}
                     </button>
                   );
-                })
+                })}
+              </div>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto p-2.5">
+              {territoriosFiltrados.length === 0 ? (
+                <div className="flex h-full min-h-32 items-center justify-center px-4 text-center text-sm text-slate-500">
+                  Nenhum território encontrado.
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  {territoriosFiltrados.map((territorio) => {
+                    const temPoligono = Boolean(territorio.poligonoGeoJson);
+                    const ativo = territorioAtivoId === territorio.id;
+                    const cor = getStatusColor(territorio.status);
+
+                    return (
+                      <button
+                        key={territorio.id}
+                        type="button"
+                        onClick={() =>
+                          temPoligono && focarTerritorio(territorio)
+                        }
+                        disabled={!temPoligono}
+                        aria-label={
+                          temPoligono
+                            ? `Focar território ${territorio.numero}, ${territorio.nome}`
+                            : `Território ${territorio.numero}, sem mapa`
+                        }
+                        className={`flex w-full items-center justify-between gap-3 rounded-xl border p-2.5 text-left transition-colors ${
+                          !temPoligono
+                            ? "cursor-not-allowed border-slate-200 bg-slate-100 opacity-60"
+                            : ativo
+                              ? "border-slate-300 bg-white shadow-sm"
+                              : "border-transparent bg-white hover:border-slate-200 hover:bg-white"
+                        }`}
+                      >
+                        <div className="flex min-w-0 items-center gap-2.5">
+                          <div
+                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-semibold"
+                            style={{
+                              backgroundColor: `${cor}12`,
+                              color: cor,
+                              border: `1px solid ${cor}30`,
+                            }}
+                          >
+                            {territorio.numero}
+                          </div>
+
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium text-slate-800">
+                              {territorio.nome}
+                            </p>
+
+                            <span className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-500">
+                              {temPoligono ? (
+                                <>
+                                  <StatusIcon status={territorio.status} />
+                                  {getStatusLabel(territorio.status)}
+                                </>
+                              ) : (
+                                "Sem mapa"
+                              )}
+                            </span>
+                          </div>
+                        </div>
+
+                        {temPoligono && (
+                          <ChevronRight
+                            size={16}
+                            className="shrink-0 text-slate-400"
+                            aria-hidden="true"
+                          />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               )}
             </div>
           </aside>
 
-          {/* Área do Mapa */}
-          <div className="flex-1 relative z-0 h-3/5 lg:h-full">
-            <div ref={mapContainerRef} className="w-full h-full" />
+          <div className="relative min-h-0 flex-1">
+            <div
+              ref={mapContainerRef}
+              className="h-full min-h-0 w-full"
+              aria-label="Mapa geral dos territórios"
+            />
 
-            {/* Legenda Flutuante */}
-            <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 z-400 bg-slate-900/90 backdrop-blur-md p-2.5 sm:p-3 rounded-2xl border border-slate-800 shadow-xl space-y-1.5 text-xs">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+            <div className="absolute bottom-4 right-4 z-1000 rounded-xl border border-slate-200 bg-white/95 p-3 text-xs shadow-lg backdrop-blur-sm print:hidden">
+              <span className="mb-2 block text-[10px] font-semibold uppercase tracking-wide text-slate-500">
                 Status
               </span>
-              <div className="flex items-center gap-2 text-slate-300">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
-                <span>Disponível</span>
-              </div>
-              <div className="flex items-center gap-2 text-slate-300">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0" />
-                <span>Em Uso</span>
-              </div>
-              <div className="flex items-center gap-2 text-slate-300">
-                <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0" />
-                <span>Em Atraso</span>
+
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 text-slate-600">
+                  <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-500" />
+                  Disponível
+                </div>
+
+                <div className="flex items-center gap-2 text-slate-600">
+                  <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-amber-500" />
+                  Em Uso
+                </div>
+
+                <div className="flex items-center gap-2 text-slate-600">
+                  <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-rose-500" />
+                  Em Atraso
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Rodapé */}
-        <div className="p-3 bg-slate-950 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400 print:hidden shrink-0">
+        <footer className="flex shrink-0 items-center justify-between gap-3 border-t border-slate-200 bg-white px-4 py-3 text-xs text-slate-500 sm:px-6 print:hidden">
           <span>
             Territórios mapeados:{" "}
-            <strong className="text-white">
-              {territorios.filter((t) => t.poligonoGeoJson).length}
+            <strong className="font-semibold text-slate-800">
+              {territoriosMapeados.length}
             </strong>{" "}
-            de <strong className="text-white">{territorios.length}</strong>
+            de{" "}
+            <strong className="font-semibold text-slate-800">
+              {territorios.length}
+            </strong>
           </span>
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl cursor-pointer"
-          >
+
+          <Button type="button" variant="secondary" size="sm" onClick={onClose}>
             Fechar
-          </button>
-        </div>
+          </Button>
+        </footer>
       </div>
     </div>
   );
-};
+}
