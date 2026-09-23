@@ -1,66 +1,66 @@
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { territorioService } from "../services/territorioService";
+
 import { publicadorService } from "../services/publicadorService";
+import { territorioService } from "../services/territorioService";
+import type { Publicador } from "../types/publicador";
 import type {
+  DevolucaoRequest,
+  DesignacaoRequest,
+  HistoricoTerritorio,
   Territorio,
   TerritorioRequest,
-  DesignacaoRequest,
-  DevolucaoRequest,
-  HistoricoTerritorio,
 } from "../types/territorio";
-import type { Publicador } from "../types/publicador";
 
 export function useTerritorios(congregacaoId?: number | null) {
   const [territorios, setTerritorios] = useState<Territorio[]>([]);
   const [publicadores, setPublicadores] = useState<Publicador[]>([]);
   const [historicoS13, setHistoricoS13] = useState<HistoricoTerritorio[]>([]);
 
-  const [carregando, setCarregando] = useState<boolean>(Boolean(congregacaoId));
+  const [carregando, setCarregando] = useState(Boolean(congregacaoId));
   const [carregandoHistorico, setCarregandoHistorico] = useState(false);
 
-  const recarregar = useCallback(async () => {
-    if (!congregacaoId) {
-      setCarregando(false);
-      return;
+  const buscarDados = useCallback(async () => {
+    if (congregacaoId == null) {
+      return null;
     }
 
-    try {
-      const id = Number(congregacaoId);
-      const [terData, pubData] = await Promise.all([
-        territorioService.listarPorCongregacao(id),
-        publicadorService.listarPorCongregacao(id),
-      ]);
-      setTerritorios(terData);
-      setPublicadores(pubData);
-    } catch {
-      setTerritorios([]);
-      toast.error("Erro ao atualizar territórios.");
-    } finally {
-      setCarregando(false);
-    }
+    const [terData, pubData] = await Promise.all([
+      territorioService.listarPorCongregacao(congregacaoId),
+      publicadorService.listarPorCongregacao(congregacaoId),
+    ]);
+
+    return {
+      territorios: terData,
+      publicadores: pubData,
+    };
   }, [congregacaoId]);
 
   useEffect(() => {
+    if (congregacaoId == null) {
+      return;
+    }
+
     let ativo = true;
-    if (!congregacaoId) return;
 
     const carregarInicial = async () => {
       try {
-        const id = Number(congregacaoId);
-        const [terData, pubData] = await Promise.all([
-          territorioService.listarPorCongregacao(id),
-          publicadorService.listarPorCongregacao(id),
-        ]);
-        if (ativo) {
-          setTerritorios(terData);
-          setPublicadores(pubData);
+        const dados = await buscarDados();
+
+        if (!ativo || !dados) {
+          return;
         }
+
+        setTerritorios(dados.territorios);
+        setPublicadores(dados.publicadores);
       } catch {
-        if (ativo) {
-          setTerritorios([]);
-          toast.error("Erro ao carregar dados de territórios.");
+        if (!ativo) {
+          return;
         }
+
+        setTerritorios([]);
+        setPublicadores([]);
+        toast.error("Erro ao carregar dados de territórios.");
       } finally {
         if (ativo) {
           setCarregando(false);
@@ -68,55 +68,98 @@ export function useTerritorios(congregacaoId?: number | null) {
       }
     };
 
-    carregarInicial();
+    void carregarInicial();
 
     return () => {
       ativo = false;
     };
-  }, [congregacaoId]);
+  }, [congregacaoId, buscarDados]);
 
-  const salvarTerritorio = async (dto: TerritorioRequest, id?: number) => {
+  const recarregar = useCallback(async () => {
+    if (congregacaoId == null) {
+      return;
+    }
+
+    setCarregando(true);
+
     try {
-      if (id) {
+      const dados = await buscarDados();
+
+      if (!dados) {
+        return;
+      }
+
+      setTerritorios(dados.territorios);
+      setPublicadores(dados.publicadores);
+    } catch {
+      setTerritorios([]);
+      setPublicadores([]);
+      toast.error("Erro ao atualizar territórios.");
+    } finally {
+      setCarregando(false);
+    }
+  }, [congregacaoId, buscarDados]);
+
+  const salvarTerritorio = async (
+    dto: TerritorioRequest,
+    id?: number,
+  ): Promise<void> => {
+    try {
+      if (id != null) {
         await territorioService.atualizar(id, dto);
         toast.success(`Território ${dto.numero} atualizado com sucesso!`);
       } else {
         await territorioService.criar(dto);
         toast.success(`Território ${dto.numero} cadastrado com sucesso!`);
       }
+
       await recarregar();
     } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : "Falha ao salvar território.";
-      toast.error(msg);
+      const mensagem =
+        err instanceof Error
+          ? err.message
+          : "Falha ao salvar território.";
+
+      toast.error(mensagem);
       throw err;
     }
   };
 
-  const excluirTerritorio = async (id: number, numero: string) => {
+  const excluirTerritorio = async (
+    id: number,
+    numero: string,
+  ): Promise<void> => {
     try {
       await territorioService.deletar(id);
       toast.success(`Território ${numero} excluído com sucesso.`);
+
       await recarregar();
     } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : "Falha ao excluir território.";
-      toast.error(msg);
+      const mensagem =
+        err instanceof Error
+          ? err.message
+          : "Falha ao excluir território.";
+
+      toast.error(mensagem);
     }
   };
 
   const designarTerritorio = async (
     territorioId: number,
     dto: DesignacaoRequest,
-  ) => {
+  ): Promise<void> => {
     try {
       await territorioService.retirar(territorioId, dto);
       toast.success("Território designado com sucesso!");
+
       await recarregar();
     } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : "Falha ao designar território.";
-      toast.error(msg);
+      const mensagem =
+        err instanceof Error
+          ? err.message
+          : "Falha ao designar território.";
+
+      toast.error(mensagem);
       throw err;
     }
   };
@@ -124,26 +167,35 @@ export function useTerritorios(congregacaoId?: number | null) {
   const devolverTerritorio = async (
     territorioId: number,
     dto: DevolucaoRequest,
-  ) => {
+  ): Promise<void> => {
     try {
       await territorioService.devolver(territorioId, dto);
       toast.success("Território devolvido com sucesso!");
+
       await recarregar();
     } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : "Falha ao registrar devolução.";
-      toast.error(msg);
+      const mensagem =
+        err instanceof Error
+          ? err.message
+          : "Falha ao registrar devolução.";
+
+      toast.error(mensagem);
       throw err;
     }
   };
 
-  const carregarRelatorioS13 = async () => {
-    if (!congregacaoId) return;
+  const carregarRelatorioS13 = async (): Promise<void> => {
+    if (congregacaoId == null) {
+      return;
+    }
+
     setCarregandoHistorico(true);
+
     try {
       const dados = await territorioService.listarHistoricoGeral(
-        Number(congregacaoId),
+        congregacaoId,
       );
+
       setHistoricoS13(dados);
     } catch {
       setHistoricoS13([]);
