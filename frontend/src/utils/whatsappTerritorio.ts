@@ -1,39 +1,74 @@
-import type { Territorio } from "../types/territorio";
 import type { Publicador } from "../types/publicador";
+import type { Territorio } from "../types/territorio";
 
 type GeoJsonPolygon = {
   type: "Polygon";
   coordinates: [number, number][][];
 };
 
+function obterLinkGoogleMaps(territorio: Territorio): string {
+  if (!territorio.poligonoGeoJson) {
+    return "";
+  }
+
+  try {
+    const parsed = JSON.parse(territorio.poligonoGeoJson) as GeoJsonPolygon;
+
+    if (
+      parsed.type !== "Polygon" ||
+      !Array.isArray(parsed.coordinates) ||
+      parsed.coordinates.length === 0 ||
+      !Array.isArray(parsed.coordinates[0]) ||
+      parsed.coordinates[0].length < 4
+    ) {
+      return "";
+    }
+
+    const primeiroPonto = parsed.coordinates[0][0];
+
+    if (
+      !Array.isArray(primeiroPonto) ||
+      primeiroPonto.length < 2 ||
+      !Number.isFinite(primeiroPonto[0]) ||
+      !Number.isFinite(primeiroPonto[1])
+    ) {
+      return "";
+    }
+
+    const [longitude, latitude] = primeiroPonto;
+
+    return `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
+  } catch {
+    return "";
+  }
+}
+
+function obterUrlCartaoWeb(territorio: Territorio): string {
+  const urlBase = import.meta.env.VITE_APP_URL || window.location.origin;
+
+  return `${urlBase.replace(/\/$/, "")}/mapa/${territorio.id}`;
+}
+
+function obterNumeroWhatsApp(publicador?: Publicador): string {
+  const telefoneLimpo = publicador?.telefone?.replace(/\D/g, "") ?? "";
+
+  if (!telefoneLimpo) {
+    return "";
+  }
+
+  if (telefoneLimpo.startsWith("55")) {
+    return telefoneLimpo;
+  }
+
+  return telefoneLimpo.length >= 10 ? `55${telefoneLimpo}` : telefoneLimpo;
+}
+
 export const gerarLinkWhatsAppTerritorio = (
   territorio: Territorio,
   publicador?: Publicador,
 ): string => {
-  let linkGps = "";
-
-  if (territorio.poligonoGeoJson) {
-    try {
-      const parsed = JSON.parse(territorio.poligonoGeoJson) as GeoJsonPolygon;
-      
-      if (
-        parsed.type === "Polygon" &&
-        Array.isArray(parsed.coordinates) &&
-        parsed.coordinates.length > 0 &&
-        parsed.coordinates[0].length >= 4
-      ) {
-        const [longitude, latitude] = parsed.coordinates[0][0];
-
-        linkGps = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
-      }
-    } catch {
-      linkGps = "";
-    }
-  }
-
-  const urlBase = import.meta.env.VITE_APP_URL || window.location.origin;
-
-  const urlCartaoWeb = `${urlBase}/mapa/${territorio.id}`;
+  const linkGps = obterLinkGoogleMaps(territorio);
+  const urlCartaoWeb = obterUrlCartaoWeb(territorio);
 
   const nomePublicador = publicador
     ? `Olá, irmão(ã) *${publicador.nome}*!`
@@ -64,17 +99,11 @@ ${linkGps}
 Bom trabalho no ministério!`;
 
   const textoCodificado = encodeURIComponent(mensagem);
+  const numeroFormatado = obterNumeroWhatsApp(publicador);
 
-  const telefoneLimpo = publicador?.telefone
-    ? publicador.telefone.replace(/\D/g, "")
-    : "";
+  if (numeroFormatado) {
+    return `https://api.whatsapp.com/send?phone=${numeroFormatado}&text=${textoCodificado}`;
+  }
 
-  const numeroFormatado =
-    telefoneLimpo.length >= 10 && !telefoneLimpo.startsWith("55")
-      ? `55${telefoneLimpo}`
-      : telefoneLimpo;
-
-  return numeroFormatado
-    ? `https://api.whatsapp.com/send?phone=${numeroFormatado}&text=${textoCodificado}`
-    : `https://api.whatsapp.com/send?text=${textoCodificado}`;
+  return `https://api.whatsapp.com/send?text=${textoCodificado}`;
 };
