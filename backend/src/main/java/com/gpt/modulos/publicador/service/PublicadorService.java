@@ -9,6 +9,11 @@ import com.gpt.modulos.publicador.dto.PublicadorRequestDTO;
 import com.gpt.modulos.publicador.dto.PublicadorResponseDTO;
 import com.gpt.modulos.publicador.model.Publicador;
 import com.gpt.modulos.publicador.repository.PublicadorRepository;
+import com.gpt.modulos.movimentacao.repository.MovimentacaoEstoqueRepository;
+import com.gpt.modulos.pedido.repository.PedidoPublicadorRepository;
+import com.gpt.modulos.territorio.repository.HistoricoTerritorioRepository;
+import com.gpt.modulos.usuario.repository.UsuarioRepository;
+import com.gpt.exceptions.BusinessException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,6 +29,10 @@ public class PublicadorService {
     private final PublicadorRepository publicadorRepository;
     private final CongregacaoRepository congregacaoRepository;
     private final PessoaRepository pessoaRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final HistoricoTerritorioRepository historicoTerritorioRepository;
+    private final MovimentacaoEstoqueRepository movimentacaoEstoqueRepository;
+    private final PedidoPublicadorRepository pedidoPublicadorRepository;
 
     @Transactional
     public PublicadorResponseDTO criar(PublicadorRequestDTO request) {
@@ -130,5 +139,46 @@ public class PublicadorService {
 
         pessoaRepository.save(pessoa);
         publicadorRepository.save(publicador);
+    }
+    
+    @Transactional
+    public void excluirDefinitivamente(Long id) {
+
+        Publicador publicador = publicadorRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Publicador não encontrado com ID: " + id));
+
+        Pessoa pessoa = publicador.getPessoa();
+
+        if (usuarioRepository.existsByPessoaId(pessoa.getId())) {
+            throw new BusinessException(
+                    "Não é possível excluir definitivamente este publicador, " +
+                    "pois ele possui um usuário vinculado ao sistema."
+            );
+        }
+
+        if (historicoTerritorioRepository.existsByPublicadorId(id)) {
+            throw new BusinessException(
+                    "Não é possível excluir definitivamente este publicador, " +
+                    "pois existem registros de histórico de territórios vinculados a ele."
+            );
+        }
+
+        if (movimentacaoEstoqueRepository.existsByPublicadorId(id)) {
+            throw new BusinessException(
+                    "Não é possível excluir definitivamente este publicador, " +
+                    "pois existem movimentações de estoque vinculadas a ele."
+            );
+        }
+
+        if (pedidoPublicadorRepository.existsByPublicadorId(id)) {
+            throw new BusinessException(
+                    "Não é possível excluir definitivamente este publicador, " +
+                    "pois existem pedidos vinculados a ele."
+            );
+        }
+
+        publicadorRepository.delete(publicador);
+        pessoaRepository.delete(pessoa);
     }
 }

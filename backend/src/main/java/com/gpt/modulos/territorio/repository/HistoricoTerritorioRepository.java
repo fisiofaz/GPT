@@ -13,6 +13,8 @@ import java.util.Optional;
 @Repository
 public interface HistoricoTerritorioRepository extends JpaRepository<HistoricoTerritorio, Long> {
 
+	boolean existsByPublicadorId(Long publicadorId);
+	
 	boolean existsByTerritorioId(Long territorioId);
 	
 	Optional<HistoricoTerritorio> findByTerritorioIdAndDataDevolucaoIsNull(Long territorioId);

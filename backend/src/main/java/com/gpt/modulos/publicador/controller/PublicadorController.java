@@ -50,4 +50,11 @@ public class PublicadorController {
         publicadorService.reativar(id);
         return ResponseEntity.noContent().build();
     }
+    
+    @DeleteMapping("/{id}/definitivo")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO')")
+    public ResponseEntity<Void> excluirDefinitivamente(@PathVariable Long id) {
+        publicadorService.excluirDefinitivamente(id);
+        return ResponseEntity.noContent().build();
+    }
 }
