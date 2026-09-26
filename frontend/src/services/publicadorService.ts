@@ -11,7 +11,7 @@ export const publicadorService = {
   listarPorCongregacao: async (
     congregacaoId: number,
     page = 0,
-    size = 10
+    size = 10,
   ): Promise<PageResponse<Publicador>> => {
     const response = await api.get<PageResponse<Publicador>>(
       `/publicadores/congregacao/${congregacaoId}`,
@@ -20,7 +20,7 @@ export const publicadorService = {
           page,
           size,
         },
-      }
+      },
     );
     return response.data;
   },
@@ -59,9 +59,17 @@ export const publicadorService = {
 
   listarHistoricoPorCongregacao: async (
     congregacaoId: number,
-  ): Promise<HistoricoPublicador[]> => {
-    const response = await api.get<HistoricoPublicador[]>(
+    page = 0,
+    size = 10,
+  ): Promise<PageResponse<HistoricoPublicador>> => {
+    const response = await api.get<PageResponse<HistoricoPublicador>>(
       `/publicadores/historico/congregacao/${congregacaoId}`,
+      {
+        params: {
+          page,
+          size,
+        },
+      },
     );
 
     return response.data;

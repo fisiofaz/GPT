@@ -3,6 +3,8 @@ package com.gpt.modulos.publicador.repository;
 import com.gpt.modulos.publicador.model.HistoricoPublicador;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -14,7 +16,8 @@ public interface HistoricoPublicadorRepository
             Long publicadorId
     );
 
-    List<HistoricoPublicador> findByCongregacaoIdOrderByDataEventoDesc(
-            Long congregacaoId
+    Page<HistoricoPublicador> findByCongregacaoIdOrderByDataEventoDesc(
+            Long congregacaoId,
+            Pageable pageable
     );
 }

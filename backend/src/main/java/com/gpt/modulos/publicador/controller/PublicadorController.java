@@ -50,11 +50,15 @@ public class PublicadorController {
 
     @GetMapping("/historico/congregacao/{congregacaoId}")
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO')")
-    public ResponseEntity<List<HistoricoPublicadorResponseDTO>> listarHistoricoPorCongregacao(
-            @PathVariable Long congregacaoId) {
+    public ResponseEntity<PageResponse<HistoricoPublicadorResponseDTO>> listarHistoricoPorCongregacao(
+            @PathVariable Long congregacaoId,
+            Pageable pageable) {
 
         return ResponseEntity.ok(
-                historicoPublicadorService.listarPorCongregacao(congregacaoId)
+        		historicoPublicadorService.listarPorCongregacao(
+        		        congregacaoId,
+        		        pageable
+        		)
         );
     }
 

@@ -14,9 +14,11 @@ import { FilterBar } from "../components/ui/FilterBar";
 import { Select } from "../components/ui/Select";
 import { Button } from "../components/ui/Button";
 import { Badge } from "../components/ui/Badge";
+import { Pagination } from "../components/ui/Pagination";
 import { LoadingState } from "../components/ui/LoadingState";
 import { EmptyState } from "../components/ui/EmptyState";
 import { ErrorState } from "../components/ui/ErrorState";
+
 
 const eventoLabel: Record<EventoHistoricoPublicador, string> = {
   CRIADO: "Criado",
@@ -47,6 +49,14 @@ export default function HistoricoPublicadores() {
 
     const [historico, setHistorico] = useState<HistoricoPublicador[]>([]);
     const [carregando, setCarregando] = useState(true);
+
+    const [paginaAtual, setPaginaAtual] = useState(0);
+    const [tamanhoPagina, setTamanhoPagina] = useState(10);
+    const [totalPaginas, setTotalPaginas] = useState(0);
+    const [totalElementos, setTotalElementos] = useState(0);
+
+    const [atualizacao, setAtualizacao] = useState(0);
+
     const [erro, setErro] = useState<string | null>(null);
 
     const [busca, setBusca] = useState("");
@@ -56,30 +66,7 @@ export default function HistoricoPublicadores() {
 
   const congregacaoId = usuario?.congregacaoId ?? null;
 
-  const carregarHistorico = async () => {
-    if (!congregacaoId) {
-      setErro("Não foi possível identificar a congregação.");
-      setCarregando(false);
-      return;
-    }
-
-    setCarregando(true);
-    setErro(null);
-
-    try {
-      const dados =
-        await publicadorService.listarHistoricoPorCongregacao(congregacaoId);
-
-      setHistorico(dados);
-    } catch {
-      setHistorico([]);
-      setErro("Não foi possível carregar o histórico de publicadores.");
-    } finally {
-      setCarregando(false);
-    }
-  };
-
-  useEffect(() => {
+   useEffect(() => {
     let ativo = true;
 
     const buscarDados = async () => {
@@ -97,15 +84,22 @@ export default function HistoricoPublicadores() {
       setErro(null);
 
       try {
-        const dados =
-          await publicadorService.listarHistoricoPorCongregacao(congregacaoId);
+        const dados = await publicadorService.listarHistoricoPorCongregacao(
+          congregacaoId,
+          paginaAtual,
+          tamanhoPagina,
+        );
 
         if (ativo) {
-          setHistorico(dados);
+          setHistorico(dados.content);
+          setTotalPaginas(dados.totalPages);
+          setTotalElementos(dados.totalElements);
         }
       } catch {
         if (ativo) {
           setHistorico([]);
+          setTotalPaginas(0);
+          setTotalElementos(0);
           setErro("Não foi possível carregar o histórico de publicadores.");
         }
       } finally {
@@ -120,7 +114,7 @@ export default function HistoricoPublicadores() {
     return () => {
       ativo = false;
     };
-  }, [congregacaoId]);
+  }, [congregacaoId, paginaAtual, tamanhoPagina, atualizacao]);
 
   const historicoFiltrado = useMemo(() => {
     const termo = busca.trim().toLowerCase();
@@ -146,7 +140,7 @@ export default function HistoricoPublicadores() {
           <Button
             type="button"
             variant="secondary"
-            onClick={() => void carregarHistorico()}
+            onClick={() => setAtualizacao((valor) => valor + 1)}
             disabled={carregando}
           >
             <RefreshCw
@@ -161,15 +155,21 @@ export default function HistoricoPublicadores() {
       <FilterBar>
         <SearchInput
           value={busca}
-          onChange={(event) => setBusca(event.target.value)}
+          onChange={(event) => {
+            setBusca(event.target.value);
+            setPaginaAtual(0);
+          }}
           placeholder="Buscar por nome do publicador..."
         />
 
         <Select
           value={evento}
-          onChange={(event) =>
-            setEvento(event.target.value as EventoHistoricoPublicador | "TODOS")
-          }
+          onChange={(event) => {
+            setEvento(
+              event.target.value as EventoHistoricoPublicador | "TODOS",
+            );
+            setPaginaAtual(0);
+          }}
         >
           <option value="TODOS">Todos os eventos</option>
           <option value="CRIADO">Criado</option>
@@ -267,6 +267,24 @@ export default function HistoricoPublicadores() {
               ? "registro encontrado"
               : "registros encontrados"}
           </div>
+
+          <Pagination
+            paginaAtual={paginaAtual}
+            totalPaginas={totalPaginas}
+            totalElementos={totalElementos}
+            tamanhoPagina={tamanhoPagina}
+            onPaginaAnterior={() =>
+              setPaginaAtual((pagina) => Math.max(0, pagina - 1))
+            }
+            onProximaPagina={() =>
+              setPaginaAtual((pagina) => Math.min(totalPaginas - 1, pagina + 1))
+            }
+            onTamanhoPaginaChange={(tamanho) => {
+              setTamanhoPagina(tamanho);
+              setPaginaAtual(0);
+            }}
+            desabilitado={carregando}
+          />
         </div>
       )}
     </div>

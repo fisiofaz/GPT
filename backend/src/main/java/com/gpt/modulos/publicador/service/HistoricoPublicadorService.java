@@ -5,10 +5,12 @@ import com.gpt.modulos.publicador.model.EventoHistoricoPublicador;
 import com.gpt.modulos.publicador.model.HistoricoPublicador;
 import com.gpt.modulos.publicador.model.Publicador;
 import com.gpt.modulos.publicador.repository.HistoricoPublicadorRepository;
+import com.gpt.shared.dto.PageResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import java.util.List;
 
 @Service
@@ -54,14 +56,20 @@ public class HistoricoPublicadorService {
     }
 
     @Transactional(readOnly = true)
-    public List<HistoricoPublicadorResponseDTO> listarPorCongregacao(
-            Long congregacaoId
+    public PageResponse<HistoricoPublicadorResponseDTO> listarPorCongregacao(
+            Long congregacaoId,
+            Pageable pageable
     ) {
-        return historicoRepository
-                .findByCongregacaoIdOrderByDataEventoDesc(congregacaoId)
-                .stream()
-                .map(this::toDTO)
-                .toList();
+        Page<HistoricoPublicador> pagina =
+                historicoRepository
+                        .findByCongregacaoIdOrderByDataEventoDesc(
+                                congregacaoId,
+                                pageable
+                        );
+
+        return PageResponse.from(
+                pagina.map(this::toDTO)
+        );
     }
 
     private HistoricoPublicadorResponseDTO toDTO(
