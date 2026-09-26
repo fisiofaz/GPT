@@ -2,15 +2,15 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import {
-  Lock,
-  Mail,
-  Loader2,
-  Layers,
   AlertCircle,
-  Sparkles,
   Eye,
   EyeOff,
+  Layers,
+  Loader2,
+  Lock,
+  Mail,
 } from "lucide-react";
+
 import axios from "axios";
 
 export const Login: React.FC = () => {
@@ -45,121 +45,183 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0b0f19] px-4 font-sans relative overflow-hidden selection:bg-indigo-500 selection:text-white">
-      {/* Luzes de Fundo (Glow Effect) */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-600/15 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-10 right-1/4 w-80 h-80 bg-violet-600/10 rounded-full blur-3xl pointer-events-none" />
+    <main className="min-h-screen bg-slate-50 text-slate-900">
+      <div className="grid min-h-screen lg:grid-cols-[1.05fr_0.95fr]">
+        {/* Área institucional */}
+        <section className="relative hidden overflow-hidden bg-slate-900 lg:flex">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(59,130,246,0.12),transparent_35%),radial-gradient(circle_at_80%_80%,rgba(99,102,241,0.08),transparent_35%)]" />
 
-      {/* Card Principal */}
-      <div className="relative z-10 max-w-md w-full backdrop-blur-xl bg-slate-900/80 rounded-3xl shadow-2xl p-8 sm:p-10 border border-slate-800/80 hover:border-slate-700/80 transition-all duration-300">
-        {/* Cabeçalho */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-linear-to-br from-indigo-500 via-indigo-600 to-violet-700 text-white mb-4 shadow-lg shadow-indigo-500/25 border border-indigo-400/30">
-            <Layers className="w-7 h-7" />
-          </div>
+          <div className="relative z-10 flex w-full flex-col justify-between p-12 xl:p-16">
+            <div>
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-slate-900 shadow-sm">
+                  <Layers className="h-6 w-6" />
+                </div>
 
-          <div className="flex items-center justify-center gap-2">
-            <h1 className="text-2xl font-extrabold text-white tracking-tight">
-              Sistema GPT
-            </h1>
-            <span className="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-              v1.0
-            </span>
-          </div>
-          <p className="text-slate-400 text-xs sm:text-sm mt-1.5 font-medium">
-            Gestão de Publicações e Territórios
-          </p>
-        </div>
+                <div>
+                  <p className="text-lg font-bold tracking-tight text-white">
+                    GTP
+                  </p>
 
-        {/* Mensagem de Erro com Animação */}
-        {erro && (
-          <div className="mb-6 p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs sm:text-sm flex items-start gap-3 shadow-inner">
-            <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
-            <span className="leading-relaxed">{erro}</span>
-          </div>
-        )}
-
-        {/* Formulário */}
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Campo E-mail */}
-          <div>
-            <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-2">
-              E-mail de Acesso
-            </label>
-            <div className="relative group">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500 group-focus-within:text-indigo-400 transition-colors">
-                <Mail className="w-5 h-5" />
+                  <p className="text-xs font-medium text-slate-400">
+                    Gestão de Territórios e Publicações
+                  </p>
+                </div>
               </div>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="seu.email@gpt.com"
-                className="w-full pl-11 pr-4 py-3.5 bg-slate-950/60 border border-slate-800 rounded-2xl text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all shadow-inner"
-              />
+            </div>
+
+            <div className="max-w-xl">
+              <p className="mb-4 text-sm font-semibold uppercase tracking-[0.18em] text-blue-400">
+                Gestão de Serviço
+              </p>
+
+              <h1 className="text-4xl font-semibold leading-tight tracking-tight text-white xl:text-5xl">
+                Organização e controle para uma gestão mais eficiente.
+              </h1>
+
+              <p className="mt-6 max-w-lg text-base leading-7 text-slate-400">
+                Centralize informações de territórios, publicações, publicadores
+                e pedidos em um único sistema.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between border-t border-slate-800 pt-6">
+              <p className="text-xs text-slate-500">
+                Sistema de gestão da congregação
+              </p>
+
+              <p className="text-xs font-medium text-slate-500">GTP</p>
             </div>
           </div>
+        </section>
 
-          {/* Campo Senha com botão de visualização */}
-          <div>
-            <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-2">
-              Sua Senha
-            </label>
-            <div className="relative group">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500 group-focus-within:text-indigo-400 transition-colors">
-                <Lock className="w-5 h-5" />
+        {/* Área de autenticação */}
+        <section className="flex min-h-screen items-center justify-center px-5 py-10 sm:px-8">
+          <div className="w-full max-w-md">
+            {/* Identidade mobile */}
+            <div className="mb-10 lg:hidden">
+              <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-slate-900 text-white shadow-sm">
+                <Layers className="h-6 w-6" />
               </div>
-              <input
-                type={mostrarSenha ? "text" : "password"}
-                required
-                value={senha}
-                onChange={(e) => setSenha(e.target.value)}
-                placeholder="••••••••"
-                className="w-full pl-11 pr-12 py-3.5 bg-slate-950/60 border border-slate-800 rounded-2xl text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all shadow-inner"
-              />
-              <button
-                type="button"
-                onClick={() => setMostrarSenha((prev) => !prev)}
-                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-500 hover:text-slate-200 transition-colors cursor-pointer"
-                title={mostrarSenha ? "Ocultar senha" : "Ver senha"}
+
+              <p className="text-lg font-bold tracking-tight text-slate-900">
+                GTP
+              </p>
+
+              <p className="mt-1 text-sm text-slate-500">
+                Gestão de Territórios e Publicações
+              </p>
+
+            </div>
+
+            <div className="mb-8">
+              <h2 className="text-2xl font-semibold tracking-tight text-slate-900">
+                Bem-vindo
+              </h2>
+
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Entre com suas credenciais para acessar o sistema.
+              </p>
+            </div>
+
+            {erro && (
+              <div
+                role="alert"
+                className="mb-6 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3.5 text-sm text-red-700"
               >
-                {mostrarSenha ? (
-                  <EyeOff className="w-5 h-5" />
+                <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-500" />
+
+                <span className="leading-5">{erro}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {/* E-mail */}
+              <div>
+                <label
+                  htmlFor="email"
+                  className="mb-2 block text-sm font-medium text-slate-700"
+                >
+                  E-mail
+                </label>
+                <div className="relative">
+                  <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="email"
+                    required
+                    autoComplete="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="seu.email@gpt.com"
+                    className="h-12 w-full rounded-xl border border-slate-300 bg-white pl-11 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                  />
+                </div>
+              </div>
+
+              {/* Senha */}
+              <div>
+                <label
+                  htmlFor="senha"
+                  className="mb-2 block text-sm font-medium text-slate-700"
+                >
+                  Senha
+                </label>
+                <div className="relative group">
+                  <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type={mostrarSenha ? "text" : "password"}
+                    required
+                    autoComplete="current-password"
+                    value={senha}
+                    onChange={(e) => setSenha(e.target.value)}
+                    placeholder="Digite sua senha"
+                    className="h-12 w-full rounded-xl border border-slate-300 bg-white pl-11 pr-12 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => setMostrarSenha((prev) => !prev)}
+                    aria-label={
+                      mostrarSenha ? "Ocultar senha" : "Mostrar senha"
+                    }
+                    className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  >
+                    {mostrarSenha ? (
+                      <EyeOff className="w-5 h-5" />
+                    ) : (
+                      <Eye className="w-5 h-5" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Botão */}
+              <button
+                type="submit"
+                disabled={carregando}
+                className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-slate-900/10 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {carregando ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Autenticando...</span>
+                  </>
                 ) : (
-                  <Eye className="w-5 h-5" />
+                  <>
+                    <span>Entrar no Sistema</span>
+                  </>
                 )}
               </button>
+            </form>
+
+            <div className="mt-8 pt-6 border-t border-slate-800/80 text-center">
+              <p className="text-xs text-slate-400">
+                Acesso restrito aos servos e administradores autorizados.
+              </p>
             </div>
-          </div>
-
-          {/* Botão de Entrar */}
-          <button
-            type="submit"
-            disabled={carregando}
-            className="w-full mt-2 py-3.5 px-4 bg-linear-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-semibold text-sm rounded-2xl shadow-lg shadow-indigo-600/30 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-900 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer active:scale-[0.98]"
-          >
-            {carregando ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                <span>Autenticando...</span>
-              </>
-            ) : (
-              <>
-                <span>Entrar no Sistema</span>
-                <Sparkles className="w-4 h-4 text-indigo-200" />
-              </>
-            )}
-          </button>
-        </form>
-
-        {/* Rodapé Informativo */}
-        <div className="mt-8 pt-6 border-t border-slate-800/80 text-center">
-          <p className="text-xs text-slate-400">
-            Acesso restrito aos servos e administradores autorizados.
-          </p>
         </div>
-      </div>
+      </section>
     </div>
+  </main>
   );
 };
