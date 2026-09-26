@@ -52,7 +52,7 @@ export function useTerritorios(congregacaoId?: number | null) {
         }
 
         setTerritorios(dados.territorios);
-        setPublicadores(dados.publicadores);
+        setPublicadores(dados.publicadores.content);
       } catch {
         if (!ativo) {
           return;
@@ -90,7 +90,7 @@ export function useTerritorios(congregacaoId?: number | null) {
       }
 
       setTerritorios(dados.territorios);
-      setPublicadores(dados.publicadores);
+      setPublicadores(dados.publicadores.content);
     } catch {
       setTerritorios([]);
       setPublicadores([]);

@@ -11,6 +11,9 @@ import com.gpt.modulos.publicador.model.Publicador;
 import com.gpt.modulos.publicador.repository.PublicadorRepository;
 
 import jakarta.persistence.EntityNotFoundException;
+import com.gpt.shared.dto.PageResponse;
+
+import org.springframework.data.domain.PageRequest;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -354,22 +357,28 @@ class PublicadorServiceIntegrationTest {
 
         publicadorService.desativar(publicadorJoao.getId());
 
-        List<PublicadorResponseDTO> resultado =
-                publicadorService.listarPorCongregacao(congregacao1.getId());
+        PageResponse<PublicadorResponseDTO> resultado =
+                publicadorService.listarPorCongregacao(
+                        congregacao1.getId(),
+                        PageRequest.of(0, 10)
+                );
 
-        assertEquals(2, resultado.size());
+        assertEquals(2, resultado.getTotalElements());
+        assertEquals(1, resultado.getTotalPages());
+        assertEquals(2, resultado.getContent().size());
 
-        assertEquals("Ana Souza", resultado.get(0).getNome());
-        assertEquals("Carlos Oliveira", resultado.get(1).getNome());
+        assertEquals("Ana Souza", resultado.getContent().get(0).getNome());
 
-        assertTrue(resultado.stream()
+        assertEquals("Carlos Oliveira", resultado.getContent().get(1).getNome());
+
+        assertTrue(resultado.getContent().stream()
                 .allMatch(publicador ->
                         congregacao1.getId().equals(publicador.getCongregacaoId())));
 
-        assertTrue(resultado.stream()
+        assertTrue(resultado.getContent().stream()
                 .allMatch(PublicadorResponseDTO::getAtivo));
 
-        assertFalse(resultado.stream()
+        assertFalse(resultado.getContent().stream()
                 .anyMatch(publicador ->
                         publicadorJoao.getId().equals(publicador.getId())));
     }
@@ -398,11 +407,18 @@ class PublicadorServiceIntegrationTest {
 
         publicadorService.desativar(criado.getId());
 
-        List<PublicadorResponseDTO> resultado =
-                publicadorService.listarPorCongregacao(congregacao.getId());
+        PageResponse<PublicadorResponseDTO> resultado =
+                publicadorService.listarPorCongregacao(
+                        congregacao.getId(),
+                        PageRequest.of(0, 10)
+                );
 
         assertNotNull(resultado);
-        assertTrue(resultado.isEmpty());
+        assertTrue(resultado.getContent().isEmpty());
+        assertEquals(0, resultado.getTotalElements());
+        assertEquals(0, resultado.getTotalPages());
+        assertTrue(resultado.isFirst());
+        assertTrue(resultado.isLast());
     }
     
     @Test
@@ -714,18 +730,27 @@ class PublicadorServiceIntegrationTest {
         PublicadorResponseDTO criado =
                 publicadorService.criar(request);
 
-        List<PublicadorResponseDTO> antes =
-                publicadorService.listarPorCongregacao(congregacao.getId());
+        PageResponse<PublicadorResponseDTO> antes =
+                publicadorService.listarPorCongregacao(
+                        congregacao.getId(),
+                        PageRequest.of(0, 10)
+                );
 
-        assertEquals(1, antes.size());
-        assertEquals(criado.getId(), antes.get(0).getId());
+        assertEquals(1, antes.getTotalElements());
+        assertEquals(1, antes.getContent().size());
+        assertEquals(criado.getId(), antes.getContent().get(0).getId());
 
         publicadorService.desativar(criado.getId());
 
-        List<PublicadorResponseDTO> depois =
-                publicadorService.listarPorCongregacao(congregacao.getId());
+        PageResponse<PublicadorResponseDTO> depois =
+                publicadorService.listarPorCongregacao(
+                        congregacao.getId(),
+                        PageRequest.of(0, 10)
+                );
 
         assertNotNull(depois);
-        assertTrue(depois.isEmpty());
+        assertTrue(depois.getContent().isEmpty());
+        assertEquals(0, depois.getTotalElements());
+        assertEquals(0, depois.getTotalPages());
     }
 }

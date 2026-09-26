@@ -1,3 +1,9 @@
+export type EventoHistoricoPublicador =
+  | "CRIADO"
+  | "INATIVADO"
+  | "REATIVADO"
+  | "EXCLUIDO_DEFINITIVAMENTE";
+
 export interface Publicador {
   id: number;
   nome: string;
@@ -14,6 +20,17 @@ export interface PublicadorRequestDTO {
   telefone?: string;
   email?: string;
   congregacaoId: number;
+}
+
+export interface HistoricoPublicador {
+  id: number;
+  publicadorId: number;
+  nomePublicador: string;
+  congregacaoId: number;
+  evento: EventoHistoricoPublicador;
+  dataEvento: string;
+  usuarioResponsavelId?: number;
+  observacoes?: string;
 }
 
 export type CriarPublicadorDTO = PublicadorRequestDTO;

@@ -6,6 +6,7 @@ import {
   Map,
   Users,
   UserCog,
+  History,
 } from "lucide-react";
 
 export interface NavigationItem {
@@ -59,6 +60,11 @@ export const navigationGroups: NavigationGroup[] = [
         label: "Publicadores",
         path: "/publicadores",
         icon: Users,
+      },
+      {
+        label: "Histórico de Publicadores",
+        path: "/historico-publicadores",
+        icon: History,
       },
       {
         label: "Usuários",

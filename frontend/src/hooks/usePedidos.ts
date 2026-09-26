@@ -39,7 +39,7 @@ export function usePedidos(congregacaoId?: number | null) {
       setPedidosBetel(betelData);
       setPublicacoes(pubEstoque);
       setCatalogoMestre(catalogoGeral);
-      setPublicadores(pessoas);
+      setPublicadores(pessoas.content);
     } catch {
       toast.error("Erro ao sincronizar pedidos.");
     } finally {
@@ -67,7 +67,7 @@ export function usePedidos(congregacaoId?: number | null) {
           setPedidosBetel(betelData);
           setPublicacoes(pubEstoque);
           setCatalogoMestre(catalogoGeral);
-          setPublicadores(pessoas);
+          setPublicadores(pessoas.content);
         }
       } catch {
         if (ativo) toast.error("Erro ao carregar dados de pedidos.");

@@ -34,7 +34,7 @@ export function usePublicacoes(congregacaoId?: number | null) {
         publicacaoService.listarCatalogoMestre().catch(() => []),
       ]);
       setPublicacoes(pubData);
-      setPublicadores(pubsPessoas);
+      setPublicadores(pubsPessoas.content);
       setCatalogoMestre(catalogoData);
     } catch {
       setPublicacoes([]);
@@ -59,7 +59,7 @@ export function usePublicacoes(congregacaoId?: number | null) {
         ]);
         if (ativo) {
           setPublicacoes(pubData);
-          setPublicadores(pubsPessoas);
+          setPublicadores(pubsPessoas.content);
           setCatalogoMestre(catalogoData);
         }
       } catch {

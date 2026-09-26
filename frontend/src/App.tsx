@@ -15,6 +15,7 @@ import { CartaoPublico } from "./pages/CartaoPublico";
 import { Publicacoes } from "./pages/Publicacoes";
 import { CatalogoPublicacoes } from "./pages/CatalogoPublicacoes";
 import { Pedidos } from "./pages/Pedidos";
+import HistoricoPublicadores  from "./pages/HistoricoPublicadores";
 
 import AdminCongregacoesPage from "./pages/AdminCongregacoesPage";
 import UsuariosCongregacaoPage from "./pages/UsuariosCongregacaoPage";
@@ -73,6 +74,8 @@ export const App: React.FC = () => {
             <Route path="/dashboard" element={<Dashboard />} />
 
             <Route path="/publicadores" element={<Publicadores />} />
+
+            <Route path="/historico-publicadores" element={<HistoricoPublicadores />} />
 
             <Route path="/territorios" element={<Territorios />} />
 

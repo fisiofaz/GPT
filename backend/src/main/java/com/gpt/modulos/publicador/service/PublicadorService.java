@@ -13,14 +13,15 @@ import com.gpt.modulos.movimentacao.repository.MovimentacaoEstoqueRepository;
 import com.gpt.modulos.pedido.repository.PedidoPublicadorRepository;
 import com.gpt.modulos.territorio.repository.HistoricoTerritorioRepository;
 import com.gpt.modulos.usuario.repository.UsuarioRepository;
+import com.gpt.modulos.publicador.model.EventoHistoricoPublicador;
+import com.gpt.shared.dto.PageResponse;
 import com.gpt.exceptions.BusinessException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +34,7 @@ public class PublicadorService {
     private final HistoricoTerritorioRepository historicoTerritorioRepository;
     private final MovimentacaoEstoqueRepository movimentacaoEstoqueRepository;
     private final PedidoPublicadorRepository pedidoPublicadorRepository;
+    private final HistoricoPublicadorService historicoPublicadorService;
 
     @Transactional
     public PublicadorResponseDTO criar(PublicadorRequestDTO request) {
@@ -57,17 +59,31 @@ public class PublicadorService {
                 .build();
 
         publicador = publicadorRepository.save(publicador);
+        
+        historicoPublicadorService.registrar(
+                publicador,
+                EventoHistoricoPublicador.CRIADO
+        );
+        
         return toDTO(publicador);
     }
 
     @Transactional(readOnly = true)
-    public List<PublicadorResponseDTO> listarPorCongregacao(Long congregacaoId) {
-        
-    	return publicadorRepository
-    			.findByCongregacaoIdAndAtivoTrueOrderByPessoa_NomeAsc(congregacaoId)
-                .stream()
-                .map(this::toDTO)
-                .collect(Collectors.toList());
+    public PageResponse<PublicadorResponseDTO> listarPorCongregacao(
+            Long congregacaoId,
+            Pageable pageable
+    ) {
+
+        Page<Publicador> pagina =
+                publicadorRepository
+                        .findByCongregacaoIdAndAtivoTrueOrderByPessoa_NomeAsc(
+                                congregacaoId,
+                                pageable
+                        );
+
+        return PageResponse.from(
+                pagina.map(this::toDTO)
+        );
     }
 
     private PublicadorResponseDTO toDTO(Publicador publicador) {
@@ -123,6 +139,11 @@ public class PublicadorService {
 
         pessoaRepository.save(pessoa);
         publicadorRepository.save(publicador);
+        
+        historicoPublicadorService.registrar(
+                publicador,
+                EventoHistoricoPublicador.INATIVADO
+        );
     }
     
     @Transactional
@@ -139,6 +160,11 @@ public class PublicadorService {
 
         pessoaRepository.save(pessoa);
         publicadorRepository.save(publicador);
+        
+        historicoPublicadorService.registrar(
+                publicador,
+                EventoHistoricoPublicador.REATIVADO
+        );
     }
     
     @Transactional
@@ -177,6 +203,11 @@ public class PublicadorService {
                     "pois existem pedidos vinculados a ele."
             );
         }
+        
+        historicoPublicadorService.registrar(
+                publicador,
+                EventoHistoricoPublicador.EXCLUIDO_DEFINITIVAMENTE
+        );
 
         publicadorRepository.delete(publicador);
         pessoaRepository.delete(pessoa);

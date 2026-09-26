@@ -1,29 +1,35 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+
 import {
   CalendarDays,
+  History,
   Mail,
   Pencil,
   Phone,
   UserPlus,
-  UserX,
   Users,
+  UserX,
   X,
 } from "lucide-react";
 
 import { useAuth } from "../context/useAuth";
 import { publicadorService } from "../services/publicadorService";
+
 import type { AtualizarPublicadorDTO, Publicador } from "../types/publicador";
+
+import { HistoricoPublicadorModal } from "../components/publicador/HistoricoPublicadorModal";
 
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
+import { ConfirmModal } from "../components/ui/ConfirmModal";
 import { EmptyState } from "../components/ui/EmptyState";
 import { ErrorState } from "../components/ui/ErrorState";
 import { FilterBar } from "../components/ui/FilterBar";
 import { Input } from "../components/ui/Input";
 import { LoadingState } from "../components/ui/LoadingState";
 import { PageHeader } from "../components/ui/PageHeader";
+import { Pagination } from "../components/ui/Pagination";
 import { SearchInput } from "../components/ui/SearchInput";
-import { ConfirmModal } from "../components/ui/ConfirmModal";
 
 type ModalModo = "criar" | "editar";
 
@@ -45,12 +51,20 @@ export function Publicadores() {
   const { usuario } = useAuth();
 
   const [publicadores, setPublicadores] = useState<Publicador[]>([]);
+
+  const [paginaAtual, setPaginaAtual] = useState(0);
+  const [tamanhoPagina, setTamanhoPagina] = useState(10);
+  const [totalPaginas, setTotalPaginas] = useState(0);
+  const [totalElementos, setTotalElementos] = useState(0);
+
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
+
   const [busca, setBusca] = useState("");
 
   const [modalAberto, setModalAberto] = useState(false);
   const [modalModo, setModalModo] = useState<ModalModo>("criar");
+
   const [publicadorSelecionado, setPublicadorSelecionado] =
     useState<Publicador | null>(null);
 
@@ -61,25 +75,33 @@ export function Publicadores() {
   const [erroFormulario, setErroFormulario] = useState<string | null>(null);
 
   const [modalInativarAberto, setModalInativarAberto] = useState(false);
+
   const [publicadorParaInativar, setPublicadorParaInativar] =
     useState<Publicador | null>(null);
+
   const [processandoInativacao, setProcessandoInativacao] = useState(false);
 
+  const [historicoPublicador, setHistoricoPublicador] = useState<{
+    id: number;
+    nome: string;
+  } | null>(null);
+
+  const [atualizacao, setAtualizacao] = useState(0);
+
   const congregacaoId = usuario?.congregacaoId ?? null;
-
-  const buscarPublicadores = useCallback(async () => {
-    if (!congregacaoId) {
-      return [];
-    }
-
-    return publicadorService.listarPorCongregacao(congregacaoId);
-  }, [congregacaoId]);
 
   useEffect(() => {
     let ativo = true;
 
-    const carregarInicial = async () => {
+    const carregar = async () => {
       if (!congregacaoId) {
+        if (ativo) {
+          setPublicadores([]);
+          setTotalPaginas(0);
+          setTotalElementos(0);
+          setCarregando(false);
+        }
+
         return;
       }
 
@@ -87,19 +109,27 @@ export function Publicadores() {
       setErro(null);
 
       try {
-        const dados = await buscarPublicadores();
+        const resultado = await publicadorService.listarPorCongregacao(
+          congregacaoId,
+          paginaAtual,
+          tamanhoPagina,
+        );
 
         if (!ativo) {
           return;
         }
 
-        setPublicadores(dados);
+        setPublicadores(resultado.content);
+        setTotalPaginas(resultado.totalPages);
+        setTotalElementos(resultado.totalElements);
       } catch {
         if (!ativo) {
           return;
         }
 
         setPublicadores([]);
+        setTotalPaginas(0);
+        setTotalElementos(0);
         setErro("Não foi possível carregar os publicadores da congregação.");
       } finally {
         if (ativo) {
@@ -108,31 +138,12 @@ export function Publicadores() {
       }
     };
 
-    void carregarInicial();
+    void carregar();
 
     return () => {
       ativo = false;
     };
-  }, [congregacaoId, buscarPublicadores]);
-
-  const carregarPublicadores = useCallback(async () => {
-    if (!congregacaoId) {
-      return;
-    }
-
-    setCarregando(true);
-    setErro(null);
-
-    try {
-      const dados = await buscarPublicadores();
-
-      setPublicadores(dados);
-    } catch {
-      setErro("Não foi possível carregar os publicadores da congregação.");
-    } finally {
-      setCarregando(false);
-    }
-  }, [congregacaoId, buscarPublicadores]);
+  }, [congregacaoId, paginaAtual, tamanhoPagina, atualizacao]);
 
   const publicadoresFiltrados = useMemo(() => {
     const termo = busca.trim().toLowerCase();
@@ -195,7 +206,7 @@ export function Publicadores() {
     }));
   };
 
-  const handleSalvar = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSalvar = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!congregacaoId) {
@@ -244,8 +255,12 @@ export function Publicadores() {
         await publicadorService.atualizar(publicadorSelecionado.id, dados);
       }
 
-      fecharModal();
-      await carregarPublicadores();
+      setModalAberto(false);
+      setPublicadorSelecionado(null);
+      setFormulario(formularioInicial);
+      setErroFormulario(null);
+
+      setAtualizacao((valor) => valor + 1);
     } catch {
       setErroFormulario(
         modalModo === "criar"
@@ -281,10 +296,11 @@ export function Publicadores() {
     try {
       await publicadorService.desativar(publicadorParaInativar.id);
 
-      fecharModalInativar();
-      await carregarPublicadores();
+      setModalInativarAberto(false);
+      setPublicadorParaInativar(null);
+
+      setAtualizacao((valor) => valor + 1);
     } catch {
-      fecharModalInativar();
       setErro("Não foi possível inativar o publicador. Tente novamente.");
     } finally {
       setProcessandoInativacao(false);
@@ -338,11 +354,11 @@ export function Publicadores() {
 
             <div className="text-sm text-slate-500 lg:ml-auto">
               <span className="font-semibold text-slate-800">
-                {publicadoresFiltrados.length}
+                {totalElementos}
               </span>{" "}
-              {publicadoresFiltrados.length === 1
-                ? "publicador encontrado"
-                : "publicadores encontrados"}
+              {totalElementos === 1
+                ? "publicador cadastrado"
+                : "publicadores cadastrados"}
             </div>
           </FilterBar>
 
@@ -351,7 +367,9 @@ export function Publicadores() {
           ) : erro ? (
             <ErrorState
               message={erro}
-              onRetry={() => void carregarPublicadores()}
+              onRetry={() => {
+                setAtualizacao((valor) => valor + 1);
+              }}
             />
           ) : publicadoresFiltrados.length === 0 ? (
             <EmptyState
@@ -383,84 +401,125 @@ export function Publicadores() {
               }
             />
           ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {publicadoresFiltrados.map((publicador) => (
-                <article
-                  key={publicador.id}
-                  className="
-                    rounded-xl
-                    border border-slate-200
-                    bg-white
-                    p-5
-                    transition-colors
-                    hover:border-slate-300
-                  "
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0">
-                      <h2 className="truncate text-sm font-semibold text-slate-900">
-                        {publicador.nome}
-                      </h2>
+            <>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-2.5">
+                {publicadoresFiltrados.map((publicador) => (
+                  <article
+                    key={publicador.id}
+                    className="
+                      rounded-xl
+                      border border-slate-200
+                      bg-white
+                      p-5
+                      transition-colors
+                      hover:border-slate-300
+                    "
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0">
+                        <h2 className="truncate text-sm font-semibold text-slate-900">
+                          {publicador.nome}
+                        </h2>
 
-                      <div className="mt-3 space-y-2">
-                        {publicador.dataNascimento && (
-                          <p className="flex items-center gap-1.5 text-sm text-slate-500">
-                            <CalendarDays size={14} aria-hidden="true" />
-                            <span>
-                              {formatarData(publicador.dataNascimento)}
-                            </span>
-                          </p>
-                        )}
+                        <div className="mt-3 space-y-2">
+                          {publicador.dataNascimento && (
+                            <p className="flex items-center gap-1.5 text-sm text-slate-500">
+                              <CalendarDays size={14} aria-hidden="true" />
 
-                        {publicador.telefone ? (
-                          <p className="flex items-center gap-1.5 text-sm text-slate-500">
-                            <Phone size={14} aria-hidden="true" />
-                            <span>{publicador.telefone}</span>
-                          </p>
-                        ) : (
-                          <p className="text-xs italic text-slate-400">
-                            Sem telefone informado
-                          </p>
-                        )}
+                              <span>
+                                {formatarData(publicador.dataNascimento)}
+                              </span>
+                            </p>
+                          )}
 
-                        {publicador.email && (
-                          <p className="flex items-center gap-1.5 truncate text-sm text-slate-500">
-                            <Mail size={14} aria-hidden="true" />
-                            <span className="truncate">{publicador.email}</span>
-                          </p>
-                        )}
+                          {publicador.telefone ? (
+                            <p className="flex items-center gap-1.5 text-sm text-slate-500">
+                              <Phone size={14} aria-hidden="true" />
+
+                              <span>{publicador.telefone}</span>
+                            </p>
+                          ) : (
+                            <p className="text-xs italic text-slate-400">
+                              Sem telefone informado
+                            </p>
+                          )}
+
+                          {publicador.email && (
+                            <p className="flex items-center gap-1.5 truncate text-sm text-slate-500">
+                              <Mail size={14} aria-hidden="true" />
+
+                              <span className="truncate">
+                                {publicador.email}
+                              </span>
+                            </p>
+                          )}
+                        </div>
                       </div>
+
+                      <Badge variant={publicador.ativo ? "success" : "default"}>
+                        {publicador.ativo ? "Ativo" : "Inativo"}
+                      </Badge>
                     </div>
 
-                    <Badge variant={publicador.ativo ? "success" : "default"}>
-                      {publicador.ativo ? "Ativo" : "Inativo"}
-                    </Badge>
-                  </div>
+                    <div className="mt-5 flex flex-col gap-2 border-t border-slate-100 pt-4 sm:flex-row">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => abrirModalEditar(publicador)}
+                      >
+                        <Pencil size={15} aria-hidden="true" />
+                        Editar
+                      </Button>
 
-                  <div className="mt-5 flex flex-col gap-2 border-t border-slate-100 pt-4 sm:flex-row">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => abrirModalEditar(publicador)}
-                    >
-                      <Pencil size={15} aria-hidden="true" />
-                      Editar
-                    </Button>
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => abrirModalInativar(publicador)}
+                      >
+                        <UserX size={15} aria-hidden="true" />
+                        Inativar
+                      </Button>
 
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => abrirModalInativar(publicador)}
-                    >
-                      <UserX size={15} aria-hidden="true" />
-                      Inativar
-                    </Button>
-                  </div>
-                </article>
-              ))}
-            </div>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={() =>
+                          setHistoricoPublicador({
+                            id: publicador.id,
+                            nome: publicador.nome,
+                          })
+                        }
+                      >
+                        <History size={16} aria-hidden="true" />
+                        Histórico
+                      </Button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+
+              <Pagination
+                paginaAtual={paginaAtual}
+                totalPaginas={totalPaginas}
+                totalElementos={totalElementos}
+                tamanhoPagina={tamanhoPagina}
+                onPaginaAnterior={() => {
+                  setPaginaAtual((pagina) => Math.max(0, pagina - 1));
+                }}
+                onProximaPagina={() => {
+                  setPaginaAtual((pagina) =>
+                    Math.min(totalPaginas - 1, pagina + 1),
+                  );
+                }}
+                onTamanhoPaginaChange={(novoTamanho) => {
+                  setTamanhoPagina(novoTamanho);
+                  setPaginaAtual(0);
+                }}
+                desabilitado={carregando}
+              />
+            </>
           )}
         </>
       )}
@@ -628,6 +687,13 @@ export function Publicadores() {
         loading={processandoInativacao}
         onConfirmar={() => void confirmarInativacao()}
         onCancelar={fecharModalInativar}
+      />
+
+      <HistoricoPublicadorModal
+        aberto={historicoPublicador !== null}
+        publicadorId={historicoPublicador?.id ?? null}
+        nomePublicador={historicoPublicador?.nome}
+        onFechar={() => setHistoricoPublicador(null)}
       />
     </>
   );
