@@ -1,19 +1,29 @@
-import { useState, useEffect, useCallback } from "react";
+import { useEffect, useState } from "react";
+
 import { useNavigate } from "react-router-dom";
+
 import { api } from "../services/api";
+
 import { toast } from "sonner";
+
 import {
-  Users,
-  ArrowLeft,
-  Shield,
   Mail,
-  CheckCircle2,
-  XCircle,
-  UserX,
-  UserPlus,
   Pencil,
+  Shield,
   Trash2,
+  UserPlus,
+  UserX,
+  Users,
 } from "lucide-react";
+
+import { PageHeader } from "../components/ui/PageHeader";
+import { Button } from "../components/ui/Button";
+import { Badge } from "../components/ui/Badge";
+import { Card } from "../components/ui/Card";
+import { LoadingState } from "../components/ui/LoadingState";
+import { EmptyState } from "../components/ui/EmptyState";
+import { ErrorState } from "../components/ui/ErrorState";
+import { ConfirmModal } from "../components/ui/ConfirmModal";
 
 interface Usuario {
   id: number;
@@ -23,243 +33,342 @@ interface Usuario {
   ativo: boolean;
 }
 
+type AcaoConfirmacao = "inativar" | "excluir" | null;
+
+const roleLabels: Record<string, string> = {
+  ROLE_ADMIN_GERAL: "Administrador geral",
+  ROLE_SUPERINTENDENTE_SERVICO: "Superintendente",
+  ROLE_ANCIAO: "Ancião",
+  ROLE_SERVO_PUBLICACOES: "Servo de publicações",
+};
+
+function obterNomeRole(role: string): string {
+  return roleLabels[role] ?? role.replace("ROLE_", "").replaceAll("_", " ");
+}
+
+function obterIniciais(nome: string): string {
+  const partes = nome.trim().split(/\s+/);
+
+  if (partes.length === 0) {
+    return "US";
+  }
+
+  if (partes.length === 1) {
+    return partes[0].substring(0, 2).toUpperCase();
+  }
+
+  return `${partes[0][0]}${partes[partes.length - 1][0]}`.toUpperCase();
+}
+
 export default function UsuariosCongregacaoPage() {
   const navigate = useNavigate();
+
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
-
-  // Recupera o ID da congregação do usuário logado armazenado no localStorage
-  const usuarioLogado = JSON.parse(localStorage.getItem("usuario") || "{}");
-  const congregacaoId = usuarioLogado.congregacaoId || 1;
-
-  const carregarUsuarios = useCallback(async () => {
-    try {
-      const response = await api.get("/usuarios");
-      setUsuarios(response.data);
-    } catch (error) {
-      console.error("Erro ao carregar usuários da congregação", error);
-      toast.error("Erro ao carregar usuários da congregação.");
-    }
-  }, [congregacaoId]);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
+  const [acao, setAcao] = useState<AcaoConfirmacao>(null);
+  const [usuarioSelecionado, setUsuarioSelecionado] = useState<Usuario | null>(
+    null,
+  );
+  const [processando, setProcessando] = useState(false);
+  const [atualizacao, setAtualizacao] = useState(0);
 
   useEffect(() => {
-    if (!congregacaoId) return;
+    const buscarUsuarios = async () => {
+      setCarregando(true);
+      setErro(null);
 
-    const carregarDados = async () => {
       try {
-        const response = await api.get(`/usuarios`);
+        const response = await api.get<Usuario[]>("/usuarios");
+
         setUsuarios(response.data);
       } catch (error) {
-        console.error("Erro ao carregar usuários da congregação", error);
-        toast.error("Erro ao carregar usuários da congregação.");
+        console.error("Erro ao carregar usuários", error);
+        setUsuarios([]);
+        setErro("Não foi possível carregar os usuários.");
+      } finally {
+        setCarregando(false);
       }
     };
 
-    carregarDados();
-  }, [congregacaoId]);
+    void buscarUsuarios();
+  }, [atualizacao]);
 
-  const handleInativar = async (id: number) => {
-    if (
-      !window.confirm(
-        "Tem certeza que deseja inativar este usuário do sistema?",
-      )
-    ) {
+  const abrirConfirmacao = (
+    usuario: Usuario,
+    tipo: Exclude<AcaoConfirmacao, null>,
+  ) => {
+    setUsuarioSelecionado(usuario);
+    setAcao(tipo);
+  };
+
+  const fecharConfirmacao = () => {
+    if (processando) {
       return;
     }
 
-    try {
-      await api.patch(`/usuarios/${id}/inativar`);
-      toast.success("Usuário inativado com sucesso.");
-      carregarUsuarios();
-    } catch (error) {
-      console.error("Erro ao inativar usuário", error);
-      toast.error("Erro ao executar operação.");
-    }
+    setAcao(null);
+    setUsuarioSelecionado(null);
   };
 
-  const handleDeletar = async (id: number) => {
-    if (
-      !window.confirm(
-        "Tem certeza que deseja excluir permanentemente este usuário?",
-      )
-    ) {
+  const executarAcao = async () => {
+    if (!usuarioSelecionado || !acao) {
       return;
     }
 
+    setProcessando(true);
+
     try {
-      await api.delete(`/usuarios/${id}`);
-      toast.success("Usuário excluído com sucesso.");
-      carregarUsuarios();
+      if (acao === "inativar") {
+        await api.patch(`/usuarios/${usuarioSelecionado.id}/inativar`);
+
+        toast.success("Usuário inativado com sucesso.");
+      }
+
+      if (acao === "excluir") {
+        await api.delete(`/usuarios/${usuarioSelecionado.id}`);
+
+        toast.success("Usuário excluído com sucesso.");
+      }
+
+      fecharConfirmacao();
+      setAtualizacao((valor) => valor + 1);
     } catch (error) {
-      console.error("Erro ao excluir usuário", error);
-      toast.error("Erro ao excluir usuário.");
+      console.error("Erro ao executar operação", error);
+
+      toast.error(
+        acao === "inativar"
+          ? "Não foi possível inativar o usuário."
+          : "Não foi possível excluir o usuário.",
+      );
+    } finally {
+      setProcessando(false);
     }
   };
+
+  const tituloConfirmacao =
+    acao === "inativar" ? "Inativar usuário" : "Excluir usuário";
+
+  const mensagemConfirmacao =
+    acao === "inativar"
+      ? `Deseja realmente inativar o usuário "${usuarioSelecionado?.nome}"? O acesso ao sistema será desativado.`
+      : `Deseja realmente excluir permanentemente o usuário "${usuarioSelecionado?.nome}"? Esta ação não poderá ser desfeita.`;
 
   return (
-    <div className="min-h-screen bg-[#0b0f19] text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
-      {/* Cabeçalho */}
-      <header className="sticky top-0 z-50 backdrop-blur-xl bg-[#0b0f19]/80 border-b border-slate-800/80">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-auto sm:h-20 py-4 sm:py-0 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => navigate("/dashboard")}
-                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/80 transition-all cursor-pointer"
-                title="Voltar ao Dashboard"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-linear-to-br from-indigo-500 to-violet-700 flex items-center justify-center shadow-lg shadow-indigo-500/25 shrink-0">
-                  <Users className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h1 className="font-bold text-base sm:text-lg text-white leading-tight">
-                    Usuários da Congregação
-                  </h1>
-                  <p className="text-xs text-slate-400">
-                    Gerenciamento de membros e acessos locais
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+    <div className="space-y-6">
+      <PageHeader
+        titulo="Usuários"
+        subtitulo="Gerencie os usuários e os acessos ao sistema."
+        icon={Users}
+        actions={
+          <Button type="button" onClick={() => navigate("/usuarios/novo")}>
+            <UserPlus size={16} />
+            Novo usuário
+          </Button>
+        }
+      />
 
-          <button
-            onClick={() => navigate("/usuarios/novo")}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-linear-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-lg shadow-indigo-500/20 transition-all cursor-pointer"
-          >
-            <UserPlus className="w-4 h-4" />
-            Novo Usuário
-          </button>
-        </div>
-      </header>
-
-      {/* Conteúdo Principal */}
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-8">
-        <div className="bg-slate-900/70 border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
-          <div className="px-6 py-4 border-b border-slate-800/80 bg-slate-950/40 flex items-center justify-between">
-            <h2 className="font-bold text-sm text-slate-200 uppercase tracking-wider">
-              Usuários Vinculados ({usuarios.length})
+      <Card className="overflow-hidden p-0">
+        <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-slate-900">
+              Usuários cadastrados
             </h2>
+
+            <p className="mt-1 text-xs text-slate-500">
+              {usuarios.length}{" "}
+              {usuarios.length === 1
+                ? "usuário cadastrado"
+                : "usuários cadastrados"}
+            </p>
           </div>
 
-          {/* Versão em Tabela para Desktop e Scroll Suave para Mobile */}
-          <div className="overflow-x-auto w-full">
-            <table className="min-w-full divide-y divide-slate-800/80">
-              <thead className="bg-slate-950/60">
-                <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                    Nome
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                    E-mail
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                    Papéis (Roles)
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-4 text-right text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                    Ações
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/60">
-                {usuarios.length === 0 ? (
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => setAtualizacao((valor) => valor + 1)}
+            disabled={carregando}
+          >
+            Atualizar
+          </Button>
+        </div>
+
+        {carregando && (
+          <div className="px-5 py-10">
+            <LoadingState />
+          </div>
+        )}
+
+        {!carregando && erro && (
+          <div className="px-5 py-10">
+            <ErrorState
+              message={erro}
+              onRetry={() => setAtualizacao((valor) => valor + 1)}
+            />
+          </div>
+        )}
+
+        {!carregando && !erro && usuarios.length === 0 && (
+          <div className="px-5 py-10">
+            <EmptyState
+              title="Nenhum usuário encontrado"
+              description="Ainda não existem usuários cadastrados para esta congregação."
+              action={
+                <Button
+                  type="button"
+                  onClick={() => navigate("/usuarios/novo")}
+                >
+                  <UserPlus size={16} />
+                  Cadastrar usuário
+                </Button>
+              }
+            />
+          </div>
+        )}
+
+        {!carregando && !erro && usuarios.length > 0 && (
+          <>
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead className="border-b border-slate-200 bg-slate-50">
                   <tr>
-                    <td
-                      colSpan={5}
-                      className="px-6 py-8 text-center text-sm text-slate-500"
-                    >
-                      Nenhum usuário encontrado para esta congregação.
-                    </td>
+                    <th className="px-5 py-3 text-left font-semibold text-slate-700">
+                      Usuário
+                    </th>
+
+                    <th className="px-5 py-3 text-left font-semibold text-slate-700">
+                      Perfil
+                    </th>
+
+                    <th className="px-5 py-3 text-left font-semibold text-slate-700">
+                      Status
+                    </th>
+
+                    <th className="px-5 py-3 text-right font-semibold text-slate-700">
+                      Ações
+                    </th>
                   </tr>
-                ) : (
-                  usuarios.map((u) => (
+                </thead>
+
+                <tbody className="divide-y divide-slate-100">
+                  {usuarios.map((usuario) => (
                     <tr
-                      key={u.id}
-                      className="hover:bg-slate-800/40 transition-colors"
+                      key={usuario.id}
+                      className="transition hover:bg-slate-50"
                     >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-white flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-300 font-bold text-xs shrink-0">
-                          {u.nome ? u.nome.substring(0, 2).toUpperCase() : "US"}
-                        </div>
-                        <span className="truncate max-w-37.5 sm:max-w-none">
-                          {u.nome}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
-                        <div className="flex items-center gap-1.5">
-                          <Mail className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                          <span className="truncate max-w-40 sm:max-w-none">
-                            {u.email}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
-                        <div className="flex items-center gap-1.5">
-                          <Shield className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                          <span className="bg-slate-950/60 border border-slate-800 px-2.5 py-1 rounded-xl text-xs text-slate-300">
-                            {u.roles ? u.roles.join(", ") : "-"}
-                          </span>
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-xs font-semibold text-slate-600">
+                            {obterIniciais(usuario.nome)}
+                          </div>
+
+                          <div className="min-w-0">
+                            <p className="truncate font-medium text-slate-900">
+                              {usuario.nome}
+                            </p>
+
+                            <div className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-500">
+                              <Mail size={13} />
+
+                              <span className="truncate">{usuario.email}</span>
+                            </div>
+                          </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <span
-                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${
-                            u.ativo
-                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-sm shadow-emerald-500/10"
-                              : "bg-rose-500/10 text-rose-400 border-rose-500/20 shadow-sm shadow-rose-500/10"
-                          }`}
-                        >
-                          {u.ativo ? (
-                            <>
-                              <CheckCircle2 className="w-3 h-3" /> Ativo
-                            </>
+
+                      <td className="px-5 py-4">
+                        <div className="flex flex-wrap gap-1.5">
+                          {usuario.roles?.length > 0 ? (
+                            usuario.roles.map((role) => (
+                              <Badge key={role} variant="info">
+                                <Shield size={12} />
+                                {obterNomeRole(role)}
+                              </Badge>
+                            ))
                           ) : (
-                            <>
-                              <XCircle className="w-3 h-3" /> Inativo
-                            </>
+                            <span className="text-xs text-slate-400">
+                              Sem perfil
+                            </span>
                           )}
-                        </span>
+                        </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex items-center justify-end gap-2">
-                          {u.ativo && (
+
+                      <td className="whitespace-nowrap px-5 py-4">
+                        {usuario.ativo ? (
+                          <Badge variant="success">Ativo</Badge>
+                        ) : (
+                          <Badge variant="warning">Inativo</Badge>
+                        )}
+                      </td>
+
+                      <td className="whitespace-nowrap px-5 py-4">
+                        <div className="flex items-center justify-end gap-1">
+                          {usuario.ativo && (
                             <button
-                              onClick={() => handleInativar(u.id)}
-                              className="p-2 rounded-xl text-amber-400 hover:bg-amber-500/10 border border-transparent hover:border-amber-500/20 transition-all cursor-pointer inline-flex items-center gap-1"
-                              title="Inativar Usuário"
+                              type="button"
+                              onClick={() =>
+                                abrirConfirmacao(usuario, "inativar")
+                              }
+                              className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-amber-50 hover:text-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                              title="Inativar usuário"
+                              aria-label={`Inativar ${usuario.nome}`}
                             >
-                              <UserX className="w-4 h-5 sm:w-4 sm:h-4" />
+                              <UserX size={17} />
                             </button>
                           )}
+
                           <button
-                            onClick={() => navigate(`/usuarios/editar/${u.id}`)}
-                            className="p-2 rounded-xl text-indigo-400 hover:bg-indigo-500/10 border border-transparent hover:border-indigo-500/20 transition-all cursor-pointer inline-flex items-center gap-1"
-                            title="Editar Usuário"
+                            type="button"
+                            onClick={() =>
+                              navigate(`/usuarios/editar/${usuario.id}`)
+                            }
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-blue-50 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                            title="Editar usuário"
+                            aria-label={`Editar ${usuario.nome}`}
                           >
-                            <Pencil className="w-4 h-4" />
+                            <Pencil size={17} />
                           </button>
+
                           <button
-                            onClick={() => handleDeletar(u.id)}
-                            className="p-2 rounded-xl text-rose-400 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-all cursor-pointer inline-flex items-center gap-1"
-                            title="Excluir Usuário"
+                            type="button"
+                            onClick={() => abrirConfirmacao(usuario, "excluir")}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-500/20"
+                            title="Excluir usuário"
+                            aria-label={`Excluir ${usuario.nome}`}
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 size={17} />
                           </button>
                         </div>
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </main>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="border-t border-slate-200 bg-slate-50 px-5 py-3 text-xs text-slate-500">
+              {usuarios.length}{" "}
+              {usuarios.length === 1
+                ? "usuário encontrado"
+                : "usuários encontrados"}
+            </div>
+          </>
+        )}
+      </Card>
+
+      <ConfirmModal
+        aberto={acao !== null}
+        titulo={tituloConfirmacao}
+        mensagem={mensagemConfirmacao}
+        confirmLabel={
+          acao === "inativar" ? "Inativar usuário" : "Excluir usuário"
+        }
+        cancelLabel="Cancelar"
+        variant={acao === "excluir" ? "danger" : "primary"}
+        loading={processando}
+        onConfirmar={() => void executarAcao()}
+        onCancelar={fecharConfirmacao}
+      />
     </div>
   );
 }
