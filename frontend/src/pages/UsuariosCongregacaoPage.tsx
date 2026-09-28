@@ -182,7 +182,13 @@ export default function UsuariosCongregacaoPage() {
         subtitulo="Gerencie os usuários e os acessos ao sistema."
         icon={Users}
         actions={
-          <Button type="button" onClick={() => navigate("/usuarios/novo")}>
+          <Button 
+            type="button"
+            onClick={() => {
+              console.log("CLIQUE NOVO USUÁRIO");
+              navigate("/usuarios/novo");
+            }}
+          >
             <UserPlus size={16} />
             Novo usuário
           </Button>

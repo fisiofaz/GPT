@@ -1,18 +1,44 @@
-// src/pages/UsuarioFormPage.tsx
-import React, { useState, useEffect } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { api } from "../../services/api";
-import { toast } from "sonner";
-import {
-  UserPlus,
-  ArrowLeft,
-  Mail,
-  Lock,
-  User,
-  Shield,
-  Building2,
-} from "lucide-react";
 import { AxiosError } from "axios";
+import {
+  ArrowLeft,
+  Building2,
+  KeyRound,
+  ShieldCheck,
+  UserRound,
+  UserRoundPlus,
+} from "lucide-react";
+import { toast } from "sonner";
+
+import { AuthContext } from "../../context/AuthContext";
+import { api } from "../../services/api";
+import { PageHeader } from "../ui/PageHeader";
+import { Card } from "../ui/Card";
+import { Input } from "../ui/Input";
+import { Select } from "../ui/Select";
+import { Button } from "../ui/Button";
+import { LoadingState } from "../ui/LoadingState";
+import { ErrorState } from "../ui/ErrorState";
+
+interface Publicador {
+  id: number;
+  nome: string;
+  email?: string;
+  telefone?: string;
+  ativo: boolean;
+  congregacaoId: number;
+}
+
+interface Usuario {
+  id: number;
+  nome: string;
+  email: string;
+  ativo: boolean;
+  congregacaoId?: number;
+  congregacaoNome?: string;
+  roles: string[];
+}
 
 interface Congregacao {
   id: number;
@@ -20,240 +46,535 @@ interface Congregacao {
   numero?: string;
 }
 
+interface RoleOption {
+  value: string;
+  label: string;
+}
+
+const ROLES: RoleOption[] = [
+  {
+    value: "ROLE_ANCIAO",
+    label: "Ancião",
+  },
+  {
+    value: "ROLE_SUPERINTENDENTE_SERVICO",
+    label: "Superintendente de Serviço",
+  },
+  {
+    value: "ROLE_SERVO_PUBLICACOES",
+    label: "Servo de Publicações",
+  },
+  {
+    value: "ROLE_SERVO_TERRITORIO",
+    label: "Servo de Território",
+  },
+  {
+    value: "ROLE_ADMIN_GERAL",
+    label: "Administrador Geral",
+  },
+];
+
 export default function UsuarioFormPage() {
   const navigate = useNavigate();
-  const { id } = useParams(); // Se houver ID, é edição (opcional)
+  const { id } = useParams();
+
   const isEdicao = Boolean(id);
 
-  const [nome, setNome] = useState("");
+  const [publicadores, setPublicadores] = useState<Publicador[]>([]);
+  const [congregacoes, setCongregacoes] = useState<Congregacao[]>([]);
+
+  const [publicadorId, setPublicadorId] = useState("");
+  const [congregacaoId, setCongregacaoId] = useState<number | null>(null);
+  const [congregacaoNome, setCongregacaoNome] = useState("");
+
+  const [usuario, setUsuario] = useState<Usuario | null>(null);
+
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [roleSelecionada, setRoleSelecionada] = useState("");
-  const [congregacaoId, setCongregacaoId] = useState("");
-  const [congregacoes, setCongregacoes] = useState<Congregacao[]>([]);
-  const [carregando, setCarregando] = useState(false);
 
-  
+  const [carregando, setCarregando] = useState(true);
+  const [carregandoPublicadores, setCarregandoPublicadores] = useState(false);
+  const [salvando, setSalvando] = useState(false);
 
-  // Carrega a lista de congregações para o select
-  useEffect(() => {
-    const carregarCongregacoes = async () => {
-      try {
-        const response = await api.get("/congregacoes");
-        setCongregacoes(response.data);
-      } catch (error) {
-        console.error("Erro ao carregar congregações", error);
-        toast.error("Não foi possível carregar a lista de congregações.");
-      }
-    };
+  const [erro, setErro] = useState<string | null>(null);
 
-    carregarCongregacoes();
+  const { usuario: usuarioLogado } = useContext(AuthContext);
 
-    if (isEdicao && id) {
-      // Se for edição, pode carregar os dados do usuário aqui se necessário
-    }
-  }, [isEdicao, id]);
+  const isAdminGeral =
+    usuarioLogado?.roles?.includes("ROLE_ADMIN_GERAL") ||
+    usuarioLogado?.roles?.includes("ADMIN_GERAL");
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const isAdminGeral = roleSelecionada === "ROLE_ADMIN_GERAL" || roleSelecionada === "ADMIN_GERAL";
-
-    // Validação: Admin Geral não precisa de congregação, os demais sim.
-    if (!isAdminGeral && !congregacaoId) {
-      toast.error("Selecione uma congregação para este perfil.");
-      return;
-    }
-
-    setCarregando(true);
+  const carregarPublicadores = async (idCongregacao: number) => {
+    setCarregandoPublicadores(true);
+    setErro(null);
 
     try {
-      const payload = {
-        nome,
-        email,
-        ...(senha ? { senha } : {}),
-        roles: [roleSelecionada],
-        congregacaoId:
-          isAdminGeral ? null : Number(congregacaoId),
-      };
-
-      if (isEdicao) {
-        await api.put(`/usuarios/${id}`, payload);
-        toast.success("Usuário atualizado com sucesso!");
-      } else {
-        await api.post("/usuarios", payload);
-        toast.success("Usuário cadastrado com sucesso!");
-      }
-
-      navigate("/usuarios/congregacao"); // Ou para a listagem geral dependendo da sua rota
-    } catch (error: unknown) {
-      console.error("Erro ao salvar usuário", error);
+      const response = await api.get<Publicador[]>(
+        `/publicadores/congregacao/${idCongregacao}/disponiveis-para-usuario`,
+      );
+      setPublicadores(response.data);
+    } catch (error) {
+      console.error("Erro ao carregar publicadores disponíveis", error);
       if (error instanceof AxiosError && error.response?.data?.message) {
-        toast.error(error.response.data.message);
+        setErro(error.response.data.message);
       } else {
-        toast.error("Erro ao salvar usuário. Verifique os dados.");
+        setErro("Não foi possível carregar os publicadores disponíveis.");
       }
+      setPublicadores([]);
     } finally {
-      setCarregando(false);
+      setCarregandoPublicadores(false);
     }
   };
 
+  useEffect(() => {
+    const carregarDados = async () => {
+      setCarregando(true);
+      setErro(null);
+
+      try {
+        if (isEdicao && id) {
+          const response = await api.get<Usuario>(`/usuarios/${id}`);
+          const dados = response.data;
+          setUsuario(dados);
+          setEmail(dados.email);
+          setCongregacaoId(dados.congregacaoId ?? null);
+          setCongregacaoNome(dados.congregacaoNome ?? "");
+          if (dados.roles?.length > 0) {
+            setRoleSelecionada(dados.roles[0]);
+          }
+          return;
+        }
+        if (isAdminGeral) {
+          const response = await api.get<Congregacao[]>("/congregacoes");
+          setCongregacoes(response.data);
+          return;
+        }
+        const congregacaoIdLogada = usuarioLogado?.congregacaoId;
+        if (!congregacaoIdLogada) {
+          setErro(
+            "Não foi possível identificar a congregação do usuário logado.",
+          );
+          return;
+        }
+        setCongregacaoId(congregacaoIdLogada);
+        await carregarPublicadores(congregacaoIdLogada);
+      } catch (error) {
+        console.error("Erro ao carregar dados do formulário", error);
+        if (error instanceof AxiosError && error.response?.data?.message) {
+          setErro(error.response.data.message);
+        } else {
+          setErro("Não foi possível carregar os dados.");
+        }
+      } finally {
+        setCarregando(false);
+      }
+    };
+
+    void carregarDados();
+  }, [id, isEdicao, isAdminGeral, usuarioLogado?.congregacaoId]);
+
+  const handleCongregacaoChange = async (
+    event: React.ChangeEvent<HTMLSelectElement>,
+  ) => {
+    const valor = event.target.value;
+    setPublicadorId("");
+    setPublicadores([]);
+    setEmail("");
+    if (!valor) {
+      setCongregacaoId(null);
+      setCongregacaoNome("");
+      return;
+    }
+    const novaCongregacaoId = Number(valor);
+    setCongregacaoId(novaCongregacaoId);
+    const congregacao = congregacoes.find(
+      (item) => item.id === novaCongregacaoId,
+    );
+    setCongregacaoNome(congregacao?.nome ?? "");
+    await carregarPublicadores(novaCongregacaoId);
+  };
+
+  const publicadorSelecionado = publicadores.find(
+    (publicador) => String(publicador.id) === publicadorId,
+  );
+
+  const handlePublicadorChange = (
+    event: React.ChangeEvent<HTMLSelectElement>,
+  ) => {
+    const valor = event.target.value;
+
+    setPublicadorId(valor);
+
+    const selecionado = publicadores.find(
+      (publicador) => String(publicador.id) === valor,
+    );
+
+    if (selecionado) {
+      setEmail(selecionado.email ?? "");
+      setCongregacaoId(selecionado.congregacaoId);
+    }
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+
+    if (!isEdicao && !congregacaoId) {
+      toast.error("Selecione uma congregação.");
+      return;
+    }
+
+    if (!isEdicao && !publicadorId) {
+      toast.error("Selecione um publicador.");
+      return;
+    }
+
+    if (!email.trim()) {
+      toast.error("Informe o e-mail de acesso.");
+      return;
+    }
+
+    if (!isEdicao && !senha) {
+      toast.error("Informe uma senha.");
+      return;
+    }
+
+    if (!roleSelecionada) {
+      toast.error("Selecione um perfil.");
+      return;
+    }
+
+    setSalvando(true);
+
+    try {
+      if (isEdicao) {
+        const payload = {
+          nome: usuario?.nome ?? "",
+          email: email.trim(),
+          ...(senha ? { senha } : {}),
+          roles: [roleSelecionada],
+        };
+
+        await api.put(`/usuarios/${id}`, payload);
+
+        toast.success("Acesso do usuário atualizado com sucesso.");
+      } else {
+        const payload = {
+          publicadorId: Number(publicadorId),
+          email: email.trim(),
+          senha,
+          roles: [roleSelecionada],
+        };
+
+        await api.post("/usuarios", payload);
+
+        toast.success("Acesso ao sistema concedido com sucesso.");
+      }
+
+      navigate("/admin/usuarios-congregacao");
+    } catch (error: unknown) {
+      console.error("Erro ao salvar usuário", error);
+
+      if (error instanceof AxiosError && error.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error(
+          isEdicao
+            ? "Não foi possível atualizar o usuário."
+            : "Não foi possível conceder o acesso.",
+        );
+      }
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  if (carregando) {
+    return (
+      <div className="p-6">
+        <LoadingState />
+      </div>
+    );
+  }
+
+  if (erro) {
+    return (
+      <div className="p-6">
+        <ErrorState message={erro} onRetry={() => window.location.reload()} />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-[#0b0f19] text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
-      {/* Cabeçalho */}
-      <header className="sticky top-0 z-50 backdrop-blur-xl bg-[#0b0f19]/80 border-b border-slate-800/80">
-        <div className="max-w-3xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate(-1)}
-              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/80 transition-all cursor-pointer"
-              title="Voltar"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-linear-to-br from-indigo-500 to-violet-700 flex items-center justify-center shadow-lg shadow-indigo-500/25">
-                <UserPlus className="w-5 h-5 text-white" />
+    <div className="p-4 md:p-6">
+      <PageHeader
+        titulo={isEdicao ? "Editar acesso" : "Conceder acesso ao sistema"}
+        subtitulo={
+          isEdicao
+            ? "Atualize as credenciais e os perfis de acesso do usuário."
+            : "Selecione um publicador existente para conceder acesso ao sistema."
+        }
+        icon={isEdicao ? UserRound : UserRoundPlus}
+        actions={
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => navigate("/admin/usuarios-congregacao")}
+          >
+            {" "}
+            <ArrowLeft size={16} /> Voltar{" "}
+          </Button>
+        }
+      />
+
+      <form
+        onSubmit={handleSubmit}
+        className="mx-auto mt-6 max-w-4xl space-y-6"
+      >
+        {!isEdicao ? (
+          <>
+            {" "}
+            {isAdminGeral && (
+              <Card>
+                <div className="mb-5 flex items-center gap-3">
+                  <div className="rounded-lg bg-slate-100 p-2 text-slate-700">
+                    <Building2 size={20} />
+                  </div>
+                  <div>
+                    <h2 className="font-semibold text-slate-900">
+                      {" "}
+                      Congregação{" "}
+                    </h2>
+                    <p className="text-sm text-slate-500">
+                      {" "}
+                      Escolha a congregação para carregar os publicadores
+                      disponíveis.{" "}
+                    </p>
+                  </div>
+                </div>
+                <Select
+                  label="Congregação"
+                  value={congregacaoId ? String(congregacaoId) : ""}
+                  onChange={handleCongregacaoChange}
+                  required
+                >
+                  <option value="">Selecione uma congregação</option>
+                  {congregacoes.map((congregacao) => (
+                    <option key={congregacao.id} value={congregacao.id}>
+                      {congregacao.nome}
+                      {congregacao.numero ? ` — ${congregacao.numero}` : ""}
+                    </option>
+                  ))}
+                </Select>
+              </Card>
+            )}
+            <Card>
+              <div className="mb-5 flex items-center gap-3">
+                <div className="rounded-lg bg-slate-100 p-2 text-slate-700">
+                  <UserRound size={20} />
+                </div>
+
+                <div>
+                  <h2 className="font-semibold text-slate-900">Publicador</h2>
+
+                  <p className="text-sm text-slate-500">
+                    Selecione um publicador que ainda não possui acesso.
+                  </p>
+                </div>
               </div>
+
+              <Select
+                label="Publicador"
+                value={publicadorId}
+                onChange={handlePublicadorChange}
+                required
+                disabled={!congregacaoId || carregandoPublicadores}
+              >
+                <option value="">
+                  {carregandoPublicadores
+                    ? "Carregando publicadores..."
+                    : !congregacaoId
+                      ? "Selecione primeiro uma congregação"
+                      : publicadores.length === 0
+                        ? "Nenhum publicador disponível"
+                        : "Selecione um publicador"}
+                </option>
+
+                {publicadores.map((publicador) => (
+                  <option key={publicador.id} value={publicador.id}>
+                    {publicador.nome}
+                  </option>
+                ))}
+              </Select>
+
+              {publicadorSelecionado && (
+                <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                        Publicador
+                      </p>
+
+                      <p className="mt-1 text-sm font-medium text-slate-900">
+                        {publicadorSelecionado.nome}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                        E-mail cadastrado
+                      </p>
+
+                      <p className="mt-1 text-sm text-slate-700">
+                        {publicadorSelecionado.email || "Não informado"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </Card>
+          </>
+        ) : (
+          <Card>
+            <div className="mb-5 flex items-center gap-3">
+              <div className="rounded-lg bg-slate-100 p-2 text-slate-700">
+                <UserRound size={20} />
+              </div>
+
               <div>
-                <h1 className="font-bold text-lg text-white leading-tight">
-                  {isEdicao ? "Editar Usuário" : "Novo Usuário"}
-                </h1>
-                <p className="text-xs text-slate-400">
-                  {isEdicao
-                    ? "Atualize as informações do sistema"
-                    : "Cadastre um novo membro ou administrador"}
+                <h2 className="font-semibold text-slate-900">
+                  Publicador vinculado
+                </h2>
+
+                <p className="text-sm text-slate-500">
+                  O vínculo com o publicador não pode ser alterado nesta tela.
                 </p>
               </div>
             </div>
-          </div>
-        </div>
-      </header>
 
-      {/* Formulário */}
-      <main className="flex-1 max-w-3xl w-full mx-auto px-6 py-10">
-        <form
-          onSubmit={handleSubmit}
-          className="bg-slate-900/70 border border-slate-800 rounded-3xl p-8 shadow-xl space-y-6"
-        >
-          {/* Nome */}
-          <div className="space-y-2">
-            <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-              <User className="w-4 h-4 text-indigo-400" /> Nome Completo
-            </label>
-            <input
-              type="text"
-              required
-              value={nome}
-              onChange={(e) => setNome(e.target.value)}
-              placeholder="Ex: João da Silva"
-              className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-all"
-            />
-          </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Nome
+                </p>
 
-          {/* E-mail */}
-          <div className="space-y-2">
-            <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-              <Mail className="w-4 h-4 text-indigo-400" /> E-mail de Acesso
-            </label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="joao@exemplo.com"
-              className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-all"
-            />
-          </div>
+                <p className="mt-1 text-sm font-medium text-slate-900">
+                  {usuario?.nome || "Não informado"}
+                </p>
+              </div>
 
-          {/* Senha */}
-          <div className="space-y-2">
-            <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-              <Lock className="w-4 h-4 text-indigo-400" /> Senha{" "}
-              {isEdicao && "(Deixe em branco para não alterar)"}
-            </label>
-            <input
-              type="password"
-              required={!isEdicao}
-              value={senha}
-              onChange={(e) => setSenha(e.target.value)}
-              placeholder="••••••••"
-              className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-all"
-            />
-          </div>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Congregação
+                </p>
 
-          {/* Papel / Role */}
-          <div className="space-y-2">
-            <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-              <Shield className="w-4 h-4 text-indigo-400" /> Perfil de Acesso
-              (Role)
-            </label>
-            <select
-              value={roleSelecionada}
-              onChange={(e) => setRoleSelecionada(e.target.value)}
-              className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition-all cursor-pointer"
-              required
-            >
-              <option value="">Selecione um perfil de acesso...</option>
-              <option value="ROLE_SUPERINTENDENTE_SERVICO">
-                Superintendente de Serviço
-              </option>
-              <option value="ROLE_ADMIN_GERAL">Administrador do Sistema</option>
-              <option value="ROLE_SERVO_TERRITORIO">
-                Servo Ministerial de Território
-              </option>
-              <option value="ROLE_SERVO_PUBLICACOES">
-                Servo Ministerial de Publicação
-              </option>
-            </select>
-          </div>
-
-          {/* Congregação (Condicional: Admin Geral não precisa) */}
-          {roleSelecionada !== "ROLE_ADMIN_GERAL" && (
-            <div className="space-y-2 animate-fadeIn">
-              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                <Building2 className="w-4 h-4 text-indigo-400" />
-                Congregação Vinculada
-              </label>
-              <select
-                required={roleSelecionada !== "ROLE_ADMIN_GERAL"}
-                value={congregacaoId}
-                onChange={(e) => setCongregacaoId(e.target.value)}
-                className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition-all cursor-pointer"
-              >
-                <option value="">Selecione uma congregação...</option>
-                {congregacoes.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.nome} {c.numero ? `(${c.numero})` : ""}
-                  </option>
-                ))}
-              </select>
+                <div className="mt-1 flex items-center gap-2 text-sm text-slate-700">
+                  <Building2 size={15} />
+                  {congregacaoNome || "Não informada"}
+                </div>
+              </div>
             </div>
-          )}
+          </Card>
+        )}
 
-          {/* Botões de Ação */}
-          <div className="flex items-center justify-end gap-4 pt-4 border-t border-slate-800">
-            <button
-              type="button"
-              onClick={() => navigate(-1)}
-              className="px-6 py-3 rounded-xl text-sm font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition-all cursor-pointer"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={carregando}
-              className="bg-linear-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white px-6 py-3 rounded-xl text-sm font-semibold shadow-lg shadow-indigo-500/20 transition-all cursor-pointer disabled:opacity-50"
-            >
-              {carregando
-                ? "Salvando..."
-                : isEdicao
-                  ? "Atualizar Usuário"
-                  : "Cadastrar Usuário"}
-            </button>
+        <Card>
+          <div className="mb-5 flex items-center gap-3">
+            <div className="rounded-lg bg-slate-100 p-2 text-slate-700">
+              <KeyRound size={20} />
+            </div>
+
+            <div>
+              <h2 className="font-semibold text-slate-900">Acesso</h2>
+
+              <p className="text-sm text-slate-500">
+                Defina as credenciais e o perfil de acesso.
+              </p>
+            </div>
           </div>
-        </form>
-      </main>
+
+          <div className="grid gap-5 md:grid-cols-2">
+            <Input
+              label="E-mail"
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="usuario@exemplo.com"
+              required
+            />
+
+            <Input
+              label={isEdicao ? "Nova senha" : "Senha"}
+              type="password"
+              value={senha}
+              onChange={(event) => setSenha(event.target.value)}
+              placeholder={
+                isEdicao
+                  ? "Deixe vazio para manter a atual"
+                  : "Informe uma senha"
+              }
+              required={!isEdicao}
+            />
+
+            <Select
+              label="Perfil de acesso"
+              value={roleSelecionada}
+              onChange={(event) => setRoleSelecionada(event.target.value)}
+              required
+            >
+              <option value="">Selecione um perfil</option>
+
+              {ROLES.map((role) => (
+                <option key={role.value} value={role.value}>
+                  {role.label}
+                </option>
+              ))}
+            </Select>
+          </div>
+        </Card>
+        {congregacaoId && (
+          <Card>
+            <div className="flex items-start gap-3">
+              <Building2 size={20} className="mt-0.5 text-slate-600" />
+
+              <div>
+                <p className="text-sm font-medium text-slate-900">
+                  Congregação
+                </p>
+
+                <p className="mt-1 text-sm text-slate-600">
+                  {" "}
+                  {congregacaoNome || `ID ${congregacaoId}`}{" "}
+                </p>
+
+                <p className="mt-2 text-xs text-slate-500">
+                  A congregação é determinada pelo Publicador e não pode ser
+                  alterada neste formulário.
+                </p>
+              </div>
+            </div>
+          </Card>
+        )}
+        <div className="flex justify-end gap-3">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => navigate("/admin/usuarios-congregacao")}
+            disabled={salvando}
+          >
+            Cancelar
+          </Button>
+
+          <Button type="submit" disabled={salvando}>
+            <ShieldCheck size={16} />
+
+            {salvando
+              ? "Salvando..."
+              : isEdicao
+                ? "Salvar alterações"
+                : "Conceder acesso"}
+          </Button>
+        </div>
+      </form>
     </div>
   );
 }

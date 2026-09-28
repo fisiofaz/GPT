@@ -77,4 +77,14 @@ public class UsuarioController {
         return ResponseEntity.ok(response);
     }
     
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN_GERAL')")
+    public ResponseEntity<UsuarioResponseDTO> buscarPorId(
+            @PathVariable Long id
+    ) {
+        return ResponseEntity.ok(
+                usuarioService.buscarPorId(id)
+        );
+    }
+    
 }

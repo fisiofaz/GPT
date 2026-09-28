@@ -5,6 +5,7 @@ import com.gpt.modulos.publicador.model.EventoHistoricoPublicador;
 import com.gpt.modulos.publicador.model.HistoricoPublicador;
 import com.gpt.modulos.publicador.model.Publicador;
 import com.gpt.modulos.publicador.repository.HistoricoPublicadorRepository;
+import com.gpt.modulos.usuario.model.Usuario;
 import com.gpt.shared.dto.PageResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,20 +25,40 @@ public class HistoricoPublicadorService {
             Publicador publicador,
             EventoHistoricoPublicador evento
     ) {
-        registrar(publicador, evento, null);
+        registrar(publicador, evento, null, null);
     }
-
+    
     @Transactional
     public void registrar(
             Publicador publicador,
             EventoHistoricoPublicador evento,
             String observacoes
     ) {
+        registrar(publicador, evento, observacoes, null);
+    }
+    
+    @Transactional
+    public void registrar(
+            Publicador publicador,
+            EventoHistoricoPublicador evento,
+            Usuario usuarioResponsavel
+    ) {
+        registrar(publicador, evento, null, usuarioResponsavel);
+    }
+
+    @Transactional
+    public void registrar(
+            Publicador publicador,
+            EventoHistoricoPublicador evento,
+            String observacoes,
+            Usuario usuarioResponsavel
+    ) {
         HistoricoPublicador historico = HistoricoPublicador.builder()
                 .publicadorId(publicador.getId())
                 .nomePublicador(publicador.getPessoa().getNome())
                 .congregacao(publicador.getCongregacao())
                 .evento(evento)
+                .usuarioResponsavel(usuarioResponsavel)
                 .observacoes(observacoes)
                 .build();
 

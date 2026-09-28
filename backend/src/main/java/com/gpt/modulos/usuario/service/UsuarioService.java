@@ -10,6 +10,8 @@ import com.gpt.modulos.usuario.repository.RoleRepository;
 import com.gpt.modulos.usuario.repository.UsuarioRepository;
 import com.gpt.modulos.pessoa.model.Pessoa;
 import com.gpt.modulos.publicador.model.Publicador;
+import com.gpt.modulos.publicador.model.EventoHistoricoPublicador;
+import com.gpt.modulos.publicador.service.HistoricoPublicadorService;
 import com.gpt.modulos.publicador.repository.PublicadorRepository;
 import com.gpt.exceptions.BusinessException;
 import com.gpt.shared.dto.PageResponse;
@@ -38,6 +40,7 @@ public class UsuarioService {
     private final RoleRepository roleRepository;
     private final PublicadorRepository publicadorRepository;
     private final PasswordEncoder passwordEncoder;
+    private final HistoricoPublicadorService historicoPublicadorService;
     
 
     private void validarRolesPermitidas(Set<String> roles) {
@@ -134,6 +137,12 @@ public class UsuarioService {
         usuario.setRoles(roles);
 
         Usuario salvo = usuarioRepository.save(usuario);
+        
+        historicoPublicadorService.registrar(
+                publicador,
+                EventoHistoricoPublicador.ACESSO_SISTEMA_CONCEDIDO,
+                usuarioAutenticado
+        );
 
         boolean isSuperintendente = usuarioAutenticado.getRoles().stream()
                 .anyMatch(role -> "ROLE_SUPERINTENDENTE_SERVICO".equals(role.getNome()));
@@ -332,6 +341,16 @@ public class UsuarioService {
         );
     }
     
+    @Transactional(readOnly = true)
+    public UsuarioResponseDTO buscarPorId(Long id) {
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Usuário não encontrado com ID: " + id
+                ));
+
+        return toDTO(usuario);
+    }
+    
     @Transactional
     public void deletar(Long id) {
     	
@@ -370,6 +389,18 @@ public class UsuarioService {
             }
         }
         
+        Pessoa pessoa = usuario.getPessoa();
+
+        Publicador publicador = publicadorRepository.findByPessoaId(pessoa.getId())
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Publicador não encontrado para a pessoa do usuário."
+                ));
+        
+        historicoPublicadorService.registrar(
+                publicador,
+                EventoHistoricoPublicador.ACESSO_SISTEMA_REMOVIDO,
+                usuarioAutenticado
+        );        
        
         usuarioRepository.delete(usuario);
     }

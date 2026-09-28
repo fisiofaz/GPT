@@ -109,4 +109,14 @@ public class PublicadorController {
                 historicoPublicadorService.listarPorPublicador(id)
         );
     }
+    
+    @GetMapping("/congregacao/{congregacaoId}/disponiveis-para-usuario")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO')")
+    public ResponseEntity<List<PublicadorResponseDTO>> listarDisponiveisParaUsuario(
+            @PathVariable Long congregacaoId
+    ) {
+        return ResponseEntity.ok(
+                publicadorService.listarDisponiveisParaUsuario(congregacaoId)
+        );
+    }
 }

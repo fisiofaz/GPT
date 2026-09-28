@@ -18,6 +18,9 @@ import com.gpt.shared.dto.PageResponse;
 import com.gpt.exceptions.BusinessException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -211,5 +214,16 @@ public class PublicadorService {
 
         publicadorRepository.delete(publicador);
         pessoaRepository.delete(pessoa);
+    }
+    
+    @Transactional(readOnly = true)
+    public List<PublicadorResponseDTO> listarDisponiveisParaUsuario(
+            Long congregacaoId
+    ) {
+        return publicadorRepository
+                .findDisponiveisParaUsuario(congregacaoId)
+                .stream()
+                .map(this::toDTO)
+                .toList();
     }
 }
