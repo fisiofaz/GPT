@@ -7,9 +7,11 @@ import jakarta.validation.Valid;
 
 import com.gpt.modulos.usuario.dto.UsuarioRequestDTO;
 import com.gpt.modulos.usuario.dto.UsuarioUpdateDTO;
+import com.gpt.shared.dto.PageResponse;
 
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -25,8 +27,12 @@ public class UsuarioController {
     
     @GetMapping
     @PreAuthorize("hasAuthority('ROLE_ADMIN_GERAL')")
-    public ResponseEntity<List<UsuarioResponseDTO>> listarTodos() {
-        return ResponseEntity.ok(usuarioService.listarTodos());
+    public ResponseEntity<PageResponse<UsuarioResponseDTO>> listarTodos(
+            Pageable pageable) {
+
+        return ResponseEntity.ok(
+                usuarioService.listarTodos(pageable)
+        );
     }
 
     @GetMapping("/congregacao/{congregacaoId}")

@@ -24,6 +24,8 @@ import { LoadingState } from "../components/ui/LoadingState";
 import { EmptyState } from "../components/ui/EmptyState";
 import { ErrorState } from "../components/ui/ErrorState";
 import { ConfirmModal } from "../components/ui/ConfirmModal";
+import { Pagination } from "../components/ui/Pagination";
+import type { PageResponse } from "../types/pagination";
 
 interface Usuario {
   id: number;
@@ -66,6 +68,10 @@ export default function UsuariosCongregacaoPage() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
+  const [paginaAtual, setPaginaAtual] = useState(0);
+  const [tamanhoPagina, setTamanhoPagina] = useState(10);
+  const [totalPaginas, setTotalPaginas] = useState(0);
+  const [totalElementos, setTotalElementos] = useState(0);
   const [acao, setAcao] = useState<AcaoConfirmacao>(null);
   const [usuarioSelecionado, setUsuarioSelecionado] = useState<Usuario | null>(
     null,
@@ -79,12 +85,21 @@ export default function UsuariosCongregacaoPage() {
       setErro(null);
 
       try {
-        const response = await api.get<Usuario[]>("/usuarios");
+        const response = await api.get<PageResponse<Usuario>>("/usuarios", {
+          params: {
+            page: paginaAtual,
+            size: tamanhoPagina,
+          },
+        });
 
-        setUsuarios(response.data);
+        setUsuarios(response.data.content);
+        setTotalPaginas(response.data.totalPages);
+        setTotalElementos(response.data.totalElements);
       } catch (error) {
         console.error("Erro ao carregar usuários", error);
         setUsuarios([]);
+        setTotalPaginas(0);
+        setTotalElementos(0);
         setErro("Não foi possível carregar os usuários.");
       } finally {
         setCarregando(false);
@@ -92,7 +107,12 @@ export default function UsuariosCongregacaoPage() {
     };
 
     void buscarUsuarios();
-  }, [atualizacao]);
+  }, [paginaAtual, tamanhoPagina, atualizacao]);
+
+  const alterarTamanhoPagina = (tamanho: number) => {
+    setTamanhoPagina(tamanho);
+    setPaginaAtual(0);
+  };
 
   const abrirConfirmacao = (
     usuario: Usuario,
@@ -131,7 +151,8 @@ export default function UsuariosCongregacaoPage() {
         toast.success("Usuário excluído com sucesso.");
       }
 
-      fecharConfirmacao();
+      setAcao(null);
+      setUsuarioSelecionado(null);
       setAtualizacao((valor) => valor + 1);
     } catch (error) {
       console.error("Erro ao executar operação", error);
@@ -176,8 +197,8 @@ export default function UsuariosCongregacaoPage() {
             </h2>
 
             <p className="mt-1 text-xs text-slate-500">
-              {usuarios.length}{" "}
-              {usuarios.length === 1
+              {totalElementos}{" "}
+              {totalElementos === 1
                 ? "usuário cadastrado"
                 : "usuários cadastrados"}
             </p>
@@ -208,7 +229,7 @@ export default function UsuariosCongregacaoPage() {
           </div>
         )}
 
-        {!carregando && !erro && usuarios.length === 0 && (
+        {!carregando && !erro && totalElementos === 0 && (
           <div className="px-5 py-10">
             <EmptyState
               title="Nenhum usuário encontrado"
@@ -346,11 +367,23 @@ export default function UsuariosCongregacaoPage() {
               </table>
             </div>
 
-            <div className="border-t border-slate-200 bg-slate-50 px-5 py-3 text-xs text-slate-500">
-              {usuarios.length}{" "}
-              {usuarios.length === 1
-                ? "usuário encontrado"
-                : "usuários encontrados"}
+            <div className="border-t border-slate-200 bg-slate-50 px-5 py-3">
+              <Pagination
+                paginaAtual={paginaAtual}
+                totalPaginas={totalPaginas}
+                totalElementos={totalElementos}
+                tamanhoPagina={tamanhoPagina}
+                onPaginaAnterior={() =>
+                  setPaginaAtual((pagina) => Math.max(0, pagina - 1))
+                }
+                onProximaPagina={() =>
+                  setPaginaAtual((pagina) =>
+                    Math.min(totalPaginas - 1, pagina + 1),
+                  )
+                }
+                onTamanhoPaginaChange={alterarTamanhoPagina}
+                desabilitado={carregando}
+              />
             </div>
           </>
         )}

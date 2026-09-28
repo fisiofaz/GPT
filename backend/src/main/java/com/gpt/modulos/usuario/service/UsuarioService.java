@@ -12,6 +12,7 @@ import com.gpt.modulos.pessoa.model.Pessoa;
 import com.gpt.modulos.publicador.model.Publicador;
 import com.gpt.modulos.publicador.repository.PublicadorRepository;
 import com.gpt.exceptions.BusinessException;
+import com.gpt.shared.dto.PageResponse;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Set;
@@ -320,10 +323,13 @@ public class UsuarioService {
     }
     
     @Transactional(readOnly = true)
-    public List<UsuarioResponseDTO> listarTodos() {
-        return usuarioRepository.findAll().stream()
-                .map(this::toDTO)
-                .collect(Collectors.toList());
+    public PageResponse<UsuarioResponseDTO> listarTodos(Pageable pageable) {
+
+        Page<Usuario> pagina = usuarioRepository.findAll(pageable);
+
+        return PageResponse.from(
+                pagina.map(this::toDTO)
+        );
     }
     
     @Transactional
