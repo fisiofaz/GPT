@@ -1,7 +1,9 @@
 import { MessageCircle, Edit3, Map, RotateCcw, UserCheck } from "lucide-react";
 
 import { gerarLinkWhatsAppTerritorio } from "../../utils/whatsappTerritorio";
+
 import type { StatusTerritorio, Territorio } from "../../types/territorio";
+
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
@@ -12,6 +14,7 @@ interface CardTerritorioProps {
   onDevolver: (territorio: Territorio) => void;
   onVisualizarCartao: (territorio: Territorio) => void;
   onDesenharMapa: (territorio: Territorio) => void;
+  onEditar: (territorio: Territorio) => void;
 }
 
 function getStatusBadgeVariant(
@@ -51,6 +54,7 @@ export function CardTerritorio({
   onDevolver,
   onVisualizarCartao,
   onDesenharMapa,
+  onEditar,
 }: CardTerritorioProps) {
   const temLinkWhatsApp = territorio.status === "EM_TRABALHO";
 
@@ -100,6 +104,18 @@ export function CardTerritorio({
           >
             <Edit3 size={15} aria-hidden="true" />
             Desenhar
+          </Button>
+
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={() => onEditar(territorio)}
+            fullWidth
+            className=""
+          >
+            <Edit3 size={15} aria-hidden="true" />
+            Editar dados
           </Button>
 
           {temLinkWhatsApp && (

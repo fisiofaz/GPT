@@ -1,6 +1,8 @@
 import { FileSpreadsheet, Printer, X } from "lucide-react";
 
 import type { HistoricoTerritorio } from "../../types/territorio";
+
+import { Pagination } from "../ui/Pagination";
 import { Button } from "../ui/Button";
 
 interface ModalRelatorioS13Props {
@@ -8,6 +10,15 @@ interface ModalRelatorioS13Props {
   carregando: boolean;
   relatorio: HistoricoTerritorio[];
   congregacaoNome?: string;
+
+  paginaAtual: number;
+  totalPaginas: number;
+  totalElementos: number;
+  tamanhoPagina: number;
+  onPaginaAnterior: () => void;
+  onProximaPagina: () => void;
+  onTamanhoPaginaChange: (tamanho: number) => void;
+
   onFechar: () => void;
 }
 
@@ -16,6 +27,16 @@ export function ModalRelatorioS13({
   carregando,
   relatorio,
   congregacaoNome,
+
+  paginaAtual,
+  totalPaginas,
+  totalElementos,
+  tamanhoPagina,
+
+  onPaginaAnterior,
+  onProximaPagina,
+  onTamanhoPaginaChange,
+
   onFechar,
 }: ModalRelatorioS13Props) {
   if (!aberto) {
@@ -132,78 +153,94 @@ export function ModalRelatorioS13({
               Nenhuma designação registrada no histórico da congregação.
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-lg border border-slate-200 print:overflow-visible print:rounded-none print:border-black">
-              <table className="w-full min-w-190 text-left text-sm text-slate-600 print:min-w-0 print:text-black">
-                <thead className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500 print:border-black print:bg-gray-100 print:text-black">
-                  <tr>
-                    <th className="w-16 border-r border-slate-200 px-3 py-3 text-center print:border-gray-300 print:px-2 print:py-2">
-                      Nº
-                    </th>
+            <>
+              <div className="overflow-x-auto rounded-lg border border-slate-200 print:overflow-visible print:rounded-none print:border-black">
+                <table className="w-full min-w-190 text-left text-sm text-slate-600 print:min-w-0 print:text-black">
+                  <thead className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500 print:border-black print:bg-gray-100 print:text-black">
+                    <tr>
+                      <th className="w-16 border-r border-slate-200 px-3 py-3 text-center print:border-gray-300 print:px-2 print:py-2">
+                        Nº
+                      </th>
 
-                    <th className="border-r border-slate-200 px-3 py-3 print:border-gray-300 print:px-2 print:py-2">
-                      Território
-                    </th>
+                      <th className="border-r border-slate-200 px-3 py-3 print:border-gray-300 print:px-2 print:py-2">
+                        Território
+                      </th>
 
-                    <th className="border-r border-slate-200 px-3 py-3 print:border-gray-300 print:px-2 print:py-2">
-                      Publicador
-                    </th>
+                      <th className="border-r border-slate-200 px-3 py-3 print:border-gray-300 print:px-2 print:py-2">
+                        Publicador
+                      </th>
 
-                    <th className="w-28 border-r border-slate-200 px-3 py-3 text-center print:border-gray-300 print:px-2 print:py-2">
-                      Designado
-                    </th>
+                      <th className="w-28 border-r border-slate-200 px-3 py-3 text-center print:border-gray-300 print:px-2 print:py-2">
+                        Designado
+                      </th>
 
-                    <th className="w-28 border-r border-slate-200 px-3 py-3 text-center print:border-gray-300 print:px-2 print:py-2">
-                      Devolvido
-                    </th>
+                      <th className="w-28 border-r border-slate-200 px-3 py-3 text-center print:border-gray-300 print:px-2 print:py-2">
+                        Devolvido
+                      </th>
 
-                    <th className="px-3 py-3 print:px-2 print:py-2">
-                      Observações
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody className="divide-y divide-slate-100 print:divide-gray-300">
-                  {relatorio.map((item) => (
-                    <tr
-                      key={item.id}
-                      className="transition-colors hover:bg-slate-50 print:hover:bg-transparent"
-                    >
-                      <td className="border-r border-slate-100 px-3 py-3 text-center font-semibold text-slate-700 print:border-gray-300 print:px-2 print:py-2 print:text-black">
-                        {item.territorioNumero || "-"}
-                      </td>
-
-                      <td className="whitespace-nowrap border-r border-slate-100 px-3 py-3 font-medium text-slate-900 print:border-gray-300 print:px-2 print:py-2">
-                        {item.territorioNome || "-"}
-                      </td>
-
-                      <td className="whitespace-nowrap border-r border-slate-100 px-3 py-3 text-slate-700 print:border-gray-300 print:px-2 print:py-2 print:text-black">
-                        {item.publicadorNome}
-                      </td>
-
-                      <td className="whitespace-nowrap border-r border-slate-100 px-3 py-3 text-center print:border-gray-300 print:px-2 print:py-2">
-                        {formatarData(item.dataRetirada)}
-                      </td>
-
-                      <td className="whitespace-nowrap border-r border-slate-100 px-3 py-3 text-center print:border-gray-300 print:px-2 print:py-2">
-                        {item.dataDevolucao ? (
-                          <span className="font-medium text-slate-700 print:text-black">
-                            {formatarData(item.dataDevolucao)}
-                          </span>
-                        ) : (
-                          <span className="inline-flex rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700 print:bg-transparent print:text-gray-600">
-                            Em andamento
-                          </span>
-                        )}
-                      </td>
-
-                      <td className="max-w-xs px-3 py-3 text-slate-500 print:max-w-none print:px-2 print:py-2 print:whitespace-normal print:text-black">
-                        {item.observacoes || "-"}
-                      </td>
+                      <th className="px-3 py-3 print:px-2 print:py-2">
+                        Observações
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+
+                  <tbody className="divide-y divide-slate-100 print:divide-gray-300">
+                    {relatorio.map((item) => (
+                      <tr
+                        key={item.id}
+                        className="transition-colors hover:bg-slate-50 print:hover:bg-transparent"
+                      >
+                        <td className="border-r border-slate-100 px-3 py-3 text-center font-semibold text-slate-700 print:border-gray-300 print:px-2 print:py-2 print:text-black">
+                          {item.territorioNumero || "-"}
+                        </td>
+
+                        <td className="whitespace-nowrap border-r border-slate-100 px-3 py-3 font-medium text-slate-900 print:border-gray-300 print:px-2 print:py-2">
+                          {item.territorioNome || "-"}
+                        </td>
+
+                        <td className="whitespace-nowrap border-r border-slate-100 px-3 py-3 text-slate-700 print:border-gray-300 print:px-2 print:py-2 print:text-black">
+                          {item.publicadorNome}
+                        </td>
+
+                        <td className="whitespace-nowrap border-r border-slate-100 px-3 py-3 text-center print:border-gray-300 print:px-2 print:py-2">
+                          {formatarData(item.dataRetirada)}
+                        </td>
+
+                        <td className="whitespace-nowrap border-r border-slate-100 px-3 py-3 text-center print:border-gray-300 print:px-2 print:py-2">
+                          {item.dataDevolucao ? (
+                            <span className="font-medium text-slate-700 print:text-black">
+                              {formatarData(item.dataDevolucao)}
+                            </span>
+                          ) : (
+                            <span className="inline-flex rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700 print:bg-transparent print:text-gray-600">
+                              Em andamento
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="max-w-xs px-3 py-3 text-slate-500 print:max-w-none print:px-2 print:py-2 print:whitespace-normal print:text-black">
+                          {item.observacoes || "-"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {/* Paginação */}{" "}
+              <div className="mt-4 print:hidden">
+                {" "}
+                <Pagination
+                  paginaAtual={paginaAtual}
+                  totalPaginas={totalPaginas}
+                  totalElementos={totalElementos}
+                  tamanhoPagina={tamanhoPagina}
+                  onPaginaAnterior={onPaginaAnterior}
+                  onProximaPagina={onProximaPagina}
+                  onTamanhoPaginaChange={onTamanhoPaginaChange}
+                  desabilitado={carregando}
+                />
+              </div>
+            </>
           )}
         </div>
 

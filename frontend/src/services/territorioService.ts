@@ -1,4 +1,5 @@
 import { api } from "./api";
+
 import type {
   DevolucaoRequest,
   DesignacaoRequest,
@@ -7,26 +8,40 @@ import type {
   TerritorioRequest,
 } from "../types/territorio";
 
+import type { PageResponse } from "../types/pagination";
+
 type GeoJsonPolygon = {
   type: "Polygon";
   coordinates: [number, number][][];
 };
 
+type TerritorioAtualizacaoRequest = {
+  numero: string;
+  nome: string;
+  descricao?: string;
+};
+
 export const territorioService = {
   listarPorCongregacao: async (
     congregacaoId: number,
-  ): Promise<Territorio[]> => {
-    const response = await api.get<Territorio[]>(
+    page = 0,
+    size = 10,
+  ): Promise<PageResponse<Territorio>> => {
+    const response = await api.get<PageResponse<Territorio>>(
       `/territorios/congregacao/${congregacaoId}`,
+      {
+        params: {
+          page,
+          size,
+        },
+      },
     );
 
     return response.data;
   },
 
   buscarPublico: async (id: number): Promise<Territorio> => {
-    const response = await api.get<Territorio>(
-      `/territorios/publico/${id}`,
-    );
+    const response = await api.get<Territorio>(`/territorios/publico/${id}`);
 
     return response.data;
   },
@@ -37,19 +52,15 @@ export const territorioService = {
     return response.data;
   },
 
-  // Alias de compatibilidade.
   cadastrar: async (dados: TerritorioRequest): Promise<Territorio> => {
     return territorioService.criar(dados);
   },
 
   atualizar: async (
     id: number,
-    dados: Partial<TerritorioRequest>,
+    dados: TerritorioAtualizacaoRequest,
   ): Promise<Territorio> => {
-    const response = await api.put<Territorio>(
-      `/territorios/${id}`,
-      dados,
-    );
+    const response = await api.put<Territorio>(`/territorios/${id}`, dados);
 
     return response.data;
   },
@@ -83,9 +94,7 @@ export const territorioService = {
     dadosOuObs?: DevolucaoRequest | string,
   ): Promise<Territorio> => {
     const observacoes =
-      typeof dadosOuObs === "string"
-        ? dadosOuObs
-        : dadosOuObs?.observacoes;
+      typeof dadosOuObs === "string" ? dadosOuObs : dadosOuObs?.observacoes;
 
     const response = await api.post<Territorio>(
       `/territorios/${territorioId}/devolver`,
@@ -101,31 +110,37 @@ export const territorioService = {
     id: number,
     poligonoGeoJson: GeoJsonPolygon,
   ): Promise<Territorio> => {
-    const response = await api.patch<Territorio>(
-      `/territorios/${id}/mapa`,
-      {
-        // Manter esta propriedade exatamente como está no contrato atual.
-        poligonoGeojson: poligonoGeoJson,
-      },
-    );
+    const response = await api.patch<Territorio>(`/territorios/${id}/mapa`, {
+      // Manter esta propriedade exatamente como está no contrato atual.
+      poligonoGeojson: poligonoGeoJson,
+    });
 
     return response.data;
   },
 
   listarHistoricoGeral: async (
     congregacaoId: number,
-  ): Promise<HistoricoTerritorio[]> => {
-    const response = await api.get<HistoricoTerritorio[]>(
+    page = 0,
+    size = 10,
+  ): Promise<PageResponse<HistoricoTerritorio>> => {
+    const response = await api.get<PageResponse<HistoricoTerritorio>>(
       `/territorios/congregacao/${congregacaoId}/historico`,
+      {
+        params: {
+          page,
+          size,
+        },
+      },
     );
 
     return response.data;
   },
 
-  // Alias de compatibilidade com o relatório S-13.
   obterRelatorioS13: async (
     congregacaoId: number,
-  ): Promise<HistoricoTerritorio[]> => {
-    return territorioService.listarHistoricoGeral(congregacaoId);
+    page = 0,
+    size = 10,
+  ): Promise<PageResponse<HistoricoTerritorio>> => {
+    return territorioService.listarHistoricoGeral(congregacaoId, page, size);
   },
 };

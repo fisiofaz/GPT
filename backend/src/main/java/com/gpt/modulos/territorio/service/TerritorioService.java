@@ -12,12 +12,18 @@ import com.gpt.modulos.territorio.dto.HistoricoTerritorioResponseDTO;
 import com.gpt.modulos.territorio.dto.MovimentacaoTerritorioDTO;
 import com.gpt.modulos.territorio.dto.TerritorioRequestDTO;
 import com.gpt.modulos.territorio.dto.TerritorioResponseDTO;
+import com.gpt.modulos.territorio.dto.TerritorioAtualizacaoDTO;
 import com.gpt.modulos.territorio.enums.StatusTerritorio;
 import com.gpt.modulos.territorio.model.HistoricoTerritorio;
 import com.gpt.modulos.territorio.model.Territorio;
 import com.gpt.modulos.territorio.repository.HistoricoTerritorioRepository;
 import com.gpt.modulos.territorio.repository.TerritorioRepository;
+import com.gpt.shared.dto.PageResponse;
+
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.transaction.annotation.Transactional;
@@ -101,6 +107,45 @@ public class TerritorioService {
     }
     
     @Transactional
+    public TerritorioResponseDTO atualizar(
+            Long territorioId,
+            TerritorioAtualizacaoDTO request
+    ) {
+        Territorio territorio =
+                buscarTerritorioComAcessoPermitido(territorioId);
+
+        String numero = request.getNumero().trim();
+
+        boolean numeroAlterado =
+                !numero.equalsIgnoreCase(territorio.getNumero());
+
+        if (numeroAlterado
+                && territorioRepository.existsByNumeroAndCongregacaoId(
+                        numero,
+                        territorio.getCongregacao().getId()
+                )) {
+
+            throw new IllegalArgumentException(
+                    "Já existe um território com o número "
+                            + numero
+                            + " nesta congregação"
+            );
+        }
+
+        territorio.setNumero(numero);
+        territorio.setNome(request.getNome().trim());
+        territorio.setDescricao(
+                request.getDescricao() != null
+                        ? request.getDescricao().trim()
+                        : null
+        );
+
+        return converterParaResponseDTO(
+                territorioRepository.save(territorio)
+        );
+    }
+    
+    @Transactional
     public void deletar(Long territorioId) {
 
         Territorio territorio =
@@ -145,16 +190,23 @@ public class TerritorioService {
     }
 
     @Transactional(readOnly = true)
-    public List<TerritorioResponseDTO> listarPorCongregacao(Long congregacaoId) {
+    public PageResponse<TerritorioResponseDTO> listarPorCongregacao(
+            Long congregacaoId,
+            Pageable pageable
+    ) {
 
-    	Long congregacaoIdPermitida =
+        Long congregacaoIdPermitida =
                 getCongregacaoIdObrigatoria(congregacaoId);
-    	
-        return territorioRepository
-        		.findByCongregacaoId(congregacaoIdPermitida)
-        		.stream()
-                .map(this::converterParaResponseDTO)
-                .collect(Collectors.toList());
+
+        Page<Territorio> pagina =
+                territorioRepository.findByCongregacaoId(
+                        congregacaoIdPermitida,
+                        pageable
+                );
+
+        return PageResponse.from(
+                pagina.map(this::converterParaResponseDTO)
+        );
     }
 
     @Transactional
@@ -270,16 +322,23 @@ public class TerritorioService {
     }
 
     @Transactional(readOnly = true)
-    public List<HistoricoTerritorioResponseDTO> listarHistoricoGeral(Long congregacaoId) {
-    	
-    	Long congregacaoIdPermitida =
+    public PageResponse<HistoricoTerritorioResponseDTO> listarHistoricoGeral(
+            Long congregacaoId,
+            Pageable pageable
+    ) {
+
+        Long congregacaoIdPermitida =
                 getCongregacaoIdObrigatoria(congregacaoId);
-    	
-        return historicoRepository
-        		.buscarHistoricoGeralPorCongregacao(congregacaoIdPermitida)
-        		.stream()
-                .map(this::converterParaHistoricoDTO)
-                .collect(Collectors.toList());
+
+        Page<HistoricoTerritorio> pagina =
+                historicoRepository.buscarHistoricoGeralPorCongregacao(
+                        congregacaoIdPermitida,
+                        pageable
+                );
+
+        return PageResponse.from(
+                pagina.map(this::converterParaHistoricoDTO)
+        );
     }
     
     private Territorio buscarTerritorioComAcessoPermitido(Long territorioId) {

@@ -134,7 +134,7 @@ export function MapaGeralModal({
 
   const territoriosMapeados = useMemo(
     () =>
-      territorios.filter((territorio) => Boolean(territorio.poligonoGeoJson)),
+      territorios.filter((territorio) => Boolean(territorio.poligonoGeojson)),
     [territorios],
   );
 
@@ -163,10 +163,10 @@ export function MapaGeralModal({
     const polyMap = new Map<number, L.Polygon>();
 
     territorios.forEach((territorio) => {
-      if (!territorio.poligonoGeoJson) return;
+      if (!territorio.poligonoGeojson) return;
 
       try {
-        const parsed = JSON.parse(territorio.poligonoGeoJson) as GeoJsonPolygon;
+        const parsed = JSON.parse(territorio.poligonoGeojson) as GeoJsonPolygon;
 
         if (
           parsed.type !== "Polygon" ||
@@ -383,7 +383,7 @@ export function MapaGeralModal({
               ) : (
                 <div className="space-y-1.5">
                   {territoriosFiltrados.map((territorio) => {
-                    const temPoligono = Boolean(territorio.poligonoGeoJson);
+                    const temPoligono = Boolean(territorio.poligonoGeojson);
                     const ativo = territorioAtivoId === territorio.id;
                     const cor = getStatusColor(territorio.status);
 

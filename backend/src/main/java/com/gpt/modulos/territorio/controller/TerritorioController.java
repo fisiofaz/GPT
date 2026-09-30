@@ -5,9 +5,12 @@ import com.gpt.modulos.territorio.dto.HistoricoTerritorioResponseDTO;
 import com.gpt.modulos.territorio.dto.MovimentacaoTerritorioDTO;
 import com.gpt.modulos.territorio.dto.TerritorioRequestDTO;
 import com.gpt.modulos.territorio.dto.TerritorioResponseDTO;
+import com.gpt.modulos.territorio.dto.TerritorioAtualizacaoDTO;
 import com.gpt.modulos.territorio.service.TerritorioService;
+import com.gpt.shared.dto.PageResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -30,6 +33,17 @@ public class TerritorioController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
     
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO')")
+    public ResponseEntity<TerritorioResponseDTO> atualizar(
+            @PathVariable Long id,
+            @Valid @RequestBody TerritorioAtualizacaoDTO request
+    ) {
+        return ResponseEntity.ok(
+                territorioService.atualizar(id, request)
+        );
+    }
+    
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO',)")
     public ResponseEntity<Void> deletar(@PathVariable Long id) {
@@ -39,8 +53,17 @@ public class TerritorioController {
 
     @GetMapping("/congregacao/{congregacaoId}")
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO', 'ROLE_SERVO_TERRITORIO')")
-    public ResponseEntity<List<TerritorioResponseDTO>> listarPorCongregacao(@PathVariable Long congregacaoId) {
-        return ResponseEntity.ok(territorioService.listarPorCongregacao(congregacaoId));
+    public ResponseEntity<PageResponse<TerritorioResponseDTO>> listarPorCongregacao(
+            @PathVariable Long congregacaoId,
+            Pageable pageable
+    ) {
+
+        return ResponseEntity.ok(
+                territorioService.listarPorCongregacao(
+                        congregacaoId,
+                        pageable
+                )
+        );
     }
 
     @PostMapping("/{id}/retirar")
@@ -68,8 +91,17 @@ public class TerritorioController {
 
     @GetMapping("/congregacao/{congregacaoId}/historico")
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO', 'ROLE_SERVO_TERRITORIO')")
-    public ResponseEntity<List<HistoricoTerritorioResponseDTO>> listarHistoricoGeral(@PathVariable Long congregacaoId) {
-        return ResponseEntity.ok(territorioService.listarHistoricoGeral(congregacaoId));
+    public ResponseEntity<PageResponse<HistoricoTerritorioResponseDTO>> listarHistoricoGeral(
+            @PathVariable Long congregacaoId,
+            Pageable pageable
+    ) {
+
+        return ResponseEntity.ok(
+                territorioService.listarHistoricoGeral(
+                        congregacaoId,
+                        pageable
+                )
+        );
     }
 
     @PatchMapping("/{id}/mapa")

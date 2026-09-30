@@ -73,9 +73,9 @@ export function CartaoPublico() {
 
     let coordenadas: [number, number][] = [];
 
-    if (territorio.poligonoGeoJson) {
+    if (territorio.poligonoGeojson) {
       try {
-        const parsed = JSON.parse(territorio.poligonoGeoJson) as GeoJsonPolygon;
+        const parsed = JSON.parse(territorio.poligonoGeojson) as GeoJsonPolygon;
 
         if (
           parsed.type === "Polygon" &&
@@ -193,12 +193,12 @@ export function CartaoPublico() {
   };
 
   const handleAbrirGoogleMaps = () => {
-    if (!territorio?.poligonoGeoJson) {
+    if (!territorio?.poligonoGeojson) {
       return;
     }
 
     try {
-      const parsed = JSON.parse(territorio.poligonoGeoJson) as GeoJsonPolygon;
+      const parsed = JSON.parse(territorio.poligonoGeojson) as GeoJsonPolygon;
 
       if (
         parsed.type === "Polygon" &&

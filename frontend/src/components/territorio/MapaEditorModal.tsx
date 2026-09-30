@@ -52,9 +52,9 @@ export function MapaEditorModal({
     let initialZoom = 15;
     let pontosIniciais: [number, number][] = [];
 
-    if (territorio.poligonoGeoJson) {
+    if (territorio.poligonoGeojson) {
       try {
-        const parsed = JSON.parse(territorio.poligonoGeoJson) as GeoJsonPolygon;
+        const parsed = JSON.parse(territorio.poligonoGeojson) as GeoJsonPolygon;
 
         if (
           parsed.type === "Polygon" &&

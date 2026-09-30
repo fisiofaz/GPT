@@ -24,12 +24,12 @@ export function CartaoTerritorioModal({
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
   const coordenadas = useMemo<[number, number][]>(() => {
-    if (!territorio.poligonoGeoJson) {
+    if (!territorio.poligonoGeojson) {
       return [];
     }
 
     try {
-      const parsed = JSON.parse(territorio.poligonoGeoJson) as GeoJsonPolygon;
+      const parsed = JSON.parse(territorio.poligonoGeojson) as GeoJsonPolygon;
 
       if (
         parsed.type !== "Polygon" ||
@@ -48,7 +48,7 @@ export function CartaoTerritorioModal({
       console.error("Erro ao fazer parse do polígono:", error);
       return [];
     }
-  }, [territorio.poligonoGeoJson]);
+  }, [territorio.poligonoGeojson]);
 
   useEffect(() => {
     if (!mapContainerRef.current || coordenadas.length === 0) {

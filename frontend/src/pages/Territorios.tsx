@@ -6,6 +6,7 @@ import { useTerritorios } from "../hooks/useTerritorios";
 
 import type { Territorio } from "../types/territorio";
 import type { Publicador } from "../types/publicador";
+import { Pagination } from "../components/ui/Pagination";
 
 import { CardTerritorio } from "../components/territorio/CardTerritorio";
 import { ModalCriarTerritorio } from "../components/territorio/ModalCriarTerritorio";
@@ -16,6 +17,7 @@ import { ModalRelatorioS13 } from "../components/territorio/ModalRelatorioS13";
 import { MapaEditorModal } from "../components/territorio/MapaEditorModal";
 import { CartaoTerritorioModal } from "../components/territorio/CartaoTerritorioModal";
 import { MapaGeralModal } from "../components/territorio/MapaGeralModal";
+import { ModalEditarTerritorio } from "../components/territorio/ModalEditarTerritorio";
 
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
@@ -42,6 +44,22 @@ export function Territorios() {
     devolverTerritorio,
     carregarRelatorioS13,
     recarregar,
+
+    paginaTerritorios,
+    totalPaginasTerritorios,
+    totalTerritorios,
+    tamanhoPaginaTerritorios,
+    paginaAnteriorTerritorios,
+    proximaPaginaTerritorios,
+    alterarTamanhoPaginaTerritorios,
+
+    paginaHistorico,
+    totalPaginasHistorico,
+    totalHistorico,
+    tamanhoPaginaHistorico,
+    paginaAnteriorHistorico,
+    proximaPaginaHistorico,
+    alterarTamanhoPaginaHistorico,
   } = useTerritorios(congregacaoId ?? undefined);
 
   // Filtros
@@ -53,6 +71,8 @@ export function Territorios() {
   const [territorioParaDesignar, setTerritorioParaDesignar] =
     useState<Territorio | null>(null);
   const [territorioParaDevolver, setTerritorioParaDevolver] =
+    useState<Territorio | null>(null);
+  const [territorioParaEditar, setTerritorioParaEditar] =
     useState<Territorio | null>(null);
 
   // Modais de mapas
@@ -120,7 +140,7 @@ export function Territorios() {
 
   const quantidadePorStatus = useMemo(() => {
     return {
-      TODOS: territorios.length,
+      TODOS: totalTerritorios,
       DISPONIVEL: territorios.filter(
         (territorio) => territorio.status === "DISPONIVEL",
       ).length,
@@ -131,7 +151,7 @@ export function Territorios() {
         (territorio) => territorio.status === "EM_ATRASO",
       ).length,
     };
-  }, [territorios]);
+  }, [territorios, totalTerritorios]);
 
   return (
     <div className="space-y-6">
@@ -265,20 +285,34 @@ export function Territorios() {
               }
             />
           ) : (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {territoriosFiltrados.map((territorio) => (
-                <CardTerritorio
-                  key={territorio.id}
-                  territorio={territorio}
-                  onDesignar={(item) => setTerritorioParaDesignar(item)}
-                  onDevolver={(item) => setTerritorioParaDevolver(item)}
-                  onVisualizarCartao={(item) =>
-                    setTerritorioParaVisualizar(item)
-                  }
-                  onDesenharMapa={(item) => setTerritorioParaDesenhar(item)}
-                />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2 2xl:grid-cols-3">
+                {territoriosFiltrados.map((territorio) => (
+                  <CardTerritorio
+                    key={territorio.id}
+                    territorio={territorio}
+                    onDesignar={(item) => setTerritorioParaDesignar(item)}
+                    onDevolver={(item) => setTerritorioParaDevolver(item)}
+                    onVisualizarCartao={(item) =>
+                      setTerritorioParaVisualizar(item)
+                    }
+                    onDesenharMapa={(item) => setTerritorioParaDesenhar(item)}
+                    onEditar={(item) => setTerritorioParaEditar(item)}
+                  />
+                ))}
+              </div>
+
+              <Pagination
+                paginaAtual={paginaTerritorios}
+                totalPaginas={totalPaginasTerritorios}
+                totalElementos={totalTerritorios}
+                tamanhoPagina={tamanhoPaginaTerritorios}
+                onPaginaAnterior={paginaAnteriorTerritorios}
+                onProximaPagina={proximaPaginaTerritorios}
+                onTamanhoPaginaChange={alterarTamanhoPaginaTerritorios}
+                desabilitado={carregando}
+              />
+            </>
           )}
         </>
       )}
@@ -323,6 +357,13 @@ export function Territorios() {
         carregando={carregandoHistorico}
         relatorio={historicoS13}
         congregacaoNome={congregacaoNome}
+        paginaAtual={paginaHistorico}
+        totalPaginas={totalPaginasHistorico}
+        totalElementos={totalHistorico}
+        tamanhoPagina={tamanhoPaginaHistorico}
+        onPaginaAnterior={paginaAnteriorHistorico}
+        onProximaPagina={proximaPaginaHistorico}
+        onTamanhoPaginaChange={alterarTamanhoPaginaHistorico}
         onFechar={() => setModalRelatorioGeralAberto(false)}
       />
 
@@ -346,6 +387,17 @@ export function Territorios() {
         <CartaoTerritorioModal
           territorio={territorioParaVisualizar}
           onClose={() => setTerritorioParaVisualizar(null)}
+        />
+      )}
+
+      {territorioParaEditar && (
+        <ModalEditarTerritorio
+          key={territorioParaEditar.id}
+          territorio={territorioParaEditar}
+          onFechar={() => setTerritorioParaEditar(null)}
+          onSalvar={async () => {
+            // A integração com a API será adicionada no próximo passo.
+          }}
         />
       )}
     </div>

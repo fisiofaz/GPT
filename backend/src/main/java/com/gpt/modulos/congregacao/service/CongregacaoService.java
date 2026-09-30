@@ -43,6 +43,8 @@ public class CongregacaoService {
                 .numeroCircuito(request.getNumeroCircuito())
                 .cidade(request.getCidade())
                 .estado(request.getEstado().toUpperCase())
+                .latitude(request.getLatitude())
+                .longitude(request.getLongitude())
                 .build();
 
         Congregacao salva = congregacaoRepository.save(congregacao);
@@ -59,10 +61,11 @@ public class CongregacaoService {
         congregacao.setNumeroCircuito(request.getNumeroCircuito());
         congregacao.setCidade(request.getCidade());
         congregacao.setEstado(request.getEstado().toUpperCase());
+        congregacao.setLatitude(request.getLatitude());
+        congregacao.setLongitude(request.getLongitude());
 
         Congregacao atualizada = congregacaoRepository.save(congregacao);
-        
-        // Reaproveita o método auxiliar padronizado do serviço
+
         return converterParaResponseDTO(atualizada);
     }
 
@@ -84,6 +87,8 @@ public class CongregacaoService {
                 .cidade(congregacao.getCidade())
                 .estado(congregacao.getEstado())
                 .criadoEm(congregacao.getCriadoEm())
+                .latitude(congregacao.getLatitude())
+                .longitude(congregacao.getLongitude())
                 .build();
     }
 }

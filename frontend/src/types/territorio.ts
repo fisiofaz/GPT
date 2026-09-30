@@ -8,7 +8,7 @@ export interface Territorio {
   numero: string;
   nome: string;
   descricao?: string;
-  poligonoGeoJson?: string;
+  poligonoGeojson?: string;
 
   status: StatusTerritorio;
 

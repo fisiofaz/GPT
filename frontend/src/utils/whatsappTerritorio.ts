@@ -7,12 +7,12 @@ type GeoJsonPolygon = {
 };
 
 function obterLinkGoogleMaps(territorio: Territorio): string {
-  if (!territorio.poligonoGeoJson) {
+  if (!territorio.poligonoGeojson) {
     return "";
   }
 
   try {
-    const parsed = JSON.parse(territorio.poligonoGeoJson) as GeoJsonPolygon;
+    const parsed = JSON.parse(territorio.poligonoGeojson) as GeoJsonPolygon;
 
     if (
       parsed.type !== "Polygon" ||

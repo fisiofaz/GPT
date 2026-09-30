@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Getter
@@ -23,4 +24,6 @@ public class CongregacaoResponseDTO {
     private String estado;
     private LocalDateTime criadoEm;
     private LocalDateTime atualizadoEm;
+    private BigDecimal latitude;
+    private BigDecimal longitude;
 }
