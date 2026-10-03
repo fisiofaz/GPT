@@ -44,6 +44,7 @@ export function Territorios() {
     devolverTerritorio,
     carregarRelatorioS13,
     recarregar,
+    excluirTerritorio,
     paginaTerritorios,
     totalPaginasTerritorios,
     totalTerritorios,
@@ -303,6 +304,7 @@ export function Territorios() {
                     }
                     onDesenharMapa={(item) => setTerritorioParaDesenhar(item)}
                     onEditar={(item) => setTerritorioParaEditar(item)}
+                    onExcluir={excluirTerritorio}
                   />
                 ))}
               </div>

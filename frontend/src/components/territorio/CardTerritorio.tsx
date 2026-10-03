@@ -1,4 +1,10 @@
-import { MessageCircle, Edit3, Map, RotateCcw, UserCheck } from "lucide-react";
+import {
+  MessageCircle,
+  Edit3,
+  Map,
+  RotateCcw,
+  UserCheck,
+  Trash2, } from "lucide-react";
 
 import { gerarLinkWhatsAppTerritorio } from "../../utils/whatsappTerritorio";
 
@@ -15,6 +21,7 @@ interface CardTerritorioProps {
   onVisualizarCartao: (territorio: Territorio) => void;
   onDesenharMapa: (territorio: Territorio) => void;
   onEditar: (territorio: Territorio) => void;
+  onExcluir: (id: number, numero: string) => Promise<void>;
 }
 
 function getStatusBadgeVariant(
@@ -55,8 +62,19 @@ export function CardTerritorio({
   onVisualizarCartao,
   onDesenharMapa,
   onEditar,
+  onExcluir,
 }: CardTerritorioProps) {
   const temLinkWhatsApp = territorio.status === "EM_TRABALHO";
+
+  const handleExcluir = async () => {
+    const confirmado = window.confirm(
+      `Tem certeza que deseja excluir o território ${territorio.numero} - ${territorio.nome}?`,
+    );
+    if (!confirmado) {
+      return;
+    }
+    await onExcluir(territorio.id, territorio.numero);
+  };
 
   return (
     <Card className="flex h-full flex-col">
@@ -116,6 +134,17 @@ export function CardTerritorio({
           >
             <Edit3 size={15} aria-hidden="true" />
             Editar dados
+          </Button>
+
+          <Button
+            type="button"
+            variant="danger"
+            size="sm"
+            onClick={() => void handleExcluir()}
+            fullWidth
+          >
+            {" "}
+            <Trash2 size={15} aria-hidden="true" /> Excluir{" "}
           </Button>
 
           {temLinkWhatsApp && (
