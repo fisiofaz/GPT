@@ -10,7 +10,7 @@ interface ModalRelatorioS13Props {
   carregando: boolean;
   relatorio: HistoricoTerritorio[];
   congregacaoNome?: string;
-
+  disabled?: boolean;
   paginaAtual: number;
   totalPaginas: number;
   totalElementos: number;
@@ -27,16 +27,14 @@ export function ModalRelatorioS13({
   carregando,
   relatorio,
   congregacaoNome,
-
+  disabled = false,
   paginaAtual,
   totalPaginas,
   totalElementos,
   tamanhoPagina,
-
   onPaginaAnterior,
   onProximaPagina,
   onTamanhoPaginaChange,
-
   onFechar,
 }: ModalRelatorioS13Props) {
   if (!aberto) {
@@ -97,7 +95,7 @@ export function ModalRelatorioS13({
               variant="secondary"
               size="sm"
               onClick={() => window.print()}
-              disabled={carregando}
+              disabled={carregando || disabled}
             >
               <Printer size={16} aria-hidden="true" />
               <span className="hidden sm:inline">Imprimir / Salvar PDF</span>
@@ -107,7 +105,7 @@ export function ModalRelatorioS13({
             <button
               type="button"
               onClick={onFechar}
-              disabled={carregando}
+              disabled={carregando || disabled}
               className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
               aria-label="Fechar relatório"
             >
@@ -237,7 +235,7 @@ export function ModalRelatorioS13({
                   onPaginaAnterior={onPaginaAnterior}
                   onProximaPagina={onProximaPagina}
                   onTamanhoPaginaChange={onTamanhoPaginaChange}
-                  desabilitado={carregando}
+                  desabilitado={carregando || disabled}
                 />
               </div>
             </>
@@ -258,7 +256,7 @@ export function ModalRelatorioS13({
             variant="secondary"
             size="sm"
             onClick={onFechar}
-            disabled={carregando}
+            disabled={carregando || disabled}
           >
             Fechar
           </Button>

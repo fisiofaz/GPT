@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { FileSpreadsheet, Layers, MapPin, Plus } from "lucide-react";
 
-import { useAuth } from "../context/useAuth";
+import { useCongregacao } from "../context/useCongregacao";
 import { useTerritorios } from "../hooks/useTerritorios";
 
 import type { Territorio } from "../types/territorio";
@@ -29,9 +29,9 @@ import { PageHeader } from "../components/ui/PageHeader";
 import { SearchInput } from "../components/ui/SearchInput";
 
 export function Territorios() {
-  const { usuario } = useAuth();
+  const { congregacaoSelecionadaId, congregacaoSelecionada } = useCongregacao();
 
-  const congregacaoId = usuario?.congregacaoId ?? null;
+  const congregacaoId = congregacaoSelecionadaId;
 
   const {
     territorios,
@@ -44,7 +44,6 @@ export function Territorios() {
     devolverTerritorio,
     carregarRelatorioS13,
     recarregar,
-
     paginaTerritorios,
     totalPaginasTerritorios,
     totalTerritorios,
@@ -52,7 +51,6 @@ export function Territorios() {
     paginaAnteriorTerritorios,
     proximaPaginaTerritorios,
     alterarTamanhoPaginaTerritorios,
-
     paginaHistorico,
     totalPaginasHistorico,
     totalHistorico,
@@ -92,7 +90,8 @@ export function Territorios() {
   const [modalRelatorioGeralAberto, setModalRelatorioGeralAberto] =
     useState(false);
 
-  const congregacaoNome = territorios[0]?.congregacaoNome;
+  const congregacaoNome =
+    congregacaoSelecionada?.nome ?? territorios[0]?.congregacaoNome;
 
   const handleConfirmarDesignacao = async (
     territorioId: number,
@@ -111,6 +110,10 @@ export function Territorios() {
   };
 
   const handleAbrirRelatorio = async () => {
+    if (!congregacaoId) {
+      return;
+    }
+
     setModalRelatorioGeralAberto(true);
     await carregarRelatorioS13();
   };
@@ -168,6 +171,7 @@ export function Territorios() {
             <Button
               type="button"
               variant="secondary"
+              disabled={!congregacaoId}
               size="sm"
               onClick={() => setModalMapaGeralAberto(true)}
             >
@@ -178,6 +182,7 @@ export function Territorios() {
             <Button
               type="button"
               variant="secondary"
+              disabled={!congregacaoId}
               size="sm"
               onClick={handleAbrirRelatorio}
             >
@@ -200,8 +205,8 @@ export function Territorios() {
 
       {!congregacaoId ? (
         <ErrorState
-          title="Congregação não identificada"
-          message="Não foi possível determinar a congregação do usuário logado."
+          title="Selecione uma congregação"
+          message="Para consultar mapas, territórios, designações e o relatório S-13, o administrador geral precisa selecionar uma congregação no cabeçalho."
         />
       ) : (
         <>

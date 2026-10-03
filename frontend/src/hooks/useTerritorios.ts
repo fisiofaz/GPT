@@ -3,7 +3,6 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { publicadorService } from "../services/publicadorService";
-
 import { territorioService } from "../services/territorioService";
 
 import type { Publicador } from "../types/publicador";
@@ -16,26 +15,71 @@ import type {
   TerritorioRequest,
 } from "../types/territorio";
 
+interface EstadoDadosTerritorios {
+  congregacaoId: number | null;
+  territorios: Territorio[];
+  publicadores: Publicador[];
+  historicoS13: HistoricoTerritorio[];
+  totalPaginasTerritorios: number;
+  totalTerritorios: number;
+  totalPaginasHistorico: number;
+  totalHistorico: number;
+}
+
 export function useTerritorios(congregacaoId?: number | null) {
-  const [territorios, setTerritorios] = useState<Territorio[]>([]);
-  const [publicadores, setPublicadores] = useState<Publicador[]>([]);
-  const [historicoS13, setHistoricoS13] = useState<HistoricoTerritorio[]>([]);
+  const [estadoDados, setEstadoDados] =
+    useState<EstadoDadosTerritorios>({
+      congregacaoId: null,
+      territorios: [],
+      publicadores: [],
+      historicoS13: [],
+      totalPaginasTerritorios: 0,
+      totalTerritorios: 0,
+      totalPaginasHistorico: 0,
+      totalHistorico: 0,
+    });
 
-  const [carregando, setCarregando] = useState(Boolean(congregacaoId));
+  const [carregando, setCarregando] = useState(
+    Boolean(congregacaoId),
+  );
 
-  const [carregandoHistorico, setCarregandoHistorico] = useState(false);
+  const [carregandoHistorico, setCarregandoHistorico] =
+    useState(false);
 
-  // Paginação dos territórios
   const [paginaTerritorios, setPaginaTerritorios] = useState(0);
-  const [tamanhoPaginaTerritorios, setTamanhoPaginaTerritorios] = useState(10);
-  const [totalPaginasTerritorios, setTotalPaginasTerritorios] = useState(0);
-  const [totalTerritorios, setTotalTerritorios] = useState(0);
+  const [tamanhoPaginaTerritorios, setTamanhoPaginaTerritorios] =
+    useState(10);
 
-  // Paginação do histórico / S-13
   const [paginaHistorico, setPaginaHistorico] = useState(0);
-  const [tamanhoPaginaHistorico, setTamanhoPaginaHistorico] = useState(10);
-  const [totalPaginasHistorico, setTotalPaginasHistorico] = useState(0);
-  const [totalHistorico, setTotalHistorico] = useState(0);
+  const [tamanhoPaginaHistorico, setTamanhoPaginaHistorico] =
+    useState(10);
+
+  const dadosDaCongregacaoAtual =
+    congregacaoId != null &&
+    estadoDados.congregacaoId === congregacaoId
+      ? estadoDados
+      : null;
+
+  const territorios =
+    dadosDaCongregacaoAtual?.territorios ?? [];
+
+  const publicadores =
+    dadosDaCongregacaoAtual?.publicadores ?? [];
+
+  const historicoS13 =
+    dadosDaCongregacaoAtual?.historicoS13 ?? [];
+
+  const totalPaginasTerritorios =
+    dadosDaCongregacaoAtual?.totalPaginasTerritorios ?? 0;
+
+  const totalTerritorios =
+    dadosDaCongregacaoAtual?.totalTerritorios ?? 0;
+
+  const totalPaginasHistorico =
+    dadosDaCongregacaoAtual?.totalPaginasHistorico ?? 0;
+
+  const totalHistorico =
+    dadosDaCongregacaoAtual?.totalHistorico ?? 0;
 
   const buscarDados = useCallback(async () => {
     if (congregacaoId == null) {
@@ -52,10 +96,15 @@ export function useTerritorios(congregacaoId?: number | null) {
     ]);
 
     return {
+      congregacaoId,
       territorios: terData,
       publicadores: pubData,
     };
-  }, [congregacaoId, paginaTerritorios, tamanhoPaginaTerritorios]);
+  }, [
+    congregacaoId,
+    paginaTerritorios,
+    tamanhoPaginaTerritorios,
+  ]);
 
   useEffect(() => {
     if (congregacaoId == null) {
@@ -64,7 +113,7 @@ export function useTerritorios(congregacaoId?: number | null) {
 
     let ativo = true;
 
-    const carregarInicial = async () => {
+    const carregarDados = async () => {
       try {
         setCarregando(true);
 
@@ -74,21 +123,33 @@ export function useTerritorios(congregacaoId?: number | null) {
           return;
         }
 
-        setTerritorios(dados.territorios.content);
-        setTotalPaginasTerritorios(dados.territorios.totalPages);
-        setTotalTerritorios(dados.territorios.totalElements);
-        setPublicadores(dados.publicadores.content);
+        setEstadoDados((estadoAnterior) => ({
+          ...estadoAnterior,
+          congregacaoId: dados.congregacaoId,
+          territorios: dados.territorios.content,
+          publicadores: dados.publicadores.content,
+          totalPaginasTerritorios:
+            dados.territorios.totalPages,
+          totalTerritorios:
+            dados.territorios.totalElements,
+        }));
       } catch {
         if (!ativo) {
           return;
         }
 
-        setTerritorios([]);
-        setPublicadores([]);
-        setTotalPaginasTerritorios(0);
-        setTotalTerritorios(0);
+        setEstadoDados((estadoAnterior) => ({
+          ...estadoAnterior,
+          congregacaoId,
+          territorios: [],
+          publicadores: [],
+          totalPaginasTerritorios: 0,
+          totalTerritorios: 0,
+        }));
 
-        toast.error("Erro ao carregar dados de territórios.");
+        toast.error(
+          "Erro ao carregar dados de territórios.",
+        );
       } finally {
         if (ativo) {
           setCarregando(false);
@@ -96,7 +157,7 @@ export function useTerritorios(congregacaoId?: number | null) {
       }
     };
 
-    void carregarInicial();
+    void carregarDados();
 
     return () => {
       ativo = false;
@@ -117,15 +178,25 @@ export function useTerritorios(congregacaoId?: number | null) {
         return;
       }
 
-      setTerritorios(dados.territorios.content);
-      setTotalPaginasTerritorios(dados.territorios.totalPages);
-      setTotalTerritorios(dados.territorios.totalElements);
-      setPublicadores(dados.publicadores.content);
+      setEstadoDados((estadoAnterior) => ({
+        ...estadoAnterior,
+        congregacaoId: dados.congregacaoId,
+        territorios: dados.territorios.content,
+        publicadores: dados.publicadores.content,
+        totalPaginasTerritorios:
+          dados.territorios.totalPages,
+        totalTerritorios:
+          dados.territorios.totalElements,
+      }));
     } catch {
-      setTerritorios([]);
-      setPublicadores([]);
-      setTotalPaginasTerritorios(0);
-      setTotalTerritorios(0);
+      setEstadoDados((estadoAnterior) => ({
+        ...estadoAnterior,
+        congregacaoId,
+        territorios: [],
+        publicadores: [],
+        totalPaginasTerritorios: 0,
+        totalTerritorios: 0,
+      }));
 
       toast.error("Erro ao atualizar territórios.");
     } finally {
@@ -133,251 +204,296 @@ export function useTerritorios(congregacaoId?: number | null) {
     }
   }, [buscarDados, congregacaoId]);
 
-  // ============================================================
-  // Criar / salvar território
-  // ============================================================
+  const salvarTerritorio = useCallback(
+    async (
+      dto: TerritorioRequest,
+      id?: number,
+    ) => {
+      try {
+        if (id) {
+          await territorioService.atualizar(id, dto);
 
-  const salvarTerritorio = async (
-    dto: TerritorioRequest,
-    id?: number,
-  ): Promise<void> => {
-    try {
-      if (id != null) {
-        await territorioService.atualizar(id, {
-          numero: dto.numero,
-          nome: dto.nome,
-          descricao: dto.descricao,
-        });
+          toast.success(
+            "Território atualizado com sucesso.",
+          );
+        } else {
+          await territorioService.criar(dto);
 
-        toast.success(`Território ${dto.numero} atualizado com sucesso!`);
-      } else {
-        await territorioService.criar(dto);
+          toast.success(
+            "Território criado com sucesso.",
+          );
+        }
 
-        toast.success(`Território ${dto.numero} cadastrado com sucesso!`);
+        await recarregar();
+      } catch (error) {
+        const mensagem =
+          error instanceof Error
+            ? error.message
+            : "Erro ao salvar território.";
+
+        toast.error(mensagem);
+
+        throw error;
       }
-
-      await recarregar();
-    } catch (err: unknown) {
-      const mensagem =
-        err instanceof Error ? err.message : "Falha ao salvar território.";
-
-      toast.error(mensagem);
-      throw err;
-    }
-  };
-
-  // ============================================================
-  // Atualizar território
-  // ============================================================
-
-  const atualizarTerritorio = async (
-    id: number,
-    dto: {
-      numero: string;
-      nome: string;
-      descricao?: string;
     },
-  ): Promise<void> => {
-    try {
-      await territorioService.atualizar(id, dto);
+    [recarregar],
+  );
 
-      toast.success(`Território ${dto.numero} atualizado com sucesso!`);
+  const atualizarTerritorio = useCallback(
+    async (
+      id: number,
+      dto: TerritorioRequest,
+    ) => {
+      try {
+        await territorioService.atualizar(id, dto);
 
-      await recarregar();
-    } catch (err: unknown) {
-      const mensagem =
-        err instanceof Error ? err.message : "Falha ao atualizar território.";
+        toast.success(
+          "Território atualizado com sucesso.",
+        );
 
-      toast.error(mensagem);
-      throw err;
-    }
-  };
+        await recarregar();
+      } catch (error) {
+        const mensagem =
+          error instanceof Error
+            ? error.message
+            : "Erro ao atualizar território.";
 
-  // ============================================================
-  // Excluir território
-  // ============================================================
+        toast.error(mensagem);
 
-  const excluirTerritorio = async (
-    id: number,
-    numero: string,
-  ): Promise<void> => {
-    try {
-      await territorioService.deletar(id);
+        throw error;
+      }
+    },
+    [recarregar],
+  );
 
-      toast.success(`Território ${numero} excluído com sucesso.`);
+  const excluirTerritorio = useCallback(
+    async (
+      id: number,
+      numero: string,
+    ) => {
+      try {
+        await territorioService.deletar(id);
 
-      await recarregar();
-    } catch (err: unknown) {
-      const mensagem =
-        err instanceof Error ? err.message : "Falha ao excluir território.";
+        toast.success(
+          `Território ${numero} excluído com sucesso.`,
+        );
 
-      toast.error(mensagem);
-    }
-  };
+        await recarregar();
+      } catch (error) {
+        const mensagem =
+          error instanceof Error
+            ? error.message
+            : "Erro ao excluir território.";
 
-  // ============================================================
-  // Designar território
-  // ============================================================
+        toast.error(mensagem);
 
-  const designarTerritorio = async (
-    territorioId: number,
-    dto: DesignacaoRequest,
-  ): Promise<void> => {
-    try {
-      await territorioService.retirar(territorioId, dto);
+        throw error;
+      }
+    },
+    [recarregar],
+  );
 
-      toast.success("Território designado com sucesso!");
+  const designarTerritorio = useCallback(
+    async (
+      territorioId: number,
+      dto: DesignacaoRequest,
+    ) => {
+      try {
+        await territorioService.retirar(
+          territorioId,
+          dto,
+        );
 
-      await recarregar();
-    } catch (err: unknown) {
-      const mensagem =
-        err instanceof Error ? err.message : "Falha ao designar território.";
+        toast.success(
+          "Território designado com sucesso.",
+        );
 
-      toast.error(mensagem);
-      throw err;
-    }
-  };
+        await recarregar();
+      } catch (error) {
+        const mensagem =
+          error instanceof Error
+            ? error.message
+            : "Erro ao designar território.";
 
-  // ============================================================
-  // Devolver território
-  // ============================================================
+        toast.error(mensagem);
 
-  const devolverTerritorio = async (
-    territorioId: number,
-    dto: DevolucaoRequest,
-  ): Promise<void> => {
-    try {
-      await territorioService.devolver(territorioId, dto);
+        throw error;
+      }
+    },
+    [recarregar],
+  );
 
-      toast.success("Território devolvido com sucesso!");
+  const devolverTerritorio = useCallback(
+    async (
+      territorioId: number,
+      dto: DevolucaoRequest,
+    ) => {
+      try {
+        await territorioService.devolver(
+          territorioId,
+          dto,
+        );
 
-      await recarregar();
-    } catch (err: unknown) {
-      const mensagem =
-        err instanceof Error ? err.message : "Falha ao registrar devolução.";
+        toast.success(
+          "Território devolvido com sucesso.",
+        );
 
-      toast.error(mensagem);
-      throw err;
-    }
-  };
+        await recarregar();
+      } catch (error) {
+        const mensagem =
+          error instanceof Error
+            ? error.message
+            : "Erro ao devolver território.";
 
-  // ============================================================
-  // Paginação dos territórios
-  // ============================================================
+        toast.error(mensagem);
 
-  const paginaAnteriorTerritorios = () => {
-    setPaginaTerritorios((pagina) => Math.max(0, pagina - 1));
-  };
+        throw error;
+      }
+    },
+    [recarregar],
+  );
 
-  const proximaPaginaTerritorios = () => {
-    setPaginaTerritorios((pagina) =>
-      Math.min(Math.max(totalPaginasTerritorios - 1, 0), pagina + 1),
+  const paginaAnteriorTerritorios = useCallback(() => {
+    setPaginaTerritorios((paginaAtual) => Math.max(0, paginaAtual - 1));
+  }, []);
+
+  const proximaPaginaTerritorios = useCallback(() => {
+    setPaginaTerritorios((paginaAtual) =>
+      Math.min(Math.max(0, totalPaginasTerritorios - 1), paginaAtual + 1),
     );
-  };
+  }, [totalPaginasTerritorios]);
 
-  const alterarTamanhoPaginaTerritorios = (tamanho: number) => {
+  const alterarTamanhoPaginaTerritorios = useCallback((tamanho: number) => {
     setTamanhoPaginaTerritorios(tamanho);
     setPaginaTerritorios(0);
-  };
+  }, []);
 
-  // ============================================================
-  // Relatório S-13 / Histórico
-  // ============================================================
+  const carregarRelatorioS13 = useCallback(
+    async (
+      pagina = paginaHistorico,
+      tamanho = tamanhoPaginaHistorico,
+    ) => {
+      if (congregacaoId == null) {
+        return;
+      }
 
-  const carregarRelatorioS13 = async (
-    pagina = paginaHistorico,
-    tamanho = tamanhoPaginaHistorico,
-  ): Promise<void> => {
-    if (congregacaoId == null) {
-      return;
-    }
+      setCarregandoHistorico(true);
 
-    setCarregandoHistorico(true);
+      try {
+        const dados =
+          await territorioService.listarHistoricoGeral(
+            congregacaoId,
+            pagina,
+            tamanho,
+          );
 
-    try {
-      const dados = await territorioService.listarHistoricoGeral(
-        congregacaoId,
-        pagina,
-        tamanho,
-      );
+        setEstadoDados((estadoAnterior) => ({
+          ...estadoAnterior,
+          congregacaoId,
+          historicoS13: dados.content,
+          totalPaginasHistorico:
+            dados.totalPages,
+          totalHistorico:
+            dados.totalElements,
+        }));
 
-      setHistoricoS13(dados.content);
-      setPaginaHistorico(dados.page);
-      setTamanhoPaginaHistorico(dados.size);
-      setTotalPaginasHistorico(dados.totalPages);
-      setTotalHistorico(dados.totalElements);
-    } catch {
-      setHistoricoS13([]);
-      setTotalPaginasHistorico(0);
-      setTotalHistorico(0);
+        setPaginaHistorico(pagina);
+        setTamanhoPaginaHistorico(tamanho);
+      } catch (error) {
+        const mensagem =
+          error instanceof Error
+            ? error.message
+            : "Erro ao carregar relatório S-13.";
 
-      toast.error("Erro ao carregar relatório S-13.");
-    } finally {
-      setCarregandoHistorico(false);
-    }
-  };
+        toast.error(mensagem);
 
-  const paginaAnteriorHistorico = () => {
-    const novaPagina = Math.max(0, paginaHistorico - 1);
+        throw error;
+      } finally {
+        setCarregandoHistorico(false);
+      }
+    },
+    [
+      congregacaoId,
+      paginaHistorico,
+      tamanhoPaginaHistorico,
+    ],
+  );
 
-    setPaginaHistorico(novaPagina);
+  const paginaAnteriorHistorico = useCallback(() => {
+    setPaginaHistorico((paginaAtual) => Math.max(0, paginaAtual - 1));
 
-    void carregarRelatorioS13(novaPagina, tamanhoPaginaHistorico);
-  };
+    void carregarRelatorioS13(
+      Math.max(0, paginaHistorico - 1),
+      tamanhoPaginaHistorico,
+    );
+  }, [carregarRelatorioS13, paginaHistorico, tamanhoPaginaHistorico]);
 
-  const proximaPaginaHistorico = () => {
-    const novaPagina = Math.min(
-      Math.max(totalPaginasHistorico - 1, 0),
+  const proximaPaginaHistorico = useCallback(() => {
+    const proximaPagina = Math.min(
+      Math.max(0, totalPaginasHistorico - 1),
       paginaHistorico + 1,
     );
 
-    setPaginaHistorico(novaPagina);
+    setPaginaHistorico(proximaPagina);
 
-    void carregarRelatorioS13(novaPagina, tamanhoPaginaHistorico);
-  };
+    void carregarRelatorioS13(proximaPagina, tamanhoPaginaHistorico);
+  }, [
+    carregarRelatorioS13,
+    paginaHistorico,
+    tamanhoPaginaHistorico,
+    totalPaginasHistorico,
+  ]);
 
-  const alterarTamanhoPaginaHistorico = (tamanho: number) => {
-    setTamanhoPaginaHistorico(tamanho);
-    setPaginaHistorico(0);
+  const alterarTamanhoPaginaHistorico =
+    useCallback(
+      (tamanho: number) => {
+        setTamanhoPaginaHistorico(tamanho);
+        setPaginaHistorico(0);
 
-    void carregarRelatorioS13(0, tamanho);
-  };
+        void carregarRelatorioS13(0, tamanho);
+      },
+      [carregarRelatorioS13],
+    );
 
   return {
-    // Dados
     territorios,
     publicadores,
     historicoS13,
 
-    // Estados de carregamento
     carregando,
     carregandoHistorico,
 
-    // Ações de território
+    paginaTerritorios,
+    tamanhoPaginaTerritorios,
+    totalPaginasTerritorios,
+    totalTerritorios,
+
+    paginaHistorico,
+    tamanhoPaginaHistorico,
+    totalPaginasHistorico,
+    totalHistorico,
+
     salvarTerritorio,
     atualizarTerritorio,
     excluirTerritorio,
+
     designarTerritorio,
     devolverTerritorio,
+
     recarregar,
 
-    // Relatório S-13
-    carregarRelatorioS13,
+    setPaginaTerritorios,
+    setTamanhoPaginaTerritorios,
 
-    // Paginação dos territórios
-    paginaTerritorios,
-    totalPaginasTerritorios,
-    totalTerritorios,
-    tamanhoPaginaTerritorios,
     paginaAnteriorTerritorios,
     proximaPaginaTerritorios,
     alterarTamanhoPaginaTerritorios,
 
-    // Paginação do histórico / S-13
-    paginaHistorico,
-    totalPaginasHistorico,
-    totalHistorico,
-    tamanhoPaginaHistorico,
+    carregarRelatorioS13,
+
+    setPaginaHistorico,
+    setTamanhoPaginaHistorico,
+
     paginaAnteriorHistorico,
     proximaPaginaHistorico,
     alterarTamanhoPaginaHistorico,
