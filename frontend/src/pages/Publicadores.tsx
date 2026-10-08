@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 
 import {
+  ArrowRightLeft,
   CalendarDays,
   History,
   Mail,
@@ -12,8 +13,9 @@ import {
   X,
 } from "lucide-react";
 
-import { useAuth } from "../context/useAuth";
 import { publicadorService } from "../services/publicadorService";
+import { useCongregacao } from "../context/useCongregacao";
+import { useAuth } from "../context/useAuth";
 
 import type { AtualizarPublicadorDTO, Publicador } from "../types/publicador";
 
@@ -38,6 +40,7 @@ interface FormularioPublicador {
   dataNascimento: string;
   telefone: string;
   email: string;
+  congregacaoId: number | null;
 }
 
 const formularioInicial: FormularioPublicador = {
@@ -45,10 +48,15 @@ const formularioInicial: FormularioPublicador = {
   dataNascimento: "",
   telefone: "",
   email: "",
+  congregacaoId: null,
 };
 
 export function Publicadores() {
-  const { usuario } = useAuth();
+
+  const { congregacaoSelecionadaId, congregacoes } = useCongregacao();
+  const { temRole } = useAuth();
+  
+  const isAdminGeral = temRole("ROLE_ADMIN_GERAL");
 
   const [publicadores, setPublicadores] = useState<Publicador[]>([]);
 
@@ -81,6 +89,23 @@ export function Publicadores() {
 
   const [processandoInativacao, setProcessandoInativacao] = useState(false);
 
+  const [modalTransferenciaAberto, setModalTransferenciaAberto] =
+    useState(false);
+
+  const [publicadorParaTransferir, setPublicadorParaTransferir] =
+    useState<Publicador | null>(null);
+
+  const [congregacaoDestinoId, setCongregacaoDestinoId] = useState<
+    number | null
+  >(null);
+
+  const [processandoTransferencia, setProcessandoTransferencia] =
+    useState(false);
+
+  const [erroTransferencia, setErroTransferencia] = useState<string | null>(
+    null,
+  );
+  
   const [historicoPublicador, setHistoricoPublicador] = useState<{
     id: number;
     nome: string;
@@ -88,7 +113,7 @@ export function Publicadores() {
 
   const [atualizacao, setAtualizacao] = useState(0);
 
-  const congregacaoId = usuario?.congregacaoId ?? null;
+  const congregacaoId = congregacaoSelecionadaId;
 
   useEffect(() => {
     let ativo = true;
@@ -168,7 +193,13 @@ export function Publicadores() {
   const abrirModalCriar = () => {
     setModalModo("criar");
     setPublicadorSelecionado(null);
-    setFormulario(formularioInicial);
+    setFormulario({
+      nome: "",
+      dataNascimento: "",
+      telefone: "",
+      email: "",
+      congregacaoId: congregacaoSelecionadaId,
+    });
     setErroFormulario(null);
     setModalAberto(true);
   };
@@ -182,6 +213,7 @@ export function Publicadores() {
       dataNascimento: publicador.dataNascimento ?? "",
       telefone: publicador.telefone ?? "",
       email: publicador.email ?? "",
+      congregacaoId: publicador.congregacaoId ?? congregacaoSelecionadaId,
     });
 
     setErroFormulario(null);
@@ -199,7 +231,10 @@ export function Publicadores() {
     setErroFormulario(null);
   };
 
-  const atualizarCampo = (campo: keyof FormularioPublicador, valor: string) => {
+  const atualizarCampo = <T extends keyof FormularioPublicador>(
+    campo: T,
+    valor: FormularioPublicador[T],
+  ) => {
     setFormulario((estadoAtual) => ({
       ...estadoAtual,
       [campo]: valor,
@@ -209,8 +244,11 @@ export function Publicadores() {
   const handleSalvar = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!congregacaoId) {
-      setErroFormulario("O usuário não possui uma congregação vinculada.");
+    const congregacaoDestinoId =
+      formulario.congregacaoId ?? congregacaoSelecionadaId;
+
+    if (!congregacaoDestinoId) {
+      setErroFormulario("Selecione uma congregação.");
       return;
     }
 
@@ -237,7 +275,7 @@ export function Publicadores() {
       dataNascimento: formulario.dataNascimento.trim() || undefined,
       telefone: telefoneNormalizado || undefined,
       email: emailNormalizado || undefined,
-      congregacaoId,
+      congregacaoId: congregacaoDestinoId,
     };
 
     setProcessando(true);
@@ -284,6 +322,60 @@ export function Publicadores() {
 
     setModalInativarAberto(false);
     setPublicadorParaInativar(null);
+  };
+
+  const abrirModalTransferencia = (publicador: Publicador) => {
+    setPublicadorParaTransferir(publicador);
+    setCongregacaoDestinoId(null);
+    setErroTransferencia(null);
+    setModalTransferenciaAberto(true);
+  };
+
+  const fecharModalTransferencia = () => {
+    if (processandoTransferencia) return;
+
+    setModalTransferenciaAberto(false);
+    setPublicadorParaTransferir(null);
+    setCongregacaoDestinoId(null);
+    setErroTransferencia(null);
+  };
+
+  const confirmarTransferencia = async () => {
+    if (!publicadorParaTransferir) return;
+
+    if (!congregacaoDestinoId) {
+      setErroTransferencia("Selecione a congregação de destino.");
+      return;
+    }
+
+    if (congregacaoDestinoId === publicadorParaTransferir.congregacaoId) {
+      setErroTransferencia(
+        "A congregação de destino deve ser diferente da atual.",
+      );
+      return;
+    }
+
+    setProcessandoTransferencia(true);
+    setErroTransferencia(null);
+
+    try {
+      await publicadorService.transferir(publicadorParaTransferir.id, {
+        congregacaoDestinoId,
+      });
+
+      setModalTransferenciaAberto(false);
+      setPublicadorParaTransferir(null);
+      setCongregacaoDestinoId(null);
+      setErroTransferencia(null);
+
+      setAtualizacao((valor) => valor + 1);
+    } catch {
+      setErroTransferencia(
+        "Não foi possível transferir o publicador. Tente novamente.",
+      );
+    } finally {
+      setProcessandoTransferencia(false);
+    }
   };
 
   const confirmarInativacao = async () => {
@@ -495,6 +587,15 @@ export function Publicadores() {
                         <History size={16} aria-hidden="true" />
                         Histórico
                       </Button>
+
+                      <Button
+                        variant="secondary"
+                        onClick={() => abrirModalTransferencia(publicador)}
+                        title="Transferir publicador"
+                      >
+                        <ArrowRightLeft size={16} />
+                        Transferir
+                      </Button>
                     </div>
                   </article>
                 ))}
@@ -637,6 +738,39 @@ export function Publicadores() {
                 disabled={processando}
               />
 
+              {isAdminGeral && modalModo === "criar" && (
+                <div className="space-y-1.5">
+                  <label
+                    htmlFor="congregacao-publicador"
+                    className="block text-sm font-medium text-slate-700"
+                  >
+                    Congregação
+                  </label>
+
+                  <select
+                    id="congregacao-publicador"
+                    value={formulario.congregacaoId ?? ""}
+                    onChange={(event) =>
+                      atualizarCampo(
+                        "congregacaoId",
+                        event.target.value ? Number(event.target.value) : null,
+                      )
+                    }
+                    disabled={processando}
+                    required
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200 disabled:cursor-not-allowed disabled:bg-slate-100"
+                  >
+                    <option value="">Selecione uma congregação</option>
+
+                    {congregacoes.map((congregacao) => (
+                      <option key={congregacao.id} value={congregacao.id}>
+                        {congregacao.nome}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               {erroFormulario && (
                 <div
                   className="
@@ -669,6 +803,100 @@ export function Publicadores() {
                 </Button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {modalTransferenciaAberto && publicadorParaTransferir && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl dark:bg-slate-900">
+            <div className="mb-5 flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+                  Transferir publicador
+                </h2>
+
+                <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                  Transferir <strong>{publicadorParaTransferir.nome}</strong>{" "}
+                  para outra congregação.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={fecharModalTransferencia}
+                disabled={processandoTransferencia}
+                className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-slate-800 dark:hover:text-slate-300"
+                aria-label="Fechar"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="congregacao-destino"
+                  className="block text-sm font-medium text-slate-700 dark:text-slate-300"
+                >
+                  Congregação de destino
+                </label>
+
+                <select
+                  id="congregacao-destino"
+                  value={congregacaoDestinoId ?? ""}
+                  onChange={(event) =>
+                    setCongregacaoDestinoId(
+                      event.target.value ? Number(event.target.value) : null,
+                    )
+                  }
+                  disabled={processandoTransferencia}
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:disabled:bg-slate-800"
+                >
+                  <option value="">Selecione uma congregação</option>
+
+                  {congregacoes
+                    .filter(
+                      (congregacao) =>
+                        congregacao.id !==
+                        publicadorParaTransferir.congregacaoId,
+                    )
+                    .map((congregacao) => (
+                      <option key={congregacao.id} value={congregacao.id}>
+                        {congregacao.nome}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              {erroTransferencia && (
+                <p className="text-sm text-red-600 dark:text-red-400">
+                  {erroTransferencia}
+                </p>
+              )}
+
+              <div className="flex justify-end gap-3 pt-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={fecharModalTransferencia}
+                  disabled={processandoTransferencia}
+                >
+                  Cancelar
+                </Button>
+
+                <Button
+                  type="button"
+                  onClick={() => void confirmarTransferencia()}
+                  disabled={
+                    processandoTransferencia || congregacaoDestinoId === null
+                  }
+                >
+                  <ArrowRightLeft size={16} />
+                  {processandoTransferencia ? "Transferindo..." : "Transferir"}
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       )}

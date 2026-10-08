@@ -2,7 +2,10 @@ export type EventoHistoricoPublicador =
   | "CRIADO"
   | "INATIVADO"
   | "REATIVADO"
-  | "EXCLUIDO_DEFINITIVAMENTE";
+  | "EXCLUIDO_DEFINITIVAMENTE"
+  | "ACESSO_SISTEMA_CONCEDIDO"
+  | "ACESSO_SISTEMA_REMOVIDO"
+  | "TRANSFERIDO";
 
 export interface Publicador {
   id: number;
@@ -20,6 +23,10 @@ export interface PublicadorRequestDTO {
   telefone?: string;
   email?: string;
   congregacaoId: number;
+}
+
+export interface TransferirPublicadorDTO {
+  congregacaoDestinoId: number;
 }
 
 export interface HistoricoPublicador {

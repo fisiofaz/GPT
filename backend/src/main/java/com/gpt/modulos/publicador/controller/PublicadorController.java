@@ -5,6 +5,7 @@ import com.gpt.modulos.publicador.dto.PublicadorRequestDTO;
 import com.gpt.modulos.publicador.dto.PublicadorResponseDTO;
 import com.gpt.modulos.publicador.service.HistoricoPublicadorService;
 import com.gpt.modulos.publicador.service.PublicadorService;
+import com.gpt.modulos.publicador.dto.TransferirPublicadorRequestDTO;
 import com.gpt.shared.dto.PageResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -71,6 +72,21 @@ public class PublicadorController {
         return ResponseEntity.ok(
                 publicadorService.atualizar(id, request)
         );
+    }
+    
+    @PatchMapping("/{id}/transferir")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO')")
+    public ResponseEntity<Void> transferir(
+            @PathVariable Long id,
+            @Valid @RequestBody TransferirPublicadorRequestDTO request
+    ) {
+
+        publicadorService.transferir(
+                id,
+                request.getCongregacaoDestinoId()
+        );
+
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{id}")

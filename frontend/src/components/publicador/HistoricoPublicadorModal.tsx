@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { History, X } from "lucide-react";
+import { AlertTriangle, History, Trash2, X } from "lucide-react";
 
 import { publicadorService } from "../../services/publicadorService";
 import type {
@@ -25,6 +25,9 @@ const eventoLabel: Record<EventoHistoricoPublicador, string> = {
   INATIVADO: "Inativado",
   REATIVADO: "Reativado",
   EXCLUIDO_DEFINITIVAMENTE: "Excluído definitivamente",
+  ACESSO_SISTEMA_CONCEDIDO: "Acesso ao sistema concedido",
+  ACESSO_SISTEMA_REMOVIDO: "Acesso ao sistema removido",
+  TRANSFERIDO: "Transferido",
 };
 
 const eventoVariant: Record<
@@ -35,6 +38,9 @@ const eventoVariant: Record<
   INATIVADO: "warning",
   REATIVADO: "success",
   EXCLUIDO_DEFINITIVAMENTE: "danger",
+  ACESSO_SISTEMA_CONCEDIDO: "success",
+  ACESSO_SISTEMA_REMOVIDO: "warning",
+  TRANSFERIDO: "info",
 };
 
 function formatarData(data: string): string {
@@ -53,6 +59,9 @@ export function HistoricoPublicadorModal({
   const [historico, setHistorico] = useState<HistoricoPublicador[]>([]);
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
+  const [processandoExclusao, setProcessandoExclusao] = useState(false);
+  const [erroExclusao, setErroExclusao] = useState<string | null>(null);
 
   useEffect(() => {
     if (!aberto || publicadorId === null) {
@@ -90,9 +99,53 @@ export function HistoricoPublicadorModal({
     };
   }, [aberto, publicadorId]);
 
+  const abrirConfirmacaoExclusao = () => {
+    setErroExclusao(null);
+    setConfirmandoExclusao(true);
+  };
+
+  const cancelarExclusao = () => {
+    if (processandoExclusao) return;
+
+    setConfirmandoExclusao(false);
+    setErroExclusao(null);
+  };
+
+  const confirmarExclusao = async () => {
+    if (publicadorId === null) return;
+
+    setProcessandoExclusao(true);
+    setErroExclusao(null);
+
+    try {
+      await publicadorService.excluirDefinitivamente(publicadorId);
+
+      setConfirmandoExclusao(false);
+      onFechar();
+    } catch {
+      setErroExclusao(
+        "Não foi possível excluir definitivamente o publicador. Verifique se existem vínculos que impedem a exclusão.",
+      );
+    } finally {
+      setProcessandoExclusao(false);
+    }
+  };
+  
   if (!aberto) {
     return null;
   }
+
+  const eventosDeEstado = historico.filter(
+    (registro) =>
+      registro.evento === "CRIADO" ||
+      registro.evento === "INATIVADO" ||
+      registro.evento === "REATIVADO",
+  );
+
+  const ultimoEventoDeEstado = eventosDeEstado[eventosDeEstado.length - 1];
+
+  const podeExcluirDefinitivamente =
+    !carregando && !erro && ultimoEventoDeEstado?.evento === "INATIVADO";
 
   return (
     <div
@@ -185,12 +238,82 @@ export function HistoricoPublicadorModal({
           )}
         </div>
 
-        <div className="flex justify-end border-t border-slate-200 px-6 py-4">
-          <Button type="button" variant="secondary" onClick={onFechar}>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 px-6 py-4">
+          <div>
+            {podeExcluirDefinitivamente && (
+              <Button
+                type="button"
+                variant="danger"
+                onClick={abrirConfirmacaoExclusao}
+                disabled={processandoExclusao}
+              >
+                <Trash2 size={16} />
+                Excluir definitivamente
+              </Button>
+            )}
+          </div>
+
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onFechar}
+            disabled={processandoExclusao}
+          >
             Fechar
           </Button>
         </div>
       </div>
+
+      {confirmandoExclusao && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+            <div className="flex items-start gap-4">
+              <div className="rounded-full bg-red-100 p-3">
+                <AlertTriangle className="h-6 w-6 text-red-600" />
+              </div>
+
+              <div className="min-w-0">
+                <h3 className="text-lg font-semibold text-slate-900">
+                  Excluir publicador definitivamente?
+                </h3>
+
+                <p className="mt-2 text-sm text-slate-600">
+                  Esta ação é irreversível. O publicador e os dados pessoais
+                  vinculados a ele serão removidos definitivamente do sistema.
+                </p>
+
+                {erroExclusao && (
+                  <p className="mt-3 text-sm text-red-600">{erroExclusao}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={cancelarExclusao}
+                disabled={processandoExclusao}
+              >
+                Cancelar
+              </Button>
+
+              <Button
+                type="button"
+                variant="danger"
+                onClick={() => void confirmarExclusao()}
+                disabled={processandoExclusao}
+              >
+                <Trash2 size={16} />
+
+                {processandoExclusao
+                  ? "Excluindo..."
+                  : "Sim, excluir definitivamente"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

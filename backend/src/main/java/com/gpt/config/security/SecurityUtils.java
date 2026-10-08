@@ -31,4 +31,10 @@ public class SecurityUtils {
                 .map(u -> u.getCongregacao() != null ? u.getCongregacao().getId() : null)
                 .orElse(null);
     }
+    
+    public boolean isAdminGeral() { 
+    	return getUsuarioLogado() 
+    			.map(usuario -> usuario.getRoles().stream() 
+    					.anyMatch(role -> "ROLE_ADMIN_GERAL".equals(role.getNome()))) 
+    			.orElse(false); }
 }

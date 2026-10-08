@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { History, RefreshCw } from "lucide-react";
-import { useAuth } from "../context/useAuth";
+import { History, RefreshCw, RotateCcw, Trash2 } from "lucide-react";
+import { useCongregacao } from "../context/useCongregacao";
 
 import { publicadorService } from "../services/publicadorService";
 import type {
@@ -25,6 +25,9 @@ const eventoLabel: Record<EventoHistoricoPublicador, string> = {
   INATIVADO: "Inativado",
   REATIVADO: "Reativado",
   EXCLUIDO_DEFINITIVAMENTE: "Excluído definitivamente",
+  ACESSO_SISTEMA_CONCEDIDO: "Acesso ao sistema concedido",
+  ACESSO_SISTEMA_REMOVIDO: "Acesso ao sistema removido",
+  TRANSFERIDO: "Transferido",
 };
 
 const eventoVariant: Record<
@@ -35,6 +38,9 @@ const eventoVariant: Record<
   INATIVADO: "warning",
   REATIVADO: "success",
   EXCLUIDO_DEFINITIVAMENTE: "danger",
+  ACESSO_SISTEMA_CONCEDIDO: "success",
+  ACESSO_SISTEMA_REMOVIDO: "warning",
+  TRANSFERIDO: "info",
 };
 
 function formatarData(data: string): string {
@@ -45,7 +51,7 @@ function formatarData(data: string): string {
 }
 
 export default function HistoricoPublicadores() {
-    const { usuario } = useAuth();
+    const { congregacaoSelecionadaId } = useCongregacao();
 
     const [historico, setHistorico] = useState<HistoricoPublicador[]>([]);
     const [carregando, setCarregando] = useState(true);
@@ -64,7 +70,9 @@ export default function HistoricoPublicadores() {
         "TODOS",
     );
 
-  const congregacaoId = usuario?.congregacaoId ?? null;
+    const [processandoAcao, setProcessandoAcao] = useState<number | null>(null);
+
+  const congregacaoId = congregacaoSelecionadaId;
 
    useEffect(() => {
     let ativo = true;
@@ -129,6 +137,55 @@ export default function HistoricoPublicadores() {
       return correspondeBusca && correspondeEvento;
     });
   }, [historico, busca, evento]);
+
+  const reativarPublicador = async (registro: HistoricoPublicador) => {
+    const confirmar = window.confirm(
+      `Deseja realmente reativar o publicador "${registro.nomePublicador}"?`,
+    );
+
+    if (!confirmar) {
+      return;
+    }
+
+    setProcessandoAcao(registro.publicadorId);
+    setErro(null);
+
+    try {
+      await publicadorService.reativar(registro.publicadorId);
+      setAtualizacao((valor) => valor + 1);
+    } catch {
+      setErro(
+        `Não foi possível reativar o publicador "${registro.nomePublicador}".`,
+      );
+    } finally {
+      setProcessandoAcao(null);
+    }
+  };
+
+  const excluirDefinitivamente = async (registro: HistoricoPublicador) => {
+    const confirmar = window.confirm(
+      `ATENÇÃO!\n\nDeseja realmente excluir definitivamente o publicador "${registro.nomePublicador}"?\n\nEssa ação não poderá ser desfeita.`,
+    );
+
+    if (!confirmar) {
+      return;
+    }
+
+    setProcessandoAcao(registro.publicadorId);
+    setErro(null);
+
+    try {
+      await publicadorService.excluirDefinitivamente(registro.publicadorId);
+
+      setAtualizacao((valor) => valor + 1);
+    } catch {
+      setErro(
+        `Não foi possível excluir definitivamente o publicador "${registro.nomePublicador}".`,
+      );
+    } finally {
+      setProcessandoAcao(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -225,6 +282,9 @@ export default function HistoricoPublicadores() {
                   <th className="px-4 py-3 text-left font-semibold text-slate-700">
                     Observações
                   </th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                    Ações
+                  </th>
                 </tr>
               </thead>
 
@@ -254,6 +314,45 @@ export default function HistoricoPublicadores() {
 
                     <td className="max-w-sm px-4 py-3 text-slate-600">
                       {registro.observacoes || "—"}
+                    </td>
+
+                    <td className="whitespace-nowrap px-4 py-3">
+                      {registro.evento === "INATIVADO" ? (
+                        <div className="flex items-center gap-2">
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() => void reativarPublicador(registro)}
+                            disabled={processandoAcao === registro.publicadorId}
+                            title="Reativar publicador"
+                          >
+                            <RotateCcw
+                              size={15}
+                              className={
+                                processandoAcao === registro.publicadorId
+                                  ? "animate-spin"
+                                  : undefined
+                              }
+                            />
+                            Reativar
+                          </Button>
+
+                          <Button
+                            type="button"
+                            variant="danger"
+                            onClick={() =>
+                              void excluirDefinitivamente(registro)
+                            }
+                            disabled={processandoAcao === registro.publicadorId}
+                            title="Excluir definitivamente"
+                          >
+                            <Trash2 size={15} />
+                            Excluir
+                          </Button>
+                        </div>
+                      ) : (
+                        <span className="text-slate-400">—</span>
+                      )}
                     </td>
                   </tr>
                 ))}

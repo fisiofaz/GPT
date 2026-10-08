@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 
 import { useNavigate } from "react-router-dom";
 
+import { useCongregacao } from "../context/useCongregacao";
+
 import { api } from "../services/api";
 
 import { toast } from "sonner";
@@ -64,7 +66,7 @@ function obterIniciais(nome: string): string {
 
 export default function UsuariosCongregacaoPage() {
   const navigate = useNavigate();
-
+  const { congregacaoSelecionadaId } = useCongregacao();
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
@@ -79,35 +81,45 @@ export default function UsuariosCongregacaoPage() {
   const [processando, setProcessando] = useState(false);
   const [atualizacao, setAtualizacao] = useState(0);
 
-  useEffect(() => {
-    const buscarUsuarios = async () => {
-      setCarregando(true);
-      setErro(null);
+    useEffect(() => {
+      const buscarUsuarios = async () => {
+        if (!congregacaoSelecionadaId) {
+          setUsuarios([]);
+          setTotalPaginas(0);
+          setTotalElementos(0);
+          setCarregando(false);
+          return;
+        }
 
-      try {
-        const response = await api.get<PageResponse<Usuario>>("/usuarios", {
-          params: {
-            page: paginaAtual,
-            size: tamanhoPagina,
-          },
-        });
+        setCarregando(true);
+        setErro(null);
 
-        setUsuarios(response.data.content);
-        setTotalPaginas(response.data.totalPages);
-        setTotalElementos(response.data.totalElements);
-      } catch (error) {
-        console.error("Erro ao carregar usuários", error);
-        setUsuarios([]);
-        setTotalPaginas(0);
-        setTotalElementos(0);
-        setErro("Não foi possível carregar os usuários.");
-      } finally {
-        setCarregando(false);
-      }
-    };
+        try {
+          const response = await api.get<PageResponse<Usuario>>("/usuarios", {
+            params: {
+              congregacaoId: congregacaoSelecionadaId,
+              page: paginaAtual,
+              size: tamanhoPagina,
+            },
+          });
 
-    void buscarUsuarios();
-  }, [paginaAtual, tamanhoPagina, atualizacao]);
+          setUsuarios(response.data.content);
+          setTotalPaginas(response.data.totalPages);
+          setTotalElementos(response.data.totalElements);
+        } catch (error) {
+          console.error("Erro ao carregar usuários", error);
+
+          setUsuarios([]);
+          setTotalPaginas(0);
+          setTotalElementos(0);
+          setErro("Não foi possível carregar os usuários.");
+        } finally {
+          setCarregando(false);
+        }
+      };
+
+      void buscarUsuarios();
+    }, [congregacaoSelecionadaId, paginaAtual, tamanhoPagina, atualizacao]);
 
   const alterarTamanhoPagina = (tamanho: number) => {
     setTamanhoPagina(tamanho);

@@ -4,6 +4,7 @@ import type {
   CriarPublicadorDTO,
   AtualizarPublicadorDTO,
   HistoricoPublicador,
+  TransferirPublicadorDTO,
 } from "../types/publicador";
 import type { PageResponse } from "../types/pagination";
 
@@ -37,6 +38,17 @@ export const publicadorService = {
     const response = await api.put<Publicador>(`/publicadores/${id}`, dados);
 
     return response.data;
+  },
+
+  transferir: async (
+    id: number,
+    dados: TransferirPublicadorDTO,
+  ): Promise<void> => {
+    await api.patch(`/publicadores/${id}/transferir`, dados);
+  },
+
+  excluirDefinitivamente: async (id: number): Promise<void> => {
+    await api.delete(`/publicadores/${id}/definitivo`);
   },
 
   desativar: async (id: number): Promise<void> => {

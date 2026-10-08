@@ -56,7 +56,7 @@ export function Header({ onAbrirMenuMobile }: HeaderProps) {
 
       <div className="flex items-center gap-3">
         {isAdminGeral && (
-          <div className="hidden items-center gap-2 md:flex">
+          <div className="flex items-center gap-2">
             <Building2
               size={17}
               className="shrink-0 text-slate-500"
@@ -68,12 +68,11 @@ export function Header({ onAbrirMenuMobile }: HeaderProps) {
                 value={congregacaoSelecionadaId ?? ""}
                 onChange={(event) => {
                   const valor = event.target.value;
-
                   selecionarCongregacao(valor === "" ? null : Number(valor));
                 }}
                 disabled={carregandoCongregacoes}
                 aria-label="Selecionar congregação operacional"
-                className="h-9 min-w-52 appearance-none rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-9 text-sm font-medium text-slate-700 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
+                className="h-9 w-40 appearance-none rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-sm font-medium text-slate-700 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 sm:w-52"
               >
                 <option value="">
                   {carregandoCongregacoes

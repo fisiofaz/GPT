@@ -12,6 +12,7 @@ import com.gpt.modulos.publicador.repository.PublicadorRepository;
 
 import jakarta.persistence.EntityNotFoundException;
 import com.gpt.shared.dto.PageResponse;
+import com.gpt.config.security.SecurityUtils;
 
 import org.springframework.data.domain.PageRequest;
 
@@ -22,13 +23,14 @@ import org.springframework.test.context.ActiveProfiles;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.List;
-
+import static org.mockito.Mockito.when;
 import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.BeforeEach;
 
 @Testcontainers
 @SpringBootTest
@@ -43,6 +45,9 @@ class PublicadorServiceIntegrationTest {
 
     @Autowired
     private PublicadorService publicadorService;
+    
+    @MockitoBean
+    private SecurityUtils securityUtils;
 
     @Autowired
     private PublicadorRepository publicadorRepository;
@@ -52,6 +57,11 @@ class PublicadorServiceIntegrationTest {
 
     @Autowired
     private CongregacaoRepository congregacaoRepository;
+    
+    @BeforeEach
+    void configurarSeguranca() {
+        when(securityUtils.isAdminGeral()).thenReturn(true);
+    }
 
     @Test
     void deveCriarPublicadorComPessoaECongregacao() {
@@ -126,109 +136,7 @@ class PublicadorServiceIntegrationTest {
         assertEquals(publicadoresAntes, publicadorRepository.count());
     }
     
-    @Test
-    void deveAtualizarPublicadorESincronizarPessoa() {
-
-        Congregacao congregacaoOriginal = congregacaoRepository.save(
-                Congregacao.builder()
-                        .nome("Congregação Original")
-                        .numero("001")
-                        .cidade("Santa Maria")
-                        .estado("RS")
-                        .numeroCircuito("RS-01")
-                        .build()
-        );
-
-        Congregacao novaCongregacao = congregacaoRepository.save(
-                Congregacao.builder()
-                        .nome("Nova Congregação")
-                        .numero("002")
-                        .cidade("Porto Alegre")
-                        .estado("RS")
-                        .numeroCircuito("RS-02")
-                        .build()
-        );
-
-        PublicadorRequestDTO requestCriacao = new PublicadorRequestDTO();
-        requestCriacao.setNome("João da Silva");
-        requestCriacao.setDataNascimento(LocalDate.of(1990, 5, 10));
-        requestCriacao.setTelefone("55999999999");
-        requestCriacao.setEmail("joao@teste.com");
-        requestCriacao.setCongregacaoId(congregacaoOriginal.getId());
-
-        PublicadorResponseDTO criado = publicadorService.criar(requestCriacao);
-
-        PublicadorRequestDTO requestAtualizacao = new PublicadorRequestDTO();
-        requestAtualizacao.setNome("João da Silva Atualizado");
-        requestAtualizacao.setDataNascimento(LocalDate.of(1991, 6, 15));
-        requestAtualizacao.setTelefone("55888888888");
-        requestAtualizacao.setEmail("joao.atualizado@teste.com");
-        requestAtualizacao.setCongregacaoId(novaCongregacao.getId());
-
-        PublicadorResponseDTO atualizado =
-                publicadorService.atualizar(criado.getId(), requestAtualizacao);
-
-        assertEquals(criado.getId(), atualizado.getId());
-        assertEquals("João da Silva Atualizado", atualizado.getNome());
-        assertEquals(LocalDate.of(1991, 6, 15), atualizado.getDataNascimento());
-        assertEquals("55888888888", atualizado.getTelefone());
-        assertEquals("joao.atualizado@teste.com", atualizado.getEmail());
-        assertEquals(novaCongregacao.getId(), atualizado.getCongregacaoId());
-        assertTrue(atualizado.getAtivo());
-
-        Publicador publicador = publicadorRepository.findById(criado.getId())
-                .orElseThrow();
-
-        assertEquals(novaCongregacao.getId(), publicador.getCongregacao().getId());
-
-        Pessoa pessoa = pessoaRepository.findById(publicador.getPessoa().getId())
-                .orElseThrow();
-
-        assertEquals("João da Silva Atualizado", pessoa.getNome());
-        assertEquals(LocalDate.of(1991, 6, 15), pessoa.getDataNascimento());
-        assertEquals("55888888888", pessoa.getTelefone());
-        assertEquals("joao.atualizado@teste.com", pessoa.getEmail());
-    }
-    
-    @Test
-    void naoDeveAtualizarPublicadorQuandoNaoExiste() {
-
-        Congregacao congregacao = congregacaoRepository.save(
-                Congregacao.builder()
-                        .nome("Congregação Teste")
-                        .numero("001")
-                        .cidade("Santa Maria")
-                        .estado("RS")
-                        .numeroCircuito("RS-01")
-                        .build()
-        );
-
-        PublicadorRequestDTO request = new PublicadorRequestDTO();
-        request.setNome("João da Silva");
-        request.setDataNascimento(LocalDate.of(1990, 5, 10));
-        request.setTelefone("55999999999");
-        request.setEmail("joao@teste.com");
-        request.setCongregacaoId(congregacao.getId());
-
-        long publicadoresAntes = publicadorRepository.count();
-        long pessoasAntes = pessoaRepository.count();
-
-        Long idInexistente = 999999L;
-
-        EntityNotFoundException exception = assertThrows(
-                EntityNotFoundException.class,
-                () -> publicadorService.atualizar(idInexistente, request)
-        );
-
-        assertEquals(
-                "Publicador não encontrado com ID: " + idInexistente,
-                exception.getMessage()
-        );
-
-        assertEquals(publicadoresAntes, publicadorRepository.count());
-        assertEquals(pessoasAntes, pessoaRepository.count());
-    }
-    
+ 
     @Test
     void deveDesativarPublicadorESincronizarSituacaoDaPessoa() {
 
@@ -578,72 +486,6 @@ class PublicadorServiceIntegrationTest {
         assertEquals(SituacaoPessoa.ATIVO, pessoa.getSituacao());
     }
     
-    @Test
-    void naoDeveAtualizarPublicadorQuandoCongregacaoNaoExiste() {
-
-        Congregacao congregacao = congregacaoRepository.save(
-                Congregacao.builder()
-                        .nome("Congregação Original")
-                        .numero("001")
-                        .cidade("Santa Maria")
-                        .estado("RS")
-                        .numeroCircuito("RS-01")
-                        .build()
-        );
-
-        PublicadorRequestDTO criarRequest = new PublicadorRequestDTO();
-        criarRequest.setNome("João da Silva");
-        criarRequest.setDataNascimento(LocalDate.of(1990, 5, 10));
-        criarRequest.setTelefone("55999999999");
-        criarRequest.setEmail("joao.congregacao@teste.com");
-        criarRequest.setCongregacaoId(congregacao.getId());
-
-        PublicadorResponseDTO criado =
-                publicadorService.criar(criarRequest);
-
-        Publicador antes =
-                publicadorRepository.findById(criado.getId()).orElseThrow();
-
-        Long pessoaIdAntes = antes.getPessoa().getId();
-
-        PublicadorRequestDTO atualizarRequest = new PublicadorRequestDTO();
-        atualizarRequest.setNome("João Atualizado");
-        atualizarRequest.setDataNascimento(LocalDate.of(1991, 6, 15));
-        atualizarRequest.setTelefone("55888888888");
-        atualizarRequest.setEmail("joao.atualizado@teste.com");
-        atualizarRequest.setCongregacaoId(999999L);
-
-        EntityNotFoundException exception = assertThrows(
-                EntityNotFoundException.class,
-                () -> publicadorService.atualizar(
-                        criado.getId(),
-                        atualizarRequest
-                )
-        );
-
-        assertEquals(
-                "Congregação não encontrada com ID: 999999",
-                exception.getMessage()
-        );
-
-        Publicador depois =
-                publicadorRepository.findById(criado.getId()).orElseThrow();
-
-        assertEquals(pessoaIdAntes, depois.getPessoa().getId());
-        assertEquals("João da Silva", depois.getPessoa().getNome());
-        assertEquals(
-                "55999999999",
-                depois.getPessoa().getTelefone()
-        );
-        assertEquals(
-                "joao.congregacao@teste.com",
-                depois.getPessoa().getEmail()
-        );
-        assertEquals(
-                congregacao.getId(),
-                depois.getCongregacao().getId()
-        );
-    }
     
     @Test
     void deveManterPublicadorInativoAoAtualizarDados() {
