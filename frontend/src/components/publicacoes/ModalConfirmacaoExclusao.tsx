@@ -1,65 +1,88 @@
-import React from "react";
-import { AlertTriangle, X } from "lucide-react";
+import { AlertTriangle} from "lucide-react";
 import type { Publicacao } from "../../types/publicacao";
+
+import { Button } from "../ui/Button";
 
 interface ModalConfirmacaoExclusaoProps {
   publicacao: Publicacao | null;
+  processando?: boolean;
   onFechar: () => void;
-  onConfirmar: () => void;
+  onConfirmar: () => void | Promise<void>;
 }
 
-export const ModalConfirmacaoExclusao: React.FC<
-  ModalConfirmacaoExclusaoProps
-> = ({ publicacao, onFechar, onConfirmar }) => {
-  if (!publicacao) return null;
+export function ModalConfirmacaoExclusao({
+  publicacao, 
+  processando = false, 
+  onFechar, 
+  onConfirmar,
+}: ModalConfirmacaoExclusaoProps) {
+  if (!publicacao) { 
+    return null;
+  }
+
+  const handleFechar = () => { 
+    if (!processando) { 
+      onFechar(); 
+    } 
+  };
+
+  const handleConfirmar = async () => { if (processando) return; await onConfirmar(); };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-          <div className="flex items-center gap-2 text-rose-400">
-            <AlertTriangle className="w-5 h-5" />
-            <h3 className="text-base font-bold text-white">
-              Confirmar Exclusão
-            </h3>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          handleFechar();
+        }
+      }}
+    >
+      <section
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="confirmacao-exclusao-titulo"
+        aria-describedby="confirmacao-exclusao-descricao"
+        className="w-full max-w-md space-y-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl sm:p-6"
+      >
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-600">
+            <AlertTriangle size={21} aria-hidden="true" />{" "}
           </div>
-          <button
-            onClick={onFechar}
-            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-all cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="min-w-0 flex-1">
+            <h2
+              id="confirmacao-exclusao-titulo"
+              className="text-base font-semibold text-slate-900"
+            >
+              Confirmar exclusão
+            </h2>
+            <p
+              id="confirmacao-exclusao-descricao"
+              className="mt-2 text-sm leading-relaxed text-slate-600"
+            >
+              Deseja realmente remover a publicação{" "}
+              <strong className="font-semibold text-slate-900">
+                [{publicacao.codigo}] {publicacao.titulo}
+              </strong>{" "}
+              do estoque ativo da congregação?
+            </p>
+            <p className="mt-2 text-xs leading-relaxed text-slate-500">
+              O histórico de movimentações anteriores será preservado.
+            </p>
+          </div>
         </div>
 
-        <p className="text-xs text-slate-300 leading-relaxed">
-          Tem certeza que deseja remover{" "}
-          <strong className="text-white font-mono">
-            [{publicacao.codigo}] {publicacao.titulo}
-          </strong>{" "}
-          do estoque ativo da congregação? O histórico de movimentações
-          anteriores será preservado.
-        </p>
-
-        <div className="pt-2 flex gap-2">
-          <button
-            type="button"
-            onClick={onFechar}
-            className="w-1/2 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition-all cursor-pointer"
-          >
+        <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
+          <Button type="button" onClick={handleFechar} disabled={processando}>
             Cancelar
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              onConfirmar();
-              onFechar();
-            }}
-            className="w-1/2 py-2.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold rounded-xl shadow-lg shadow-rose-600/30 transition-all cursor-pointer"
-          >
-            Confirmar Remoção
-          </button>
+          </Button>
+
+          <Button type="button" onClick={handleConfirmar} disabled={processando}>
+            {processando ? "Removendo..." : "Confirmar remoção"}
+          </Button>
         </div>
-      </div>
+      </section>
     </div>
   );
 };
+
+  

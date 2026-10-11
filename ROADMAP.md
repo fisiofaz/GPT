@@ -214,6 +214,67 @@ Documento oficial de acompanhamento das fases e engenharia do projeto GPT - Vers
   - [x] Testes de integração de Movimentações.
   - [x] Testes de integração de Pedidos.
   - [x] Execução completa da suíte de testes.
+  
+  - [x] **Task 11.1: Auditoria da estrutura do frontend**
+  - [x] Revisar estrutura de pastas.
+  - [x] Identificar responsabilidades duplicadas.
+  - [x] Identificar componentes excessivamente grandes.
+  - [x] Identificar regras de negócio diretamente dentro das telas.
+  - [x] Identificar código legado da v1.0.
+
+- [x] **Task 11.2: Revisão do gerenciamento de autenticação**
+  - [x] Revisar `AuthContext`.
+  - [x] Revisar `AuthProvider`.
+  - [x] Revisar `useAuth`.
+  - [x] Revisar persistência do JWT.
+  - [x] Revisar tratamento de expiração do token.
+  - [x] Revisar logout.
+  - [x] Revisar recuperação do usuário autenticado.
+
+- [x] **Task 11.3: Revisão do cliente HTTP**
+  - [x] Revisar configuração do Axios.
+  - [x] Revisar interceptor de autenticação.
+  - [x] Revisar tratamento global de erros.
+  - [x] Padronizar respostas e erros da API.
+  - [x] Eliminar chamadas HTTP duplicadas ou inconsistentes.
+
+- [x] **Task 11.4: Revisão das rotas**
+  - [x] Revisar `RotaPrivada`.
+  - [x] Revisar proteção por autenticação.
+  - [x] Revisar proteção por perfil.
+  - [x] Revisar escopo por congregação.
+  - [x] Centralizar regras de navegação.
+
+- [x] **Task 11.5: Arquitetura de Layout**
+  - [x] Criar/ajustar `AppLayout`.
+  - [x] Centralizar `Header`.
+  - [x] Centralizar `Sidebar`.
+  - [x] Implementar navegação responsiva.
+  - [x] Implementar menu mobile/hamburger.
+  - [x] Centralizar configuração de navegação.
+  - [x] Remover navegação duplicada das páginas.
+
+- [x] **Task 11.6: Padronização visual**
+  - [x] Padronizar componentes de interface.
+  - [x] Padronizar botões.
+  - [x] Padronizar modais.
+  - [x] Padronizar tabelas.
+  - [x] Padronizar formulários.
+  - [x] Padronizar estados de loading.
+  - [x] Padronizar estados vazios.
+  - [x] Padronizar mensagens de erro.
+  - [x] Revisar responsividade.
+  - [x] Revisar acessibilidade.
+
+- [ ] **Task 11.7: Revisão dos módulos existentes**
+  - [x] Territórios.
+  - [x] Publicadores.
+  - [ ] Publicações.
+  - [ ] Movimentações.
+  - [ ] Pedidos.
+  - [x] Usuários.
+  - [x] Congregações.
+  - [x] Administração.
 
 **Resultado da suíte atual:**
 
@@ -231,69 +292,6 @@ BUILD SUCCESS
 ## 📌 Fase 11: Revisão Arquitetural do Frontend — v2.0 (Em andamento)
 
 > Objetivo: revisar toda a arquitetura React antes de iniciar novas funcionalidades ou refatorações isoladas.
-
-- [ ] **Task 11.1: Auditoria da estrutura do frontend**
-  - [ ] Revisar estrutura de pastas.
-  - [ ] Identificar responsabilidades duplicadas.
-  - [ ] Identificar componentes excessivamente grandes.
-  - [ ] Identificar regras de negócio diretamente dentro das telas.
-  - [ ] Identificar código legado da v1.0.
-
-- [ ] **Task 11.2: Revisão do gerenciamento de autenticação**
-  - [ ] Revisar `AuthContext`.
-  - [ ] Revisar `AuthProvider`.
-  - [ ] Revisar `useAuth`.
-  - [ ] Revisar persistência do JWT.
-  - [ ] Revisar tratamento de expiração do token.
-  - [ ] Revisar logout.
-  - [ ] Revisar recuperação do usuário autenticado.
-
-- [ ] **Task 11.3: Revisão do cliente HTTP**
-  - [ ] Revisar configuração do Axios.
-  - [ ] Revisar interceptor de autenticação.
-  - [ ] Revisar tratamento global de erros.
-  - [ ] Padronizar respostas e erros da API.
-  - [ ] Eliminar chamadas HTTP duplicadas ou inconsistentes.
-
-- [ ] **Task 11.4: Revisão das rotas**
-  - [ ] Revisar `RotaPrivada`.
-  - [ ] Revisar proteção por autenticação.
-  - [ ] Revisar proteção por perfil.
-  - [ ] Revisar escopo por congregação.
-  - [ ] Centralizar regras de navegação.
-
-- [ ] **Task 11.5: Arquitetura de Layout**
-  - [ ] Criar/ajustar `AppLayout`.
-  - [ ] Centralizar `Header`.
-  - [ ] Centralizar `Sidebar`.
-  - [ ] Implementar navegação responsiva.
-  - [ ] Implementar menu mobile/hamburger.
-  - [ ] Centralizar configuração de navegação.
-  - [ ] Remover navegação duplicada das páginas.
-
-- [ ] **Task 11.6: Padronização visual**
-  - [ ] Padronizar componentes de interface.
-  - [ ] Padronizar botões.
-  - [ ] Padronizar modais.
-  - [ ] Padronizar tabelas.
-  - [ ] Padronizar formulários.
-  - [ ] Padronizar estados de loading.
-  - [ ] Padronizar estados vazios.
-  - [ ] Padronizar mensagens de erro.
-  - [ ] Revisar responsividade.
-  - [ ] Revisar acessibilidade.
-
-- [ ] **Task 11.7: Revisão dos módulos existentes**
-  - [ ] Territórios.
-  - [ ] Publicadores.
-  - [ ] Publicações.
-  - [ ] Movimentações.
-  - [ ] Pedidos.
-  - [ ] Usuários.
-  - [ ] Congregações.
-  - [ ] Administração.
-
----
 
 ## 📌 Fase 12: Dashboard 2.0 — Métricas e Governança (Planejado)
 

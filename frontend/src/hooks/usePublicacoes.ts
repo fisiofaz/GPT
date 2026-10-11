@@ -20,14 +20,23 @@ export function usePublicacoes(congregacaoId?: number | null) {
   const [historico, setHistorico] = useState<MovimentacaoResponse[]>([]);
 
   // Inicializa com true apenas se houver ID de congregação para buscar
-  const [carregando, setCarregando] = useState<boolean>(Boolean(congregacaoId));
+  const [carregando, setCarregando] = useState<boolean>(() =>
+    Boolean(congregacaoId),
+  );
   const [carregandoHistorico, setCarregandoHistorico] = useState(false);
 
   // Função manual para recarregar dados após mutações (POST, PUT, DELETE)
   const recarregar = useCallback(async () => {
-    if (!congregacaoId) return;
+    if (!congregacaoId) { 
+      setPublicacoes([]); 
+      setPublicadores([]); 
+      setHistorico([]); 
+      setCarregando(false); 
+      return; 
+    }
 
     try {
+      setCarregando(true);
       const [pubData, pubsPessoas, catalogoData] = await Promise.all([
         publicacaoService.listarPorCongregacao(congregacaoId),
         publicadorService.listarPorCongregacao(congregacaoId),
@@ -36,8 +45,12 @@ export function usePublicacoes(congregacaoId?: number | null) {
       setPublicacoes(pubData);
       setPublicadores(pubsPessoas.content);
       setCatalogoMestre(catalogoData);
-    } catch {
-      setPublicacoes([]);
+    } catch (err) {
+      console.error("[Publicações] Erro ao sincronizar dados:", err);
+
+      setPublicacoes([]); 
+      setPublicadores([]); 
+
       toast.error("Erro ao sincronizar dados de publicações.");
     } finally {
       setCarregando(false);
@@ -48,33 +61,44 @@ export function usePublicacoes(congregacaoId?: number | null) {
   useEffect(() => {
     let ativo = true;
 
-    if (!congregacaoId) return;
+    const carregar = async () => { 
+      if (!congregacaoId) { 
+        return; 
+      }
 
-    const carregar = async () => {
+      setCarregando(true);
+
       try {
         const [pubData, pubsPessoas, catalogoData] = await Promise.all([
           publicacaoService.listarPorCongregacao(congregacaoId),
           publicadorService.listarPorCongregacao(congregacaoId),
-          publicacaoService.listarCatalogoMestre().catch(() => []),
+          publicacaoService.listarCatalogoMestre().catch((err) => {
+            console.error("[Publicações] Falha no catálogo:", err);
+            return [];
+          }),
         ]);
-        if (ativo) {
-          setPublicacoes(pubData);
-          setPublicadores(pubsPessoas.content);
-          setCatalogoMestre(catalogoData);
-        }
-      } catch {
-        if (ativo) {
-          setPublicacoes([]);
-          toast.error("Erro ao sincronizar dados de publicações.");
+
+        if (!ativo) return;
+
+        setPublicacoes(pubData); 
+        setPublicadores(pubsPessoas.content);
+        setCatalogoMestre(catalogoData);
+      } catch (err) {
+        console.error("[Publicações] Falha ao carregar dados:", err);
+
+        if (ativo) { 
+          setPublicacoes([]); 
+          setPublicadores([]); 
+          toast.error("Erro ao sincronizar dados de publicações."); 
         }
       } finally {
-        if (ativo) {
-          setCarregando(false);
+        if (ativo) { 
+          setCarregando(false); 
         }
       }
     };
 
-    carregar();
+    void carregar();
 
     return () => {
       ativo = false;
@@ -100,14 +124,31 @@ export function usePublicacoes(congregacaoId?: number | null) {
   };
 
   const excluirPublicacao = async (id: number, titulo: string) => {
+    if (congregacaoId == null) {
+      toast.error("Não foi possível identificar a congregação.");
+      throw new Error("Congregação não identificada.");
+    }
+
     try {
-      await publicacaoService.deletar(id);
-      toast.success(`"${titulo}" removido do estoque ativo.`);
+      await publicacaoService.deletar(id, congregacaoId);
+
+      // Remove imediatamente da lista exibida.
+      setPublicacoes((atuais) =>
+        atuais.filter((publicacao) => publicacao.id !== id),
+      );
+
+      toast.success(`"${titulo}" removido do estoque ativo desta congregação.`);
+
+      // Sincroniza a lista com o backend.
       await recarregar();
     } catch (err: unknown) {
       const msg =
-        err instanceof Error ? err.message : "Falha ao excluir publicação.";
+        err instanceof Error
+          ? err.message
+          : "Falha ao remover publicação do estoque ativo.";
+
       toast.error(msg);
+      throw err;
     }
   };
 
@@ -115,37 +156,55 @@ export function usePublicacoes(congregacaoId?: number | null) {
     publicacaoId: number,
     dto: MovimentacaoEstoqueRequest,
   ) => {
+    if (congregacaoId == null) {
+      toast.error("Não foi possível identificar a congregação.");
+      return;
+    }
+
     try {
-      await publicacaoService.movimentarEstoque(publicacaoId, dto);
+      await publicacaoService.movimentarEstoque(
+        publicacaoId,
+        congregacaoId,
+        dto,
+      );
+
       const acao =
         dto.tipo === "SAIDA"
           ? "Saída registrada"
           : dto.tipo === "ENTRADA"
             ? "Entrada registrada"
             : "Inventário ajustado";
+
       toast.success(`${acao} com sucesso!`);
       await recarregar();
     } catch (err: unknown) {
       const msg =
-        err instanceof Error ? err.message : "Falha ao movimentar estoque.";
+        err instanceof Error
+          ? err.message
+          : "Falha ao movimentar estoque.";
+
       toast.error(msg);
       throw err;
     }
   };
 
-  const carregarHistorico = async () => {
-    if (!congregacaoId) return;
+ const carregarHistorico = useCallback(async () => {
+    if (!congregacaoId) { 
+      setHistorico([]); 
+      return; 
+    }
     setCarregandoHistorico(true);
     try {
       const dados = await publicacaoService.listarHistoricoGeral(congregacaoId);
       setHistorico(dados);
-    } catch {
+    } catch (err) {
+      console.error("[Publicações] Erro ao carregar histórico:", err);
       setHistorico([]);
       toast.error("Erro ao carregar histórico de movimentações.");
     } finally {
       setCarregandoHistorico(false);
     }
-  };
+  }, [congregacaoId]);
 
   return {
     publicacoes,

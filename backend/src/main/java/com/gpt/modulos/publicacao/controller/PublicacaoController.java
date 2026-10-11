@@ -103,10 +103,14 @@ public class PublicacaoController {
         return ResponseEntity.ok(publicacaoService.atualizar(id, dto));
     }
 
-    @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO', 'ROLE_SERVO_PUBLICACOES')")
-    public ResponseEntity<Void> deletar(@PathVariable Long id) {
-        publicacaoService.deletar(id);
-        return ResponseEntity.noContent().build();
-    }
+
+	@DeleteMapping("/{id}/congregacao/{congregacaoId}")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO', 'ROLE_SERVO_PUBLICACOES')")
+	public ResponseEntity<Void> deletar(
+	        @PathVariable Long id,
+	        @PathVariable Long congregacaoId) {
+	
+	    publicacaoService.deletar(id, congregacaoId);
+	    return ResponseEntity.noContent().build();
+	}
 }

@@ -1,10 +1,11 @@
 package com.gpt.modulos.movimentacao.repository;
 
-import com.gpt.modulos.publicacao.model.PublicacaoEstoque;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
+import com.gpt.modulos.movimentacao.model.PublicacaoEstoque;
 
 import java.util.List;
 import java.util.Optional;

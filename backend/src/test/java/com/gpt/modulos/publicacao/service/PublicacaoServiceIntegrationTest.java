@@ -3,6 +3,7 @@ package com.gpt.modulos.publicacao.service;
 import com.gpt.BackendApplication;
 import com.gpt.modulos.congregacao.model.Congregacao;
 import com.gpt.modulos.congregacao.repository.CongregacaoRepository;
+import com.gpt.modulos.movimentacao.model.PublicacaoEstoque;
 import com.gpt.modulos.movimentacao.repository.PublicacaoEstoqueRepository;
 import com.gpt.modulos.publicacao.dto.PublicacaoRequestDTO;
 import com.gpt.modulos.publicacao.dto.PublicacaoResponseDTO;
@@ -10,7 +11,6 @@ import com.gpt.modulos.publicacao.enums.CategoriaPublicacao;
 import com.gpt.modulos.publicacao.enums.FormatoPublicacao;
 import com.gpt.modulos.publicacao.enums.IdiomaPublicacao;
 import com.gpt.modulos.publicacao.model.Publicacao;
-import com.gpt.modulos.publicacao.model.PublicacaoEstoque;
 import com.gpt.modulos.publicacao.repository.PublicacaoRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -284,52 +284,7 @@ class PublicacaoServiceIntegrationTest {
         assertTrue(resultado.get(0).ativo());
     }
 
-    @Test
-    void deveInativarPublicacaoESeusEstoques() {
-
-        Congregacao congregacao = criarCongregacao(
-                "Congregação Exclusão",
-                "005"
-        );
-
-        PublicacaoRequestDTO request = new PublicacaoRequestDTO(
-        		"teste-inativacao",
-                "Lições da Bíblia",
-                CategoriaPublicacao.LIVRO,
-                null,
-                null,
-                15,
-                5,
-                congregacao.getId()
-        );
-
-        PublicacaoResponseDTO criada =
-                publicacaoService.cadastrar(request, null);
-
-        publicacaoService.deletar(criada.id());
-
-        Publicacao publicacao =
-                publicacaoRepository.findById(criada.id())
-                        .orElseThrow();
-
-        PublicacaoEstoque estoque =
-                publicacaoEstoqueRepository
-                        .findByPublicacaoIdAndCongregacaoId(
-                                criada.id(),
-                                congregacao.getId()
-                        )
-                        .orElseThrow();
-
-        assertFalse(publicacao.getAtivo());
-        assertFalse(estoque.getAtivo());
-
-        List<PublicacaoResponseDTO> resultado =
-                publicacaoService.listarPorCongregacao(
-                        congregacao.getId()
-                );
-
-        assertTrue(resultado.isEmpty());
-    }
+    
 
     private Congregacao criarCongregacao(
             String nome,

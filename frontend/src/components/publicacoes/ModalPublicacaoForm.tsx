@@ -1,11 +1,14 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Pencil, X, Sparkles, Loader2 } from "lucide-react";
+import { Loader2, Pencil, Plus, Sparkles, X } from "lucide-react";
+import { toast } from "sonner";
+
 import {
   publicacaoSchema,
   type PublicacaoFormData,
 } from "../../schemas/publicacaoSchema";
+
 import type {
   Publicacao,
   PublicacaoRequest,
@@ -13,6 +16,8 @@ import type {
   FormatoPublicacao,
   IdiomaPublicacao,
 } from "../../types/publicacao";
+
+import { Button } from "../ui/Button";
 
 interface ModalPublicacaoFormProps {
   aberto: boolean;
@@ -22,18 +27,38 @@ interface ModalPublicacaoFormProps {
   formatos: { valor: FormatoPublicacao; rotulo: string }[];
   idiomas: { valor: IdiomaPublicacao; rotulo: string }[];
   onFechar: () => void;
-  onSalvar: (dto: PublicacaoRequest, id?: number) => Promise<void>;
+  onSalvar: (
+    dto: PublicacaoRequest,
+    id?: number,
+  ) => Promise<void>;
 }
 
-const FormularioPublicacao: React.FC<{
+interface FormularioPublicacaoProps {
   itemEmEdicao: Publicacao | null;
   catalogoMestre: CatalogoMestreItem[];
   congregacaoId: number;
   formatos: { valor: FormatoPublicacao; rotulo: string }[];
   idiomas: { valor: IdiomaPublicacao; rotulo: string }[];
   onFechar: () => void;
-  onSalvar: (dto: PublicacaoRequest, id?: number) => Promise<void>;
-}> = ({
+  onSalvar: (
+    dto: PublicacaoRequest,
+    id?: number,
+  ) => Promise<void>;
+}
+
+const valoresIniciais = (
+  item: Publicacao | null,
+): PublicacaoFormData => ({
+  codigo: item?.codigo ?? "",
+  titulo: item?.titulo ?? "",
+  categoria: item?.categoria ?? "LIVRO",
+  formato: item?.formato ?? "NORMAL",
+  idioma: item?.idioma ?? "PORTUGUES",
+  quantidadeEstoque: item?.quantidadeEstoque ?? 0,
+  estoqueMinimo: item?.estoqueMinimo ?? 5,
+});
+
+const FormularioPublicacao = ({
   itemEmEdicao,
   catalogoMestre,
   congregacaoId,
@@ -41,145 +66,219 @@ const FormularioPublicacao: React.FC<{
   idiomas,
   onFechar,
   onSalvar,
-}) => {
+}: FormularioPublicacaoProps) => {
   const {
     register,
     handleSubmit,
     setValue,
     watch,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<PublicacaoFormData>({
     resolver: zodResolver(publicacaoSchema),
-    defaultValues: itemEmEdicao
-      ? {
-          codigo: itemEmEdicao.codigo,
-          titulo: itemEmEdicao.titulo,
-          categoria: itemEmEdicao.categoria,
-          formato: itemEmEdicao.formato,
-          idioma: itemEmEdicao.idioma,
-          quantidadeEstoque: itemEmEdicao.quantidadeEstoque,
-          estoqueMinimo: itemEmEdicao.estoqueMinimo,
-        }
-      : {
-          codigo: "",
-          titulo: "",
-          categoria: "LIVRO",
-          formato: "NORMAL",
-          idioma: "PORTUGUES",
-          quantidadeEstoque: 0,
-          estoqueMinimo: 5,
-        },
+    defaultValues: valoresIniciais(itemEmEdicao),
   });
 
   const codigoAtual = watch("codigo");
 
-  // Autopreenchimento ao digitar código conhecido
   useEffect(() => {
-    if (!itemEmEdicao && codigoAtual) {
-      const modelo = catalogoMestre.find(
-        (m) => m.codigo.toLowerCase() === codigoAtual.trim().toLowerCase(),
-      );
-      if (modelo) {
-        setValue("titulo", modelo.titulo);
-        setValue("categoria", modelo.categoria);
-        setValue("formato", modelo.formato);
-        setValue("idioma", modelo.idioma);
-      }
-    }
+    reset(valoresIniciais(itemEmEdicao));
+  }, [itemEmEdicao, reset]);
+
+  useEffect(() => {
+    if (itemEmEdicao || !codigoAtual.trim()) return;
+
+    const modelo = catalogoMestre.find(
+      (item) =>
+        item.codigo.trim().toLowerCase() ===
+        codigoAtual.trim().toLowerCase(),
+    );
+
+    if (!modelo) return;
+
+    setValue("titulo", modelo.titulo, {
+      shouldValidate: true,
+    });
+    setValue("categoria", modelo.categoria, {
+      shouldValidate: true,
+    });
+    setValue("formato", modelo.formato, {
+      shouldValidate: true,
+    });
+    setValue("idioma", modelo.idioma, {
+      shouldValidate: true,
+    });
   }, [codigoAtual, catalogoMestre, itemEmEdicao, setValue]);
 
-  const handleSelecionarModelo = (item: CatalogoMestreItem) => {
-    setValue("codigo", item.codigo);
-    setValue("titulo", item.titulo);
-    setValue("categoria", item.categoria);
-    setValue("formato", item.formato);
-    setValue("idioma", item.idioma);
+  const selecionarModelo = (item: CatalogoMestreItem) => {
+    setValue("codigo", item.codigo, {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
+    setValue("titulo", item.titulo, {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
+    setValue("categoria", item.categoria, {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
+    setValue("formato", item.formato, {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
+    setValue("idioma", item.idioma, {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
   };
 
-  const onSubmit = async (data: PublicacaoFormData) => {
-    await onSalvar(
-      {
-        ...data,
-        congregacaoId,
-      },
-      itemEmEdicao?.id,
-    );
+  const fecharFormulario = () => {
+    if (isSubmitting) return;
     onFechar();
   };
 
-  return (
-    <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-4">
-      <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-        <h2 className="text-base font-bold text-white flex items-center gap-2">
-          {itemEmEdicao ? (
-            <>
-              <Pencil className="w-4 h-4 text-indigo-400" />
-              Editar Publicação: {itemEmEdicao.codigo}
-            </>
-          ) : (
-            <>
-              <Plus className="w-4 h-4 text-indigo-400" />
-              Cadastrar Nova Publicação
-            </>
-          )}
-        </h2>
-        <button
-          onClick={onFechar}
-          className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 cursor-pointer"
-        >
-          <X className="w-5 h-5" />
-        </button>
-      </div>
+  const onSubmit = async (data: PublicacaoFormData) => {
+    const dto: PublicacaoRequest = {
+      ...data,
+      codigo: data.codigo.trim(),
+      titulo: data.titulo.trim(),
+      congregacaoId,
+    };
 
-      {!itemEmEdicao && catalogoMestre.length > 0 && (
-        <div className="p-3 bg-slate-950/80 rounded-2xl border border-slate-800/80 space-y-2">
-          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-indigo-400">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Modelos Prontos do Catálogo Oficial</span>
+    try {
+      await onSalvar(dto, itemEmEdicao?.id);
+      onFechar();
+    } catch (error: unknown) {
+      console.error("[Publicação] Erro ao salvar:", error);
+
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível salvar a publicação.",
+      );
+    }
+  };
+
+  return (
+    <section
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="titulo-modal-publicacao"
+      className="my-auto w-full max-w-2xl rounded-2xl border border-slate-200 bg-white shadow-xl"
+    >
+      <header className="flex items-center justify-between gap-4 border-b border-slate-200 px-5 py-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
+            {itemEmEdicao ? <Pencil size={19} /> : <Plus size={19} />}
           </div>
-          <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
-            {catalogoMestre.map((item) => (
-              <button
-                key={item.codigo}
-                type="button"
-                onClick={() => handleSelecionarModelo(item)}
-                className="px-2.5 py-1 bg-slate-900 hover:bg-indigo-600/30 border border-slate-800 hover:border-indigo-500/50 rounded-lg text-[11px] font-mono text-slate-300 hover:text-indigo-200 transition-all cursor-pointer"
-                title={item.titulo}
-              >
-                {item.codigo}
-              </button>
-            ))}
+
+          <div className="min-w-0">
+            <h2
+              id="titulo-modal-publicacao"
+              className="text-base font-semibold text-slate-900"
+            >
+              {itemEmEdicao
+                ? `Editar publicação: ${itemEmEdicao.codigo}`
+                : "Cadastrar publicação"}
+            </h2>
+
+            <p className="mt-0.5 text-xs text-slate-500">
+              Cadastro de publicação no estoque da congregação
+            </p>
           </div>
         </div>
-      )}
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
-        <div className="grid grid-cols-3 gap-3">
+        <button
+          type="button"
+          onClick={fecharFormulario}
+          disabled={isSubmitting}
+          aria-label="Fechar formulário"
+          className="shrink-0 rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <X size={18} />
+        </button>
+      </header>
+
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 p-5">
+        {!itemEmEdicao && catalogoMestre.length > 0 && (
+          <section className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <div className="flex items-center gap-2">
+              <Sparkles size={16} className="text-slate-600" />
+
+              <h3 className="text-sm font-semibold text-slate-800">
+                Modelos do Catálogo Mestre
+              </h3>
+            </div>
+
+            <p className="text-xs text-slate-500">
+              Selecione um modelo para preencher os dados automaticamente,
+              ou digite seu código no campo abaixo.
+            </p>
+
+            <div className="flex max-h-32 flex-wrap gap-2 overflow-y-auto">
+              {catalogoMestre.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={() => selecionarModelo(item)}
+                  title={item.titulo}
+                  className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-left transition hover:border-slate-400 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-300 disabled:opacity-50"
+                >
+                  <span className="block font-mono text-xs font-semibold text-slate-800">
+                    {item.codigo}
+                  </span>
+                  <span className="mt-0.5 block max-w-48 truncate text-xs text-slate-500">
+                    {item.titulo}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-              Código
+            <label
+              htmlFor="codigo-publicacao"
+              className="mb-1.5 block text-sm font-medium text-slate-700"
+            >
+              Código *
             </label>
+
             <input
+              id="codigo-publicacao"
               type="text"
-              disabled={Boolean(itemEmEdicao)}
-              placeholder="Ex: nwt-normal"
+              autoComplete="off"
+              maxLength={100}
+              placeholder="Ex.: nwt-normal"
+              disabled={Boolean(itemEmEdicao) || isSubmitting}
+              aria-invalid={Boolean(errors.codigo)}
               {...register("codigo")}
-              className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 font-mono focus:outline-none focus:border-indigo-500 disabled:opacity-50"
+              className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 font-mono text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200 disabled:bg-slate-50 disabled:text-slate-500"
             />
+
             {errors.codigo && (
-              <p className="text-[10px] text-rose-400 mt-1">
+              <p role="alert" className="mt-1 text-xs text-rose-600">
                 {errors.codigo.message}
               </p>
             )}
           </div>
 
-          <div className="col-span-2">
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-              Categoria
+          <div className="sm:col-span-2">
+            <label
+              htmlFor="categoria-publicacao"
+              className="mb-1.5 block text-sm font-medium text-slate-700"
+            >
+              Categoria *
             </label>
+
             <select
+              id="categoria-publicacao"
               {...register("categoria")}
-              className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
+              disabled={isSubmitting}
+              className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200 disabled:bg-slate-50"
             >
               <option value="BIBLIA">Bíblia</option>
               <option value="LIVRO">Livro</option>
@@ -195,132 +294,188 @@ const FormularioPublicacao: React.FC<{
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-            Título da Publicação
+          <label
+            htmlFor="titulo-publicacao"
+            className="mb-1.5 block text-sm font-medium text-slate-700"
+          >
+            Título da publicação *
           </label>
+
           <input
+            id="titulo-publicacao"
             type="text"
-            placeholder="Ex: Tradução do Novo Mundo das Escrituras Sagradas"
+            maxLength={255}
+            placeholder="Informe o título oficial"
+            aria-invalid={Boolean(errors.titulo)}
             {...register("titulo")}
-            className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
+            disabled={isSubmitting}
+            className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200 disabled:bg-slate-50"
           />
+
           {errors.titulo && (
-            <p className="text-[10px] text-rose-400 mt-1">
+            <p role="alert" className="mt-1 text-xs text-rose-600">
               {errors.titulo.message}
             </p>
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-              Tipo / Formato
-            </label>
-            <select
-              {...register("formato")}
-              className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
+            <label
+              htmlFor="formato-publicacao"
+              className="mb-1.5 block text-sm font-medium text-slate-700"
             >
-              {formatos.map((f) => (
-                <option key={f.valor} value={f.valor}>
-                  {f.rotulo}
+              Tipo / formato *
+            </label>
+
+            <select
+              id="formato-publicacao"
+              {...register("formato")}
+              disabled={isSubmitting}
+              className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200 disabled:bg-slate-50"
+            >
+              {formatos.map((formato) => (
+                <option key={formato.valor} value={formato.valor}>
+                  {formato.rotulo}
                 </option>
               ))}
             </select>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-              Idioma
-            </label>
-            <select
-              {...register("idioma")}
-              className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
+            <label
+              htmlFor="idioma-publicacao"
+              className="mb-1.5 block text-sm font-medium text-slate-700"
             >
-              {idiomas.map((i) => (
-                <option key={i.valor} value={i.valor}>
-                  {i.rotulo}
+              Idioma *
+            </label>
+
+            <select
+              id="idioma-publicacao"
+              {...register("idioma")}
+              disabled={isSubmitting}
+              className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200 disabled:bg-slate-50"
+            >
+              {idiomas.map((idioma) => (
+                <option key={idioma.valor} value={idioma.valor}>
+                  {idioma.rotulo}
                 </option>
               ))}
             </select>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {!itemEmEdicao && (
             <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                Qtd. Inicial
+              <label
+                htmlFor="quantidade-inicial"
+                className="mb-1.5 block text-sm font-medium text-slate-700"
+              >
+                Quantidade inicial
               </label>
+
               <input
+                id="quantidade-inicial"
                 type="number"
-                min="0"
-                {...register("quantidadeEstoque", { valueAsNumber: true })}
-                className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
+                min={0}
+                step={1}
+                inputMode="numeric"
+                {...register("quantidadeEstoque", {
+                  valueAsNumber: true,
+                })}
+                disabled={isSubmitting}
+                className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200 disabled:bg-slate-50"
               />
+
               {errors.quantidadeEstoque && (
-                <p className="text-[10px] text-rose-400 mt-1">
+                <p role="alert" className="mt-1 text-xs text-rose-600">
                   {errors.quantidadeEstoque.message}
                 </p>
               )}
+
+              <p className="mt-1 text-xs text-slate-500">
+                Usada somente na criação da publicação.
+              </p>
             </div>
           )}
 
-          <div className={itemEmEdicao ? "col-span-2" : ""}>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-              Estoque Mínimo (Alerta)
+          <div className={itemEmEdicao ? "" : ""}>
+            <label
+              htmlFor="estoque-minimo"
+              className="mb-1.5 block text-sm font-medium text-slate-700"
+            >
+              Estoque mínimo (alerta) *
             </label>
+
             <input
+              id="estoque-minimo"
               type="number"
-              min="0"
-              {...register("estoqueMinimo", { valueAsNumber: true })}
-              className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
+              min={0}
+              step={1}
+              inputMode="numeric"
+              {...register("estoqueMinimo", {
+                valueAsNumber: true,
+              })}
+              disabled={isSubmitting}
+              className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200 disabled:bg-slate-50"
             />
+
             {errors.estoqueMinimo && (
-              <p className="text-[10px] text-rose-400 mt-1">
+              <p role="alert" className="mt-1 text-xs text-rose-600">
                 {errors.estoqueMinimo.message}
               </p>
             )}
           </div>
         </div>
 
-        <div className="pt-3 flex gap-2">
-          <button
+        <footer className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
+          <Button
             type="button"
-            onClick={onFechar}
-            className="w-1/2 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl cursor-pointer"
+            variant="secondary"
+            onClick={fecharFormulario}
+            disabled={isSubmitting}
           >
             Cancelar
-          </button>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-1/2 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl shadow-lg flex items-center justify-center gap-2 cursor-pointer"
-          >
+          </Button>
+
+          <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                Salvando...
+              </>
             ) : itemEmEdicao ? (
-              "Salvar Alterações"
+              "Salvar alterações"
             ) : (
-              "Salvar Item"
+              "Cadastrar publicação"
             )}
-          </button>
-        </div>
+          </Button>
+        </footer>
       </form>
-    </div>
+    </section>
   );
 };
 
-export const ModalPublicacaoForm: React.FC<ModalPublicacaoFormProps> = ({
+export const ModalPublicacaoForm = ({
   aberto,
   itemEmEdicao,
   ...props
-}) => {
+}: ModalPublicacaoFormProps) => {
   if (!aberto) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/50 p-4"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          // O próprio formulário bloqueia o fechamento durante o envio.
+          // O backdrop não fecha automaticamente para evitar perda de dados.
+        }
+      }}
+    >
       <FormularioPublicacao
-        key={itemEmEdicao ? `edit-${itemEmEdicao.id}` : "novo-item"}
+        key={itemEmEdicao ? `edit-${itemEmEdicao.id}` : "nova-publicacao"}
         itemEmEdicao={itemEmEdicao}
         {...props}
       />

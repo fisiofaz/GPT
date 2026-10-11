@@ -27,106 +27,135 @@ export const CardPublicacao: React.FC<CardPublicacaoProps> = ({
   rotuloFormato,
   rotuloIdioma,
 }) => {
+  const estoqueZerado = item.quantidadeEstoque <= 0;
+  const estoqueBaixo = item.alertaEstoqueBaixo;
+
   return (
-    <div
-      className={`bg-slate-900/80 border rounded-2xl p-5 flex flex-col justify-between transition-all shadow-lg ${
-        item.alertaEstoqueBaixo
-          ? "border-rose-500/30 hover:border-rose-500/50"
-          : "border-slate-800 hover:border-slate-700"
-      }`}
+    <article
+      className={[
+        "flex h-full flex-col justify-between rounded-xl border bg-white p-5",
+        "shadow-sm transition-all duration-200",
+        "hover:-translate-y-0.5 hover:shadow-md",
+        estoqueBaixo
+          ? "border-red-200 hover:border-red-300"
+          : "border-slate-200 hover:border-slate-300",
+      ].join(" ")}
     >
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <span className="px-2.5 py-1 bg-slate-800 border border-slate-700 rounded-lg text-xs font-mono font-bold text-indigo-300">
+      <div className="space-y-4">
+        <div className="flex items-start justify-between gap-3">
+          <span className="inline-flex rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 font-mono text-xs font-semibold text-slate-700">
             {item.codigo}
           </span>
-          <div className="flex items-center gap-1.5">
-            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700">
+          <div className="flex shrink-0 items-center gap-1">
+            <button
+              type="button"
+              onClick={() => onEditar(item)}
+              className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+              title="Editar publicação"
+              aria-label={`Editar publicação ${item.titulo}`}
+            >
+              <Pencil size={16} aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              onClick={() => onExcluir(item)}
+              className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-red-50 hover:text-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+              title="Excluir publicação"
+              aria-label={`Excluir publicação ${item.titulo}`}
+            >
+              <Trash2 size={16} aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <h3 className="text-base font-semibold leading-snug text-slate-900">
+            {item.titulo}
+          </h3>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-md bg-slate-100 px-2 py-1 text-xs text-slate-600">
               {rotuloFormato(item.formato)}
             </span>
             <BadgeCategoria categoria={item.categoria} />
-            <button
-              onClick={() => onEditar(item)}
-              className="p-1 text-slate-400 hover:text-indigo-300 hover:bg-slate-800 rounded-lg transition-all ml-1 cursor-pointer"
-              title="Editar publicação"
-            >
-              <Pencil className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => onExcluir(item)}
-              className="p-1 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-all cursor-pointer"
-              title="Excluir do estoque"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </button>
           </div>
-        </div>
-
-        <div>
-          <h3 className="text-base font-bold text-white leading-snug">
-            {item.titulo}
-          </h3>
-          <p className="text-xs text-slate-400 mt-1 flex items-center gap-1">
-            <Globe className="w-3.5 h-3.5 text-slate-500" />
-            <span>{rotuloIdioma(item.idioma)}</span>
+          <p className="flex items-center gap-1.5 text-sm text-slate-500">
+            <Globe size={15} aria-hidden="true" />
+            {rotuloIdioma(item.idioma)}
           </p>
         </div>
 
-        {/* Indicador de Estoque */}
-        <div className="p-3 bg-slate-950/80 rounded-xl border border-slate-800/80 flex items-center justify-between">
+        <div
+          className={[
+            "flex items-center justify-between gap-3 rounded-lg border p-4",
+            estoqueBaixo
+              ? "border-red-100 bg-red-50/60"
+              : "border-slate-200 bg-slate-50",
+          ].join(" ")}
+        >
           <div>
-            <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">
-              Disponível
-            </span>
-            <span
-              className={`text-2xl font-black ${
-                item.quantidadeEstoque <= 0
-                  ? "text-rose-500"
-                  : item.alertaEstoqueBaixo
-                    ? "text-amber-400"
-                    : "text-emerald-400"
-              }`}
+            <p className="text-xs font-medium text-slate-500">
+              Quantidade disponível
+            </p>
+            <p
+              className={[
+                "mt-1 text-3xl font-bold tabular-nums",
+                estoqueZerado
+                  ? "text-red-700"
+                  : estoqueBaixo
+                    ? "text-amber-700"
+                    : "text-emerald-700",
+              ].join(" ")}
             >
               {item.quantidadeEstoque}
-            </span>
+            </p>
           </div>
 
           <div className="text-right">
-            <span className="text-[10px] uppercase font-bold text-slate-500 block tracking-wider">
-              Estoque Mínimo
-            </span>
-            <span className="text-sm font-bold text-slate-300">
+            <p className="text-xs text-slate-500">Estoque mínimo</p>
+            <p className="mt-1 text-sm font-semibold text-slate-700">
               {item.estoqueMinimo} un.
-            </span>
+            </p>
           </div>
         </div>
 
-        {item.alertaEstoqueBaixo && (
-          <div className="flex items-center gap-1.5 text-[11px] text-rose-400 font-medium">
-            <AlertTriangle className="w-3.5 h-3.5" />
-            <span>Estoque crítico ou zerado!</span>
+        {estoqueBaixo && (
+          <div
+            className="flex items-start gap-2 text-sm font-medium text-red-700"
+            role="status"
+          >
+            <AlertTriangle
+              size={16}
+              className="mt-0.5 shrink-0"
+              aria-hidden="true"
+            />
+            <span>
+              {estoqueZerado
+                ? "Estoque zerado"
+                : "Estoque abaixo do mínimo"}
+            </span>
           </div>
         )}
       </div>
 
-      {/* Botões de Ação */}
-      <div className="pt-4 border-t border-slate-800/80 mt-4 flex gap-2">
+      <div className="mt-5 grid grid-cols-1 gap-2 border-t border-slate-100 pt-4 sm:grid-cols-2">
         <button
+          type="button"
           onClick={() => onMovimentar(item, "SAIDA")}
-          className="flex-1 py-2 px-3 bg-slate-800 hover:bg-slate-700 text-rose-400 text-xs font-semibold rounded-xl border border-slate-700 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
         >
-          <ArrowUpRight className="w-4 h-4" />
-          <span>Saída / Entrega</span>
+          <ArrowUpRight size={16} aria-hidden="true" />
+          Saída / entrega
         </button>
 
         <button
+          type="button"
           onClick={() => onMovimentar(item, "ENTRADA")}
-          className="flex-1 py-2 px-3 bg-slate-800 hover:bg-slate-700 text-emerald-400 text-xs font-semibold rounded-xl border border-slate-700 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
         >
-          <ArrowDownLeft className="w-4 h-4" />
-          <span>Entrada / Caixa</span>
+          <ArrowDownLeft size={16} aria-hidden="true" />
+          Entrada / caixa
         </button>
       </div>
-    </div>
+    </article>
   );
 };

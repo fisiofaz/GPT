@@ -309,7 +309,8 @@ public class PedidoService {
             );
         }
 
-        if (dto.getItensRecebidos().size() != pedido.getItens().size()) {
+        if (dto.getItensRecebidos() == null
+                || dto.getItensRecebidos().size() != pedido.getItens().size()) {
             throw new IllegalArgumentException(
                     "É necessário informar o recebimento de todos os itens do pedido."
             );
@@ -319,6 +320,15 @@ public class PedidoService {
                 .stream()
                 .map(PedidoBetelDTO.ConferirItemRequest::getItemId)
                 .collect(Collectors.toSet());
+
+        if (idsRecebidos.contains(null)
+                || idsRecebidos.size() != pedido.getItens().size()
+                || pedido.getItens().stream()
+                        .anyMatch(item -> !idsRecebidos.contains(item.getId()))) {
+            throw new IllegalArgumentException(
+                    "Cada item do pedido deve ser informado exatamente uma vez."
+            );
+        }
 
         for (PedidoBetelDTO.ConferirItemRequest conf
                 : dto.getItensRecebidos()) {
@@ -346,6 +356,19 @@ public class PedidoService {
                         "A quantidade recebida não pode ser menor que "
                                 + "a quantidade já registrada para o item "
                                 + conf.getItemId()
+                );
+            }
+            
+            if (quantidadeRecebida < 0) {
+                throw new IllegalArgumentException(
+                        "A quantidade recebida não pode ser negativa."
+                );
+            }
+
+            if (quantidadeRecebida > item.getQuantidadeSolicitada()) {
+                throw new IllegalArgumentException(
+                        "A quantidade recebida não pode superar a quantidade solicitada "
+                                + "para o item " + item.getId() + "."
                 );
             }
 
