@@ -1,7 +1,7 @@
 import { api } from "./api";
 import type {
   PedidoPublicador,
-  PedidoPublicadorRequest,
+  PedidoPublicadorCatalogoRequest,
   PedidoBetel,
   PedidoBetelCriarRequest,
   ConferirPedidoBetelRequest,
@@ -11,12 +11,13 @@ import type {
 export const pedidoService = {
   // Pedidos de Publicadores
   criarPedidoPublicador: async (
-    dto: PedidoPublicadorRequest,
+    dto: PedidoPublicadorCatalogoRequest,
   ): Promise<PedidoPublicador> => {
     const response = await api.post<PedidoPublicador>(
       "/pedidos/publicador",
       dto,
     );
+
     return response.data;
   },
 

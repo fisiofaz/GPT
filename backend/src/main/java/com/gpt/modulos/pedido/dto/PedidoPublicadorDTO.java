@@ -19,8 +19,9 @@ public class PedidoPublicadorDTO {
         @NotNull(message = "O ID do publicador é obrigatório")
         private Long publicadorId;
 
-        @NotNull(message = "O ID da publicação é obrigatório")
         private Long publicacaoId;
+        
+        private Long catalogoMestreId;
 
         @NotNull(message = "O ID da congregação é obrigatório")
         private Long congregacaoId;
@@ -39,15 +40,21 @@ public class PedidoPublicadorDTO {
     @Builder
     public static class Response {
         private Long id;
+        
         private Long publicadorId;
         private String publicadorNome;
+        
         private Long publicacaoId;
+        private Long catalogoMestreId;
         private String publicacaoCodigo;
         private String publicacaoTitulo;
+        
         private Long congregacaoId;
         private Integer quantidade;
+        
         private LocalDateTime dataSolicitacao;
         private LocalDateTime dataAtendimento;
+        
         private StatusPedidoPublicador status;
         private String observacoes;
         private Long pedidoBetelId;

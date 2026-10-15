@@ -1,27 +1,75 @@
-import React, { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/useAuth";
 import {
-  Package,
   ArrowLeft,
+  Ban,
+  Boxes,
+  CheckCircle2,
+  Package,
+  Pencil,
   Plus,
   Send,
-  CheckCircle2,
-  Ban,
-  User,
-  Boxes,
-  Loader2,
-  FolderOpen,
-  Pencil,
   Trash2,
+  User,
 } from "lucide-react";
+
+import { useAuth } from "../context/useAuth";
 import { usePedidos } from "../hooks/usePedidos";
+
+import { Badge } from "../components/ui/Badge";
+import { Button } from "../components/ui/Button";
+import { Card } from "../components/ui/Card";
+import { ConfirmModal } from "../components/ui/ConfirmModal";
+import { EmptyState } from "../components/ui/EmptyState";
+import { FilterBar } from "../components/ui/FilterBar";
+import { LoadingState } from "../components/ui/LoadingState";
+import { PageHeader } from "../components/ui/PageHeader";
+import { SearchInput } from "../components/ui/SearchInput";
+import { Select } from "../components/ui/Select";
+
 import { ModalPedidoPublicador } from "../components/pedidos/ModalPedidoPublicador";
 import { ModalPedidoBetelForm } from "../components/pedidos/ModalPedidoBetelForm";
 import { ModalConferirRecebimento } from "../components/pedidos/ModalConferirRecebimento";
-import type { PedidoBetel } from "../types/pedido";
 
-export const Pedidos: React.FC = () => {
+import type {
+  PedidoBetel,
+  StatusPedidoBetel,
+  StatusPedidoPublicador,
+} from "../types/pedido";
+
+type AbaAtiva = "BETEL" | "PUBLICADORES";
+type FiltroStatus = "TODOS" | StatusPedidoBetel | StatusPedidoPublicador;
+
+const statusBetel: Record<
+  StatusPedidoBetel,
+  { label: string; variant: "default" | "success" | "warning" | "danger" | "info" }
+> = {
+  RASCUNHO: { label: "Rascunho", variant: "default" },
+  ENVIADO: { label: "Enviado", variant: "info" },
+  RECEBIDO_PARCIAL: { label: "Recebido parcialmente", variant: "warning" },
+  RECEBIDO_TOTAL: { label: "Recebido totalmente", variant: "success" },
+  CANCELADO: { label: "Cancelado", variant: "danger" },
+};
+
+const statusPublicador: Record<
+  StatusPedidoPublicador,
+  { label: string; variant: "default" | "success" | "warning" | "danger" | "info" }
+> = {
+  PENDENTE: { label: "Pendente", variant: "warning" },
+  INCLUIDO_NO_PEDIDO: { label: "Incluído no pedido Betel", variant: "info" },
+  ATENDIDO: { label: "Atendido", variant: "success" },
+  CANCELADO: { label: "Cancelado", variant: "danger" },
+};
+
+function normalizarTexto(valor: string | undefined | null): string {
+  return (valor ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("pt-BR")
+    .trim();
+}
+
+export function Pedidos() {
   const navigate = useNavigate();
   const { usuario } = useAuth();
 
@@ -40,333 +88,578 @@ export const Pedidos: React.FC = () => {
     registrarRecebimento,
   } = usePedidos(usuario?.congregacaoId);
 
-  const [abaAtiva, setAbaAtiva] = useState<"BETEL" | "PUBLICADORES">("BETEL");
+  const [abaAtiva, setAbaAtiva] = useState<AbaAtiva>("BETEL");
+  const [pesquisa, setPesquisa] = useState("");
+  const [filtroStatus, setFiltroStatus] = useState<FiltroStatus>("TODOS");
 
-  // Modais
   const [modalPublicadorAberto, setModalPublicadorAberto] = useState(false);
   const [modalBetelFormAberto, setModalBetelFormAberto] = useState(false);
   const [pedidoBetelParaEditar, setPedidoBetelParaEditar] =
     useState<PedidoBetel | null>(null);
   const [pedidoBetelParaConferir, setPedidoBetelParaConferir] =
     useState<PedidoBetel | null>(null);
+  const [pedidoBetelParaExcluir, setPedidoBetelParaExcluir] =
+    useState<PedidoBetel | null>(null);
+  const [excluindoPedido, setExcluindoPedido] = useState(false);
 
-  const pendentesPublicadores = pedidosPublicadores.filter(
-    (p) => p.status === "PENDENTE",
+  const pendentesPublicadores = useMemo(
+    () => pedidosPublicadores.filter((pedido) => pedido.status === "PENDENTE"),
+    [pedidosPublicadores],
   );
 
+  const pedidosBetelFiltrados = useMemo(() => {
+    const termo = normalizarTexto(pesquisa);
+
+    return pedidosBetel.filter((pedido) => {
+      const correspondeStatus =
+        filtroStatus === "TODOS" || pedido.status === filtroStatus;
+
+      const textoPedido = normalizarTexto(
+        [
+          pedido.numeroPedido,
+          pedido.mesAnoReferencia,
+          pedido.status,
+          pedido.observacoes,
+          ...pedido.itens.flatMap((item) => [
+            item.publicacaoCodigo,
+            item.publicacaoTitulo,
+          ]),
+        ].join(" "),
+      );
+
+      return correspondeStatus && (!termo || textoPedido.includes(termo));
+    });
+  }, [pedidosBetel, pesquisa, filtroStatus]);
+
+  const pedidosPublicadoresFiltrados = useMemo(() => {
+    const termo = normalizarTexto(pesquisa);
+
+    return pedidosPublicadores.filter((pedido) => {
+      const correspondeStatus =
+        filtroStatus === "TODOS" || pedido.status === filtroStatus;
+
+      const textoPedido = normalizarTexto(
+        [
+          pedido.publicadorNome,
+          pedido.publicacaoCodigo,
+          pedido.publicacaoTitulo,
+          pedido.observacoes,
+          pedido.status,
+          pedido.dataSolicitacao,
+        ].join(" "),
+      );
+
+      return correspondeStatus && (!termo || textoPedido.includes(termo));
+    });
+  }, [pedidosPublicadores, pesquisa, filtroStatus]);
+
+  function mudarAba(aba: AbaAtiva) {
+    setAbaAtiva(aba);
+    setPesquisa("");
+    setFiltroStatus("TODOS");
+  }
+
+  function abrirNovoPedidoBetel() {
+    setPedidoBetelParaEditar(null);
+    setModalBetelFormAberto(true);
+  }
+
+  function abrirEdicaoPedidoBetel(pedido: PedidoBetel) {
+    if (pedido.status !== "RASCUNHO") return;
+
+    setPedidoBetelParaEditar(pedido);
+    setModalBetelFormAberto(true);
+  }
+
+  async function confirmarExclusaoPedidoBetel() {
+    if (!pedidoBetelParaExcluir || excluindoPedido) return;
+
+    setExcluindoPedido(true);
+
+    try {
+      await excluirPedidoBetel(pedidoBetelParaExcluir.id);
+      setPedidoBetelParaExcluir(null);
+    } finally {
+      setExcluindoPedido(false);
+    }
+  }
+
+  const totalExibido =
+    abaAtiva === "BETEL"
+      ? pedidosBetelFiltrados.length
+      : pedidosPublicadoresFiltrados.length;
+
   return (
-    <div className="min-h-screen bg-[#0b0f19] text-slate-100 font-sans pb-16">
-      {/* Header Responsivo */}
-      <header className="sticky top-0 z-40 backdrop-blur-xl bg-[#0b0f19]/80 border-b border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:h-20 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-3 min-w-0">
-            <button
-              onClick={() => navigate("/dashboard")}
-              className="p-2 sm:p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 transition-all shrink-0 cursor-pointer"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <div className="min-w-0">
-              <h1 className="text-base sm:text-xl font-bold text-white flex items-center gap-2 truncate">
-                <Package className="w-5 h-5 text-indigo-400 shrink-0" />
-                <span className="truncate">Gestão de Pedidos</span>
-              </h1>
-              <p className="text-xs text-slate-400 truncate">
-                Remessas de Betel e Pedidos Especiais
-              </p>
-            </div>
-          </div>
+    <main className="min-h-screen bg-slate-50 px-4 py-6 text-slate-900 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl">
+        <div className="mb-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/dashboard")}
+            className="text-slate-600"
+          >
+            <ArrowLeft size={16} aria-hidden="true" />
+            Voltar ao painel
+          </Button>
+        </div>
 
-          <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-end">
-            {abaAtiva === "BETEL" ? (
-              <button
-                onClick={() => {
-                  setPedidoBetelParaEditar(null);
-                  setModalBetelFormAberto(true);
-                }}
-                className="w-full sm:w-auto py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition-all cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Montar Pedido Betel</span>
-              </button>
+        <PageHeader
+          titulo="Gestão de Pedidos"
+          subtitulo="Gerencie pedidos de publicadores, remessas de Betel e recebimentos de publicações."
+          icon={Package}
+          actions={
+            abaAtiva === "BETEL" ? (
+              <Button onClick={abrirNovoPedidoBetel}>
+                <Plus size={16} aria-hidden="true" />
+                Montar pedido Betel
+              </Button>
             ) : (
-              <button
-                onClick={() => setModalPublicadorAberto(true)}
-                className="w-full sm:w-auto py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition-all cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Solicitação de Publicador</span>
-              </button>
-            )}
+              <Button onClick={() => setModalPublicadorAberto(true)}>
+                <Plus size={16} aria-hidden="true" />
+                Solicitar publicação
+              </Button>
+            )
+          }
+        />
+
+        <div className="mb-5 flex flex-wrap gap-2 border-b border-slate-200">
+          <Button
+            variant={abaAtiva === "BETEL" ? "primary" : "ghost"}
+            onClick={() => mudarAba("BETEL")}
+            className="rounded-b-none"
+          >
+            <Boxes size={16} aria-hidden="true" />
+            Remessas Betel
+            <Badge variant={abaAtiva === "BETEL" ? "info" : "default"}>
+              {pedidosBetel.length}
+            </Badge>
+          </Button>
+
+          <Button
+            variant={abaAtiva === "PUBLICADORES" ? "primary" : "ghost"}
+            onClick={() => mudarAba("PUBLICADORES")}
+            className="rounded-b-none"
+          >
+            <User size={16} aria-hidden="true" />
+            Pedidos de publicadores
+            <Badge variant={abaAtiva === "PUBLICADORES" ? "info" : "default"}>
+              {pedidosPublicadores.length}
+            </Badge>
+          </Button>
+        </div>
+
+        <FilterBar>
+          <div className="w-full min-w-0 flex-1 lg:min-w-64">
+            <label
+              htmlFor="pesquisa-pedidos"
+              className="mb-1.5 block text-sm font-medium text-slate-700"
+            >
+              Pesquisar
+            </label>
+            <SearchInput
+              id="pesquisa-pedidos"
+              value={pesquisa}
+              onChange={(event) => setPesquisa(event.target.value)}
+              onClear={() => setPesquisa("")}
+              placeholder={
+                abaAtiva === "BETEL"
+                  ? "Número, referência ou publicação..."
+                  : "Publicador ou publicação..."
+              }
+            />
           </div>
-        </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 pt-8 space-y-6">
-        {/* Abas */}
-        <div className="flex gap-2 border-b border-slate-800 pb-3">
-          <button
-            onClick={() => setAbaAtiva("BETEL")}
-            className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-              abaAtiva === "BETEL"
-                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30"
-                : "bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800"
-            }`}
-          >
-            <Boxes className="w-4 h-4" />
-            <span>Remessas Betel ({pedidosBetel.length})</span>
-          </button>
-          <button
-            onClick={() => setAbaAtiva("PUBLICADORES")}
-            className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-              abaAtiva === "PUBLICADORES"
-                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30"
-                : "bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800"
-            }`}
-          >
-            <User className="w-4 h-4" />
-            <span>Pedidos de Publicadores ({pedidosPublicadores.length})</span>
-          </button>
-        </div>
+          <div className="w-full lg:w-64">
+            <Select
+              id="filtro-status-pedidos"
+              label="Status"
+              value={filtroStatus}
+              onChange={(event) =>
+                setFiltroStatus(event.target.value as FiltroStatus)
+              }
+            >
+              <option value="TODOS">Todos os status</option>
 
-        {/* Listagens */}
+              {abaAtiva === "BETEL" ? (
+                <>
+                  <option value="RASCUNHO">Rascunho</option>
+                  <option value="ENVIADO">Enviado</option>
+                  <option value="RECEBIDO_PARCIAL">Recebido parcialmente</option>
+                  <option value="RECEBIDO_TOTAL">Recebido totalmente</option>
+                  <option value="CANCELADO">Cancelado</option>
+                </>
+              ) : (
+                <>
+                  <option value="PENDENTE">Pendente</option>
+                  <option value="INCLUIDO_NO_PEDIDO">
+                    Incluído no pedido Betel
+                  </option>
+                  <option value="ATENDIDO">Atendido</option>
+                  <option value="CANCELADO">Cancelado</option>
+                </>
+              )}
+            </Select>
+          </div>
+
+          <div className="pb-1 text-sm text-slate-500">
+            {totalExibido} {totalExibido === 1 ? "resultado" : "resultados"}
+          </div>
+        </FilterBar>
+
         {carregando ? (
-          <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-3">
-            <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
-            <p className="text-sm">Carregando pedidos...</p>
-          </div>
+          <Card>
+            <LoadingState message="Carregando pedidos..." />
+          </Card>
         ) : abaAtiva === "BETEL" ? (
-          /* ABA: BETEL */
-          pedidosBetel.length === 0 ? (
-            <div className="py-16 text-center bg-slate-900/40 rounded-3xl border border-slate-800 p-8 space-y-3">
-              <FolderOpen className="w-12 h-12 text-slate-600 mx-auto" />
-              <h3 className="text-lg font-bold text-white">
-                Nenhum pedido de Betel registrado
-              </h3>
-              <p className="text-xs text-slate-500">
-                Clique em "Montar Pedido Betel" para selecionar os itens do
-                Catálogo Geral.
-              </p>
-            </div>
+          pedidosBetelFiltrados.length === 0 ? (
+            <Card>
+              <EmptyState
+                title={
+                  pedidosBetel.length === 0
+                    ? "Nenhum pedido de Betel registrado"
+                    : "Nenhum pedido encontrado"
+                }
+                description={
+                  pedidosBetel.length === 0
+                    ? "Monte um pedido com as publicações que a congregação precisa solicitar."
+                    : "Altere a pesquisa ou o filtro de status para encontrar pedidos."
+                }
+                action={
+                  pedidosBetel.length === 0 ? (
+                    <Button onClick={abrirNovoPedidoBetel}>
+                      <Plus size={16} aria-hidden="true" />
+                      Montar pedido Betel
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        setPesquisa("");
+                        setFiltroStatus("TODOS");
+                      }}
+                    >
+                      Limpar filtros
+                    </Button>
+                  )
+                }
+              />
+            </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {pedidosBetel.map((p) => (
-                <div
-                  key={p.id}
-                  className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between space-y-4 shadow-xl hover:border-slate-700 transition-all"
-                >
-                  <div className="space-y-3">
-                    {/* Topo do Card com Status e Botões de Ação (Editar e Deletar) */}
-                    <div className="flex items-center justify-between">
-                      <span className="px-3 py-1 bg-slate-800 rounded-xl text-xs font-mono font-bold text-indigo-300 border border-slate-700">
-                        {p.mesAnoReferencia}
-                      </span>
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+              {pedidosBetelFiltrados.map((pedido) => {
+                const status = statusBetel[pedido.status];
+                const podeEditar = pedido.status === "RASCUNHO";
+                const podeConferir =
+                  pedido.status === "ENVIADO" ||
+                  pedido.status === "RECEBIDO_PARCIAL";
 
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-                            p.status === "RECEBIDO_TOTAL"
-                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                              : p.status === "ENVIADO"
-                                ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                                : "bg-slate-800 text-slate-400 border border-slate-700"
-                          }`}
-                        >
-                          {p.status.replace("_", " ")}
-                        </span>
-
-                        {/* Botões de Ação: Visíveis enquanto não finalizado */}
-                        {p.status !== "RECEBIDO_TOTAL" && (
-                          <div className="flex items-center gap-1 bg-slate-950/60 p-1 rounded-xl border border-slate-800">
-                            <button
-                              onClick={() => {
-                                setPedidoBetelParaEditar(p);
-                                setModalBetelFormAberto(true);
-                              }}
-                              className="p-1.5 text-slate-400 hover:text-indigo-300 hover:bg-slate-800 rounded-lg transition-all cursor-pointer"
-                              title="Editar pedido / itens"
-                            >
-                              <Pencil className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => {
-                                if (
-                                  confirm(
-                                    `Tem certeza que deseja excluir o pedido ${
-                                      p.numeroPedido || p.mesAnoReferencia
-                                    }?`,
-                                  )
-                                ) {
-                                  excluirPedidoBetel(p.id);
-                                }
-                              }}
-                              className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-all cursor-pointer"
-                              title="Excluir pedido"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        )}
+                return (
+                  <Card
+                    key={pedido.id}
+                    className="flex min-w-0 flex-col gap-4 shadow-sm"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                          Referência
+                        </p>
+                        <h2 className="mt-1 break-words text-lg font-semibold text-slate-900">
+                          {pedido.numeroPedido || `Pedido #${pedido.id}`}
+                        </h2>
+                        <p className="mt-1 text-sm text-slate-500">
+                          {pedido.mesAnoReferencia}
+                        </p>
                       </div>
+
+                      <Badge variant={status.variant}>{status.label}</Badge>
+                    </div>
+
+                    <div className="flex items-center justify-between border-y border-slate-100 py-3 text-sm">
+                      <span className="text-slate-500">Publicações</span>
+                      <strong className="text-slate-900">
+                        {pedido.totalItens}
+                      </strong>
                     </div>
 
                     <div>
-                      <h3 className="text-base font-bold text-white">
-                        {p.numeroPedido || `Pedido #${p.id}`}
+                      <h3 className="mb-2 text-sm font-semibold text-slate-700">
+                        Itens do pedido
                       </h3>
-                      <p className="text-xs text-slate-400 mt-1">
-                        Total:{" "}
-                        <strong className="text-slate-200">
-                          {p.totalItens} publicações
-                        </strong>
-                      </p>
-                    </div>
 
-                    {/* Lista com nome e código de cada publicação */}
-                    <div className="p-3 bg-slate-950/70 rounded-xl border border-slate-800/80 space-y-1.5 max-h-36 overflow-y-auto">
-                      {p.itens.map((it) => (
-                        <div
-                          key={it.id}
-                          className="flex justify-between text-xs text-slate-300"
-                        >
-                          <span className="truncate pr-2 font-medium">
-                            <span className="text-indigo-400 font-mono text-[10px] mr-1">
-                              [{it.publicacaoCodigo}]
+                      <div className="max-h-48 space-y-2 overflow-y-auto rounded-lg bg-slate-50 p-3">
+                        {pedido.itens.map((item) => (
+                          <div
+                            key={item.id}
+                            className="flex items-start justify-between gap-3 text-sm"
+                          >
+                            <div className="min-w-0">
+                              <p className="break-words font-medium text-slate-800">
+                                {item.publicacaoTitulo}
+                              </p>
+                              <p className="mt-0.5 font-mono text-xs text-slate-500">
+                                {item.publicacaoCodigo}
+                              </p>
+                            </div>
+
+                            <span className="shrink-0 whitespace-nowrap text-right text-xs font-semibold text-slate-700">
+                              {item.quantidadeRecebida}/
+                              {item.quantidadeSolicitada}
+                              <span className="block font-normal text-slate-400">
+                                recebidas
+                              </span>
                             </span>
-                            {it.publicacaoTitulo}
-                          </span>
-                          <span className="font-mono text-slate-400 shrink-0">
-                            {it.quantidadeRecebida > 0
-                              ? `${it.quantidadeRecebida}/${it.quantidadeSolicitada}`
-                              : `${it.quantidadeSolicitada} un`}
-                          </span>
-                        </div>
-                      ))}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Ações Inferiores */}
-                  <div className="pt-3 border-t border-slate-800 flex gap-2">
-                    {p.status === "RASCUNHO" && (
-                      <button
-                        onClick={() => marcarComoEnviado(p.id)}
-                        className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-lg shadow-indigo-600/20"
-                      >
-                        <Send className="w-4 h-4" />
-                        <span>Marcar como Enviado</span>
-                      </button>
-                    )}
-
-                    {p.status === "ENVIADO" && (
-                      <button
-                        onClick={() => setPedidoBetelParaConferir(p)}
-                        className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-lg shadow-emerald-600/20"
-                      >
-                        <CheckCircle2 className="w-4 h-4" />
-                        <span>Conferir Chegada da Caixa</span>
-                      </button>
-                    )}
-
-                    {p.status === "RECEBIDO_TOTAL" && (
-                      <div className="w-full py-2 bg-slate-800/50 text-slate-400 text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 border border-slate-800">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                        <span>Conferido & Estoque Atualizado</span>
+                    {pedido.observacoes && (
+                      <div className="rounded-lg border border-slate-100 p-3">
+                        <p className="text-xs font-semibold text-slate-500">
+                          Observações
+                        </p>
+                        <p className="mt-1 whitespace-pre-wrap break-words text-sm text-slate-700">
+                          {pedido.observacoes}
+                        </p>
                       </div>
                     )}
-                  </div>
-                </div>
-              ))}
+
+                    <div className="mt-auto space-y-2 border-t border-slate-100 pt-4">
+                      {pedido.status === "RASCUNHO" && (
+                        <Button
+                          fullWidth
+                          onClick={() => marcarComoEnviado(pedido.id)}
+                        >
+                          <Send size={16} aria-hidden="true" />
+                          Marcar como enviado
+                        </Button>
+                      )}
+
+                      {podeConferir && (
+                        <Button
+                          fullWidth
+                          variant="success"
+                          onClick={() => setPedidoBetelParaConferir(pedido)}
+                        >
+                          <CheckCircle2 size={16} aria-hidden="true" />
+                          {pedido.status === "RECEBIDO_PARCIAL"
+                            ? "Registrar nova chegada"
+                            : "Conferir recebimento"}
+                        </Button>
+                      )}
+
+                      {pedido.status === "RECEBIDO_TOTAL" && (
+                        <div className="flex items-center justify-center gap-2 rounded-lg bg-emerald-50 px-3 py-2.5 text-sm font-medium text-emerald-700">
+                          <CheckCircle2 size={17} aria-hidden="true" />
+                          Recebimento concluído
+                        </div>
+                      )}
+
+                      {pedido.status === "CANCELADO" && (
+                        <div className="rounded-lg bg-red-50 px-3 py-2.5 text-center text-sm text-red-700">
+                          Pedido cancelado
+                        </div>
+                      )}
+
+                      {podeEditar && (
+                        <div className="flex gap-2">
+                          <Button
+                            variant="secondary"
+                            fullWidth
+                            onClick={() => abrirEdicaoPedidoBetel(pedido)}
+                          >
+                            <Pencil size={15} aria-hidden="true" />
+                            Editar
+                          </Button>
+
+                          <Button
+                            variant="danger"
+                            fullWidth
+                            onClick={() => setPedidoBetelParaExcluir(pedido)}
+                          >
+                            <Trash2 size={15} aria-hidden="true" />
+                            Excluir
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                );
+              })}
             </div>
           )
-        ) : /* ABA: PUBLICADORES */
-        pedidosPublicadores.length === 0 ? (
-          <div className="py-16 text-center bg-slate-900/40 rounded-3xl border border-slate-800 p-8 space-y-3">
-            <FolderOpen className="w-12 h-12 text-slate-600 mx-auto" />
-            <h3 className="text-lg font-bold text-white">
-              Nenhum pedido de publicador registrado
-            </h3>
-          </div>
-        ) : (
-          <div className="overflow-x-auto bg-slate-900/60 border border-slate-800 rounded-2xl">
-            <table className="w-full text-left text-xs text-slate-300">
-              <thead className="bg-slate-950 text-slate-400 font-semibold border-b border-slate-800 uppercase tracking-wider">
-                <tr>
-                  <th className="py-3 px-4">Publicador</th>
-                  <th className="py-3 px-4">Publicação</th>
-                  <th className="py-3 px-4 text-center">Qtd</th>
-                  <th className="py-3 px-4 text-center">Status</th>
-                  <th className="py-3 px-4">Observações</th>
-                  <th className="py-3 px-4 text-right">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/60">
-                {pedidosPublicadores.map((pp) => (
-                  <tr
-                    key={pp.id}
-                    className="hover:bg-slate-800/40 transition-colors"
+        ) : pedidosPublicadoresFiltrados.length === 0 ? (
+          <Card>
+            <EmptyState
+              title={
+                pedidosPublicadores.length === 0
+                  ? "Nenhum pedido de publicador registrado"
+                  : "Nenhum pedido encontrado"
+              }
+              description={
+                pedidosPublicadores.length === 0
+                  ? "Registre uma solicitação de publicação para um publicador."
+                  : "Altere a pesquisa ou o filtro de status para encontrar pedidos."
+              }
+              action={
+                pedidosPublicadores.length === 0 ? (
+                  <Button onClick={() => setModalPublicadorAberto(true)}>
+                    <Plus size={16} aria-hidden="true" />
+                    Solicitar publicação
+                  </Button>
+                ) : (
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      setPesquisa("");
+                      setFiltroStatus("TODOS");
+                    }}
                   >
-                    <td className="py-3 px-4 font-bold text-white">
-                      {pp.publicadorNome}
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className="font-semibold text-slate-200">
-                        {pp.publicacaoTitulo}
-                      </span>
-                      <span className="text-[10px] text-slate-500 font-mono ml-2">
-                        [{pp.publicacaoCodigo}]
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-center font-bold text-indigo-400">
-                      {pp.quantidade}
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                          pp.status === "ATENDIDO"
-                            ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                            : pp.status === "INCLUIDO_NO_PEDIDO"
-                              ? "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20"
-                              : pp.status === "CANCELADO"
-                                ? "bg-rose-500/10 text-rose-400"
-                                : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
-                        }`}
-                      >
-                        {pp.status.replace("_", " ")}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-slate-400 max-w-xs truncate">
-                      {pp.observacoes || "-"}
-                    </td>
-                    <td className="py-3 px-4 text-right space-x-2">
-                      {pp.status === "PENDENTE" && (
-                        <>
-                          <button
-                            onClick={() => atenderPedidoPublicador(pp.id)}
-                            className="p-1.5 text-emerald-400 hover:bg-slate-800 rounded-lg transition-all cursor-pointer"
-                            title="Marcar como Atendido"
-                          >
-                            <CheckCircle2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => cancelarPedidoPublicador(pp.id)}
-                            className="p-1.5 text-rose-400 hover:bg-slate-800 rounded-lg transition-all cursor-pointer"
-                            title="Cancelar Pedido"
-                          >
-                            <Ban className="w-4 h-4" />
-                          </button>
-                        </>
-                      )}
-                    </td>
+                    Limpar filtros
+                  </Button>
+                )
+              }
+            />
+          </Card>
+        ) : (
+          <Card padding="none" className="overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[760px] text-left text-sm">
+                <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                  <tr>
+                    <th scope="col" className="px-4 py-3 font-semibold">
+                      Publicador
+                    </th>
+                    <th scope="col" className="px-4 py-3 font-semibold">
+                      Publicação
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-4 py-3 text-center font-semibold"
+                    >
+                      Quantidade
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-4 py-3 text-center font-semibold"
+                    >
+                      Status
+                    </th>
+                    <th scope="col" className="px-4 py-3 font-semibold">
+                      Observações
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-4 py-3 text-right font-semibold"
+                    >
+                      Ações
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </main>
+                </thead>
 
-      {/* Modais */}
+                <tbody className="divide-y divide-slate-100">
+                  {pedidosPublicadoresFiltrados.map((pedido) => {
+                    const status = statusPublicador[pedido.status];
+
+                    return (
+                      <tr
+                        key={pedido.id}
+                        className="transition-colors hover:bg-slate-50"
+                      >
+                        <td className="px-4 py-3 font-medium text-slate-900">
+                          {pedido.publicadorNome}
+                        </td>
+
+                        <td className="px-4 py-3">
+                          <p className="font-medium text-slate-800">
+                            {pedido.publicacaoTitulo}
+                          </p>
+                          <p className="mt-0.5 font-mono text-xs text-slate-500">
+                            {pedido.publicacaoCodigo}
+                          </p>
+                        </td>
+
+                        <td className="px-4 py-3 text-center font-semibold text-slate-800">
+                          {pedido.quantidade}
+                        </td>
+
+                        <td className="px-4 py-3 text-center">
+                          <Badge variant={status.variant}>
+                            {status.label}
+                          </Badge>
+                        </td>
+
+                        <td className="max-w-xs px-4 py-3 text-slate-600">
+                          <span className="block truncate">
+                            {pedido.observacoes || "—"}
+                          </span>
+                        </td>
+
+                        <td className="px-4 py-3">
+                          <div className="flex justify-end gap-2">
+                            {pedido.status === "PENDENTE" && (
+                              <>
+                                <Button
+                                  variant="success"
+                                  size="sm"
+                                  onClick={() =>
+                                    atenderPedidoPublicador(pedido.id)
+                                  }
+                                  title="Marcar pedido como atendido"
+                                  aria-label={`Atender pedido de ${pedido.publicadorNome}`}
+                                >
+                                  <CheckCircle2
+                                    size={15}
+                                    aria-hidden="true"
+                                  />
+                                  Atender
+                                </Button>
+
+                                <Button
+                                  variant="danger"
+                                  size="sm"
+                                  onClick={() =>
+                                    cancelarPedidoPublicador(pedido.id)
+                                  }
+                                  title="Cancelar pedido"
+                                  aria-label={`Cancelar pedido de ${pedido.publicadorNome}`}
+                                >
+                                  <Ban size={15} aria-hidden="true" />
+                                  Cancelar
+                                </Button>
+                              </>
+                            )}
+
+                            {pedido.status === "INCLUIDO_NO_PEDIDO" && (
+                              <span className="text-xs text-slate-500">
+                                Aguardando remessa
+                              </span>
+                            )}
+
+                            {pedido.status === "ATENDIDO" && (
+                              <span className="text-xs font-medium text-emerald-700">
+                                Atendimento concluído
+                              </span>
+                            )}
+
+                            {pedido.status === "CANCELADO" && (
+                              <span className="text-xs text-red-600">
+                                Cancelado
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        )}
+      </div>
+
       <ModalPedidoPublicador
         aberto={modalPublicadorAberto}
         congregacaoId={usuario?.congregacaoId || 0}
@@ -395,6 +688,29 @@ export const Pedidos: React.FC = () => {
         onFechar={() => setPedidoBetelParaConferir(null)}
         onConfirmar={registrarRecebimento}
       />
-    </div>
+
+      <ConfirmModal
+        aberto={Boolean(pedidoBetelParaExcluir)}
+        titulo="Excluir pedido Betel"
+        mensagem={
+          <>
+            Tem certeza de que deseja excluir o pedido{" "}
+            <strong>
+              {pedidoBetelParaExcluir?.numeroPedido ||
+                pedidoBetelParaExcluir?.mesAnoReferencia}
+            </strong>
+            ? Essa ação não poderá ser desfeita.
+          </>
+        }
+        confirmLabel="Excluir pedido"
+        cancelLabel="Manter pedido"
+        variant="danger"
+        loading={excluindoPedido}
+        onCancelar={() => {
+          if (!excluindoPedido) setPedidoBetelParaExcluir(null);
+        }}
+        onConfirmar={confirmarExclusaoPedidoBetel}
+      />
+    </main>
   );
-};
+}

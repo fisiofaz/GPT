@@ -21,8 +21,10 @@ public class PedidoBetelDTO {
     @AllArgsConstructor
     @Builder
     public static class ItemRequest {
-        @NotNull(message = "O ID da publicação é obrigatório")
+       
         private Long publicacaoId;
+        
+        private Long catalogoMestreId;
 
         @NotNull(message = "A quantidade solicitada é obrigatória")
         @Min(value = 1, message = "A quantidade mínima é 1")
@@ -89,6 +91,7 @@ public class PedidoBetelDTO {
     public static class ItemResponse {
         private Long id;
         private Long publicacaoId;
+        private Long catalogoMestreId;
         private String publicacaoCodigo;
         private String publicacaoTitulo;
         private Integer quantidadeSolicitada;

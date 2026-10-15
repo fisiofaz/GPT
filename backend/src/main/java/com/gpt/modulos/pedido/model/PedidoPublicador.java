@@ -4,6 +4,7 @@ import com.gpt.modulos.congregacao.model.Congregacao;
 import com.gpt.modulos.pedido.enums.StatusPedidoPublicador;
 import com.gpt.modulos.publicacao.model.Publicacao;
 import com.gpt.modulos.publicador.model.Publicador;
+import com.gpt.modulos.publicacao.model.CatalogoMestre;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -28,9 +29,13 @@ public class PedidoPublicador {
     private Publicador publicador;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "publicacao_id", nullable = false)
+    @JoinColumn(name = "publicacao_id")
     private Publicacao publicacao;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "catalogo_mestre_id")
+    private CatalogoMestre catalogoMestre;
+    
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "congregacao_id", nullable = false)
     private Congregacao congregacao;
