@@ -1,465 +1,438 @@
-import React, { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/useAuth";
-import { api } from "../services/api";
 import {
+  ArrowUpRight,
+  BookOpen,
+  Building2,
+  FileText,
+  Layers,
   LogOut,
   MapPin,
-  BookOpen,
-  Layers,
-  ArrowUpRight,
-  CheckCircle2,
-  Clock,
-  Package,
-  Sparkles,
-  Building2,
   ShieldCheck,
+  Sparkles,
   UserCog,
-  Activity,
-  FileText,
+  Users,
 } from "lucide-react";
 
-interface HistoricoConsumo {
-  mesAno: string;
-  totalSaidas: number;
+import { useAuth } from "../context/useAuth";
+
+import { PageHeader } from "../components/ui/PageHeader";
+import { Button } from "../components/ui/Button";
+import { Card } from "../components/ui/Card";
+
+interface CardGovernanca {
+  titulo: string;
+  descricao: string;
+  rota: string;
+  permissao: string[];
+  icone: typeof Building2;
+  cor: string;
+  corHover: string;
+  botao: string;
 }
 
-interface DashboardStats {
-  territoriosDisponiveis: number;
-  territoriosTrabalhadosAnoServico: number;
-  territoriosEmAndamento: number;
-  totalItensEstoque: number;
-  totalPedidos: number;
-  totalCongregacoesAtivas: number;
-  historicoConsumo: HistoricoConsumo[];
-}
+const ROLES = {
+  ADMIN: "ROLE_ADMIN_GERAL",
+  SUPERINTENDENTE: "ROLE_SUPERINTENDENTE_SERVICO",
+  ANCIAO: "ROLE_ANCIAO",
+  SERVO_TERRITORIO: "ROLE_SERVO_TERRITORIO",
+  SERVO_PUBLICACOES: "ROLE_SERVO_PUBLICACOES",
+} as const;
 
-export const Dashboard: React.FC = () => {
+const CARDS_GOVERNANCA: CardGovernanca[] = [
+  {
+    titulo: "Gestão de Congregações",
+    descricao:
+      "Cadastre e administre as congregações que fazem parte do sistema.",
+    rota: "/admin/congregacoes",
+    permissao: [ROLES.ADMIN],
+    icone: Building2,
+    cor: "indigo",
+    corHover: "hover:border-indigo-300",
+    botao: "Gerenciar congregações",
+  },
+  {
+    titulo: "Usuários da Congregação",
+    descricao:
+      "Gerencie os usuários, consulte os acessos e acompanhe as permissões.",
+    rota: "/admin/usuarios-congregacao",
+    permissao: [
+      ROLES.ADMIN,
+      ROLES.SUPERINTENDENTE,
+      ROLES.ANCIAO,
+    ],
+    icone: UserCog,
+    cor: "cyan",
+    corHover: "hover:border-cyan-300",
+    botao: "Gerenciar usuários",
+  },
+  {
+    titulo: "Gestão de Territórios",
+    descricao:
+      "Organize os territórios, acompanhe as designações e consulte o andamento do trabalho.",
+    rota: "/territorios",
+    permissao: [
+      ROLES.ADMIN,
+      ROLES.SUPERINTENDENTE,
+      ROLES.ANCIAO,
+      ROLES.SERVO_TERRITORIO,
+    ],
+    icone: MapPin,
+    cor: "emerald",
+    corHover: "hover:border-emerald-300",
+    botao: "Acessar territórios",
+  },
+  {
+    titulo: "Gestão de Publicações",
+    descricao:
+      "Consulte as publicações, acesse o catálogo e acompanhe o controle de estoque.",
+    rota: "/publicacoes",
+    permissao: [
+      ROLES.ADMIN,
+      ROLES.SUPERINTENDENTE,
+      ROLES.ANCIAO,
+      ROLES.SERVO_PUBLICACOES,
+    ],
+    icone: BookOpen,
+    cor: "indigo",
+    corHover: "hover:border-indigo-300",
+    botao: "Acessar publicações",
+  },
+  {
+    titulo: "Gestão de Publicadores",
+    descricao:
+      "Consulte os cadastros, atualize informações e acompanhe o histórico dos publicadores.",
+    rota: "/publicadores",
+    permissao: [
+      ROLES.ADMIN,
+      ROLES.SUPERINTENDENTE,
+      ROLES.ANCIAO,
+    ],
+    icone: Users,
+    cor: "violet",
+    corHover: "hover:border-violet-300",
+    botao: "Acessar publicadores",
+  },
+  {
+    titulo: "Gestão de Pedidos",
+    descricao:
+      "Acompanhe os pedidos dos publicadores e a organização das remessas para Betel.",
+    rota: "/pedidos",
+    permissao: [
+      ROLES.ADMIN,
+      ROLES.SUPERINTENDENTE,
+      ROLES.ANCIAO,
+      ROLES.SERVO_PUBLICACOES,
+    ],
+    icone: FileText,
+    cor: "amber",
+    corHover: "hover:border-amber-300",
+    botao: "Acessar pedidos",
+  },
+];
+
+const CORES: Record<
+  string,
+  {
+    fundo: string;
+    icone: string;
+    botao: string;
+  }
+> = {
+  indigo: {
+    fundo: "bg-indigo-50 border-indigo-100",
+    icone: "text-indigo-600",
+    botao:
+      "border-indigo-200 text-indigo-700 hover:bg-indigo-50",
+  },
+  cyan: {
+    fundo: "bg-cyan-50 border-cyan-100",
+    icone: "text-cyan-700",
+    botao: "border-cyan-200 text-cyan-800 hover:bg-cyan-50",
+  },
+  emerald: {
+    fundo: "bg-emerald-50 border-emerald-100",
+    icone: "text-emerald-700",
+    botao:
+      "border-emerald-200 text-emerald-800 hover:bg-emerald-50",
+  },
+  violet: {
+    fundo: "bg-violet-50 border-violet-100",
+    icone: "text-violet-700",
+    botao:
+      "border-violet-200 text-violet-800 hover:bg-violet-50",
+  },
+  amber: {
+    fundo: "bg-amber-50 border-amber-100",
+    icone: "text-amber-700",
+    botao: "border-amber-200 text-amber-800 hover:bg-amber-50",
+  },
+};
+
+const formatarRole = (role: string) =>
+  role
+    .replace(/^ROLE_/, "")
+    .split("_")
+    .map(
+      (parte) =>
+        parte.charAt(0) + parte.slice(1).toLowerCase(),
+    )
+    .join(" ");
+
+export const Dashboard = () => {
   const { usuario, logout } = useAuth();
   const navigate = useNavigate();
 
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const userRoles = usuario?.roles ?? [];
 
-  const userRoles: string[] = usuario?.roles || [];
-  const isAdminGeral = userRoles.includes("ROLE_ADMIN_GERAL");
-  const isLiderancaLocal =
-    isAdminGeral ||
-    userRoles.includes("ROLE_SUPERINTENDENTE_SERVICO") ||
-    userRoles.includes("ROLE_ANCIAO");
+  const cardsVisiveis = useMemo(
+    () =>
+      CARDS_GOVERNANCA.filter((card) =>
+        card.permissao.some((role) => userRoles.includes(role)),
+      ),
+    [userRoles],
+  );
 
-  const congregacaoId = usuario?.congregacaoId || 1;
+  const rolesFormatadas = userRoles.map(formatarRole);
 
-  useEffect(() => {
-    const carregarEstatisticas = async () => {
-      try {
-        const response = await api.get(
-          `/api/v1/dashboard/estatisticas/${congregacaoId}`,
-        );
-        setStats(response.data);
-      } catch (error) {
-        console.error("Erro ao carregar estatísticas do dashboard", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    carregarEstatisticas();
-  }, [congregacaoId]);
-
-  const formatarRole = (role: string) => {
-    return role
-      .replace("ROLE_", "")
-      .replace("_", " ")
-      .toLowerCase()
-      .replace(/\b\w/g, (l) => l.toUpperCase());
-  };
+  const nomeUsuario = usuario?.nome?.trim() || "usuário";
+  const inicialUsuario =
+    nomeUsuario.charAt(0).toLocaleUpperCase("pt-BR") || "U";
 
   return (
-    <div className="min-h-screen bg-[#0b0f19] text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
-      {/* Header */}
-      <header className="sticky top-0 z-50 backdrop-blur-xl bg-[#0b0f19]/80 border-b border-slate-800/80">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-2xl bg-linear-to-br from-indigo-500 via-indigo-600 to-violet-700 flex items-center justify-center shadow-lg shadow-indigo-500/25 border border-indigo-400/30">
-              <Layers className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-extrabold text-xl tracking-tight text-white">
-                  GPT
-                </span>
-                <span className="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                  v1.0
-                </span>
-              </div>
-              <p className="text-xs text-slate-400 font-medium">
-                Gestão de Publicações e Territórios
-              </p>
-            </div>
-          </div>
+    <div className="min-h-full space-y-6 bg-slate-50/70 font-sans text-slate-900">
+      <PageHeader
+        titulo="Painel de Gestão"
+        subtitulo="Acesse as funcionalidades do GPT de acordo com seu perfil de usuário."
+        icon={Layers}
+        actions={
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={logout}
+          >
+            <LogOut size={16} aria-hidden="true" />
+            Encerrar sessão
+          </Button>
+        }
+      />
 
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3 pl-4 pr-3 py-1.5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-inner">
-              <div className="w-8 h-8 rounded-xl bg-linear-to-tr from-indigo-500 to-violet-500 flex items-center justify-center text-xs font-bold text-white shadow">
-                {usuario?.nome?.charAt(0).toUpperCase()}
-              </div>
-              <div className="text-left hidden sm:block">
-                <p className="text-xs font-semibold text-slate-200 leading-tight">
-                  {usuario?.nome}
-                </p>
-                <p className="text-[11px] text-slate-400">{usuario?.email}</p>
-              </div>
-            </div>
-
-            <button
-              onClick={logout}
-              className="p-2.5 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/25 transition-all duration-200 cursor-pointer"
-              title="Encerrar Sessão"
-            >
-              <LogOut className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* Conteúdo Principal */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-10 space-y-10">
-        {/* Banner de Boas-Vindas */}
-        <section className="relative overflow-hidden rounded-3xl bg-linear-to-r from-indigo-950/70 via-slate-900/90 to-slate-900 border border-indigo-500/20 p-8 sm:p-10 shadow-2xl">
-          <div className="absolute top-0 right-0 -mt-8 -mr-8 w-72 h-72 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold">
-                <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-                Painel Administrativo
-              </div>
-              <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-                Olá, {usuario?.nome}!
-              </h1>
-              <p className="text-slate-400 text-sm sm:text-base max-w-xl">
-                Acompanhe o panorama dos territórios, estoque, pedidos e
-                métricas do sistema.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-2 md:justify-end items-center max-w-md">
-              {usuario?.roles.map((role) => (
-                <span
-                  key={role}
-                  className="px-3 py-1.5 rounded-xl bg-slate-800/90 border border-slate-700/80 text-xs font-semibold text-slate-300 shadow-sm flex items-center gap-1.5"
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
-                  {formatarRole(role)}
-                </span>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* 📊 SEÇÃO DE CARDS DE MÉTRICAS */}
-        <section className="space-y-4">
-          <h2 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
-            <Activity className="w-5 h-5 text-indigo-400" />
-            Indicadores Principais
-          </h2>
+      <main className="space-y-8">
+        <section className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div
+            aria-hidden="true"
+            className="absolute right-0 top-0 h-40 w-40 translate-x-12 -translate-y-12 rounded-full bg-indigo-100/70 blur-3xl"
+          />
 
           <div
-            className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 ${isAdminGeral ? "xl:grid-cols-6" : "xl:grid-cols-5"} gap-5`}
-          >
-            {/* 1. Territórios Disponíveis */}
-            <div className="p-6 rounded-3xl bg-slate-900/70 border border-slate-800/80 flex flex-col justify-between hover:border-emerald-500/30 transition-all shadow-xl">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                  Disponíveis
-                </span>
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20">
-                  <CheckCircle2 className="w-5 h-5" />
-                </div>
+            aria-hidden="true"
+            className="absolute bottom-0 right-1/4 h-28 w-28 translate-y-12 rounded-full bg-violet-100/60 blur-3xl"
+          />
+
+          <div className="relative flex flex-col gap-6 p-5 sm:p-7 lg:flex-row lg:items-center lg:justify-between lg:p-8">
+            <div className="min-w-0 space-y-4">
+              <div className="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700">
+                <Sparkles
+                  size={14}
+                  aria-hidden="true"
+                />
+                Bem-vindo ao GPT
               </div>
-              <div className="mt-4">
-                <p className="text-3xl font-extrabold text-white">
-                  {loading ? "..." : (stats?.territoriosDisponiveis ?? 0)}
-                </p>
-                <p className="text-xs text-slate-500 mt-1">
-                  Prontos p/ designação
+
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+                  Olá, {nomeUsuario}!
+                </h1>
+
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500 sm:text-base">
+                  Organize as atividades da congregação em um só lugar.
+                  Selecione uma das áreas disponíveis para continuar.
                 </p>
               </div>
             </div>
 
-            {/* 2. Territórios Já Trabalhados */}
-            <div className="p-6 rounded-3xl bg-slate-900/70 border border-slate-800/80 flex flex-col justify-between hover:border-blue-500/30 transition-all shadow-xl">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                  Trabalhados
-                </span>
-                <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center border border-blue-500/20">
-                  <MapPin className="w-5 h-5" />
-                </div>
+            <div className="flex shrink-0 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:min-w-64">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-indigo-100 bg-white text-lg font-bold text-indigo-700 shadow-sm">
+                {inicialUsuario}
               </div>
-              <div className="mt-4">
-                <p className="text-3xl font-extrabold text-white">
-                  {loading
-                    ? "..."
-                    : (stats?.territoriosTrabalhadosAnoServico ?? 0)}
+
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-slate-900">
+                  {nomeUsuario}
                 </p>
-                <p className="text-xs text-slate-500 mt-1">
-                  Neste ano de serviço
+
+                <p className="mt-0.5 truncate text-xs text-slate-500">
+                  {usuario?.email || "E-mail não informado"}
+                </p>
+
+                <p className="mt-1 text-xs font-medium text-slate-600">
+                  Usuário autenticado
                 </p>
               </div>
             </div>
-
-            {/* 3. Territórios em Andamento */}
-            <div className="p-6 rounded-3xl bg-slate-900/70 border border-slate-800/80 flex flex-col justify-between hover:border-amber-500/30 transition-all shadow-xl">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                  Em Andamento
-                </span>
-                <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center border border-amber-500/20">
-                  <Clock className="w-5 h-5" />
-                </div>
-              </div>
-              <div className="mt-4">
-                <p className="text-3xl font-extrabold text-white">
-                  {loading ? "..." : (stats?.territoriosEmAndamento ?? 0)}
-                </p>
-                <p className="text-xs text-slate-500 mt-1">Com publicadores</p>
-              </div>
-            </div>
-
-            {/* 4. Número Total de Pedidos */}
-            <div className="p-6 rounded-3xl bg-slate-900/70 border border-slate-800/80 flex flex-col justify-between hover:border-violet-500/30 transition-all shadow-xl">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                  Total Pedidos
-                </span>
-                <div className="w-10 h-10 rounded-xl bg-violet-500/10 text-violet-400 flex items-center justify-center border border-violet-500/20">
-                  <FileText className="w-5 h-5" />
-                </div>
-              </div>
-              <div className="mt-4">
-                <p className="text-3xl font-extrabold text-white">
-                  {loading ? "..." : (stats?.totalPedidos ?? 0)}
-                </p>
-                <p className="text-xs text-slate-500 mt-1">Registrados</p>
-              </div>
-            </div>
-
-            {/* 5. Total de Publicações no Estoque */}
-            <div className="p-6 rounded-3xl bg-slate-900/70 border border-slate-800/80 flex flex-col justify-between hover:border-indigo-500/30 transition-all shadow-xl">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                  Estoque Total
-                </span>
-                <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center border border-indigo-500/20">
-                  <Package className="w-5 h-5" />
-                </div>
-              </div>
-              <div className="mt-4">
-                <p className="text-3xl font-extrabold text-white">
-                  {loading ? "..." : (stats?.totalItensEstoque ?? 0)}
-                </p>
-                <p className="text-xs text-slate-500 mt-1">Itens disponíveis</p>
-              </div>
-            </div>
-
-            {/* 6. Total de Congregações Ativas (Exclusivo ROLE_ADMIN_GERAL) */}
-            {isAdminGeral && (
-              <div className="p-6 rounded-3xl bg-slate-900/70 border border-cyan-500/30 flex flex-col justify-between hover:border-cyan-500/60 transition-all shadow-xl bg-linear-to-br from-slate-900 to-cyan-950/30">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-cyan-300 uppercase tracking-wider">
-                    Congregações
-                  </span>
-                  <div className="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center border border-cyan-500/20">
-                    <Building2 className="w-5 h-5" />
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <p className="text-3xl font-extrabold text-white">
-                    {loading ? "..." : (stats?.totalCongregacoesAtivas ?? 0)}
-                  </p>
-                  <p className="text-xs text-cyan-400/80 mt-1">
-                    Ativas no sistema
-                  </p>
-                </div>
-              </div>
-            )}
           </div>
+
+          {rolesFormatadas.length > 0 && (
+            <div className="relative border-t border-slate-100 bg-slate-50/70 px-5 py-4 sm:px-7 lg:px-8">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+                <div className="flex shrink-0 items-center gap-2 pt-1 text-xs font-semibold text-slate-600">
+                  <ShieldCheck
+                    size={15}
+                    aria-hidden="true"
+                  />
+                  Perfis de acesso
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {rolesFormatadas.map((role, index) => (
+                    <span
+                      key={`${userRoles[index]}-${role}`}
+                      className="inline-flex items-center rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700"
+                    >
+                      {role}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </section>
 
-        {/* Módulos de Acesso e Governança */}
-        {(isAdminGeral || isLiderancaLocal) && (
-          <section className="space-y-4">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-indigo-400" />
-              <h2 className="text-lg font-bold text-white tracking-tight">
-                Gestão e Governança
+        <section className="space-y-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm">
+                <ShieldCheck
+                  size={21}
+                  aria-hidden="true"
+                />
+              </div>
+
+              <div>
+                <h2 className="text-lg font-bold tracking-tight text-slate-900">
+                  Gestão e Governança
+                </h2>
+
+                <p className="mt-1 text-sm text-slate-500">
+                  Funcionalidades disponíveis para o seu perfil.
+                </p>
+              </div>
+            </div>
+
+            <span className="text-xs text-slate-500">
+              {cardsVisiveis.length}{" "}
+              {cardsVisiveis.length === 1
+                ? "área disponível"
+                : "áreas disponíveis"}
+            </span>
+          </div>
+
+          {cardsVisiveis.length > 0 ? (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {cardsVisiveis.map((card) => {
+                const Icone = card.icone;
+                const cores = CORES[card.cor];
+
+                return (
+                  <Card
+                    key={card.rota}
+                    className={`group flex h-full flex-col justify-between gap-5 border border-slate-200 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-6 ${card.corHover}`}
+                  >
+                    <div className="space-y-5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div
+                          className={`flex h-12 w-12 items-center justify-center rounded-xl border ${cores.fundo}`}
+                        >
+                          <Icone
+                            size={23}
+                            strokeWidth={1.8}
+                            className={cores.icone}
+                            aria-hidden="true"
+                          />
+                        </div>
+
+                        <span className="rounded-lg border border-slate-100 bg-slate-50 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                          Gestão
+                        </span>
+                      </div>
+
+                      <div>
+                        <h3 className="text-base font-semibold leading-6 text-slate-900">
+                          {card.titulo}
+                        </h3>
+
+                        <p className="mt-2 text-sm leading-6 text-slate-500">
+                          {card.descricao}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="border-t border-slate-100 pt-4">
+                      <button
+                        type="button"
+                        onClick={() => navigate(card.rota)}
+                        className={`inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border bg-white px-4 py-2.5 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:ring-offset-2 ${cores.botao}`}
+                      >
+                        {card.botao}
+
+                        <ArrowUpRight
+                          size={16}
+                          aria-hidden="true"
+                          className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                        />
+                      </button>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          ) : (
+            <Card className="border border-slate-200 bg-white p-8 text-center shadow-sm">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-500">
+                <ShieldCheck
+                  size={24}
+                  aria-hidden="true"
+                />
+              </div>
+
+              <h3 className="mt-4 text-base font-semibold text-slate-900">
+                Nenhuma área disponível
+              </h3>
+
+              <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
+                Não foi encontrada uma permissão reconhecida para exibir
+                os atalhos deste painel. Entre em contato com o
+                administrador do sistema.
+              </p>
+            </Card>
+          )}
+        </section>
+
+        <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-600">
+              <ShieldCheck
+                size={19}
+                aria-hidden="true"
+              />
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <h2 className="text-sm font-semibold text-slate-900">
+                Sessão e segurança
               </h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {isAdminGeral && (
-                <div className="group relative overflow-hidden rounded-3xl bg-slate-900/70 border border-slate-800 hover:border-indigo-500/40 p-8 transition-all duration-300 flex flex-col justify-between shadow-xl">
-                  <div className="space-y-4 relative z-10">
-                    <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center">
-                      <Building2 className="w-7 h-7" />
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-bold text-white tracking-tight">
-                        Congregações (Multi-Tenant)
-                      </h3>
-                      <p className="text-slate-400 text-sm mt-2">
-                        Cadastre e administre as congregações globais do
-                        sistema.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="pt-8 relative z-10">
-                    <button
-                      onClick={() => navigate("/admin/congregacoes")}
-                      className="w-full py-3.5 px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 transition-all cursor-pointer"
-                    >
-                      <span>Gerenciar Congregações</span>
-                      <ArrowUpRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              )}
 
-              {isLiderancaLocal && (
-                <div className="group relative overflow-hidden rounded-3xl bg-slate-900/70 border border-slate-800 hover:border-cyan-500/40 p-8 transition-all duration-300 flex flex-col justify-between shadow-xl">
-                  <div className="space-y-4 relative z-10">
-                    <div className="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center">
-                      <UserCog className="w-7 h-7" />
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-bold text-white tracking-tight">
-                        Usuários da Congregação
-                      </h3>
-                      <p className="text-slate-400 text-sm mt-2">
-                        Visualize e gerencie os usuários associados e
-                        permissões.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="pt-8 relative z-10">
-                    <button
-                      onClick={() => navigate("/admin/usuarios-congregacao")}
-                      className="w-full py-3.5 px-5 rounded-2xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-sm shadow-lg shadow-cyan-600/25 flex items-center justify-center gap-2 transition-all cursor-pointer"
-                    >
-                      <span>Gerenciar Usuários</span>
-                      <ArrowUpRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </section>
-        )}
+              <p className="mt-1 text-sm leading-6 text-slate-500">
+                {usuario?.congregacaoId != null
+                  ? `Congregação vinculada à sessão: ${usuario.congregacaoId}`
+                  : "Nenhuma congregação identificada na sessão."}
+              </p>
 
-        {/* Atalhos de Navegação Principal */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="p-8 rounded-3xl bg-slate-900/70 border border-slate-800 hover:border-emerald-500/40 transition-all flex flex-col justify-between shadow-xl">
-            <div className="space-y-4">
-              <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                <MapPin className="w-7 h-7" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold text-white">
-                  Gestão de Territórios
-                </h3>
-                <p className="text-sm text-slate-400 mt-2">
-                  Cadastre mapas de quadras, registre saídas e acompanhe prazos.
-                </p>
-              </div>
-            </div>
-            <div className="pt-8">
-              <button
-                onClick={() => navigate("/territorios")}
-                className="w-full py-3.5 px-5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2 transition-all cursor-pointer"
-              >
-                <span>Gerenciar Territórios</span>
-                <ArrowUpRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-
-          <div className="p-8 rounded-3xl bg-slate-900/70 border border-slate-800 hover:border-indigo-500/40 transition-all flex flex-col justify-between shadow-xl">
-            <div className="space-y-4">
-              <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center">
-                <BookOpen className="w-7 h-7" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold text-white">
-                  Gestão de Publicações
-                </h3>
-                <p className="text-sm text-slate-400 mt-2">
-                  Consulte catálogo, faça pedidos e controle os níveis de
-                  estoque.
-                </p>
-              </div>
-            </div>
-            <div className="pt-8">
-              <button
-                onClick={() => navigate("/publicacoes")}
-                className="w-full py-3.5 px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 transition-all cursor-pointer"
-              >
-                <span>Acessar Publicações</span>
-                <ArrowUpRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-
-          {/* Atalho para Gestão de Publicadores */}
-          <div className="p-8 rounded-3xl bg-slate-900/70 border border-slate-800 hover:border-violet-500/40 transition-all flex flex-col justify-between shadow-xl">
-            <div className="space-y-4">
-              <div className="w-14 h-14 rounded-2xl bg-violet-500/10 border border-violet-500/20 text-violet-400 flex items-center justify-center">
-                <UserCog className="w-7 h-7" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold text-white">
-                  Gestão de Publicadores
-                </h3>
-                <p className="text-sm text-slate-400 mt-2">
-                  Acompanhe o cadastro e o envolvimento dos publicadores na
-                  congregação.
-                </p>
-              </div>
-            </div>
-            <div className="pt-8">
-              <button
-                onClick={() => navigate("/publicadores")}
-                className="w-full py-3.5 px-5 rounded-2xl bg-violet-600 hover:bg-violet-500 text-white font-semibold text-sm shadow-lg shadow-violet-600/25 flex items-center justify-center gap-2 transition-all cursor-pointer"
-              >
-                <span>Acessar Publicadores</span>
-                <ArrowUpRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-
-          {/* Atalho para Gestão de Pedidos */}
-          <div className="p-8 rounded-3xl bg-slate-900/70 border border-slate-800 hover:border-violet-500/40 transition-all flex flex-col justify-between shadow-xl">
-            <div className="space-y-4">
-              <div className="w-14 h-14 rounded-2xl bg-violet-500/10 border border-violet-500/20 text-violet-400 flex items-center justify-center">
-                <FileText className="w-7 h-7" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold text-white">
-                  Gestão de Pedidos
-                </h3>
-                <p className="text-sm text-slate-400 mt-2">
-                  Acompanhe solicitações de publicadores e o envio de remessas
-                  para Betel.
-                </p>
-              </div>
-            </div>
-            <div className="pt-8">
-              <button
-                onClick={() => navigate("/pedidos")}
-                className="w-full py-3.5 px-5 rounded-2xl bg-violet-600 hover:bg-violet-500 text-white font-semibold text-sm shadow-lg shadow-violet-600/25 flex items-center justify-center gap-2 transition-all cursor-pointer"
-              >
-                <span>Acessar Pedidos</span>
-                <ArrowUpRight className="w-4 h-4" />
-              </button>
+              <p className="mt-2 text-xs leading-5 text-slate-500">
+                Os atalhos são apresentados conforme os perfis carregados
+                na sessão. As permissões efetivas também devem ser
+                verificadas pelo backend.
+              </p>
             </div>
           </div>
         </section>
@@ -467,3 +440,5 @@ export const Dashboard: React.FC = () => {
     </div>
   );
 };
+
+export default Dashboard;
