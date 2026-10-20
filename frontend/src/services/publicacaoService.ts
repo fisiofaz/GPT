@@ -5,6 +5,7 @@ import type {
   MovimentacaoEstoqueRequest,
   MovimentacaoResponse,
   CatalogoMestreItem,
+  EstatisticasPublicacao,
 } from "../types/publicacao";
 
 export const publicacaoService = {
@@ -31,12 +32,14 @@ export const publicacaoService = {
 
   movimentarEstoque: async (
     publicacaoId: number,
+    congregacaoId: number,
     dto: MovimentacaoEstoqueRequest,
   ): Promise<MovimentacaoResponse> => {
     const response = await api.post<MovimentacaoResponse>(
-      `/publicacoes/${publicacaoId}/movimentar`,
+      `/movimentacoes/publicacao/${publicacaoId}/congregacao/${congregacaoId}`,
       dto,
     );
+
     return response.data;
   },
 
@@ -44,8 +47,9 @@ export const publicacaoService = {
     congregacaoId: number,
   ): Promise<MovimentacaoResponse[]> => {
     const response = await api.get<MovimentacaoResponse[]>(
-      `/publicacoes/congregacao/${congregacaoId}/historico`,
+      `/movimentacoes/congregacao/${congregacaoId}`,
     );
+
     return response.data;
   },
 
@@ -67,8 +71,8 @@ export const publicacaoService = {
     return response.data;
   },
 
-  deletar: async (id: number): Promise<void> => {
-    await api.delete(`/publicacoes/${id}`);
+  deletar: async (id: number, congregacaoId: number): Promise<void> => {
+    await api.delete(`/publicacoes/${id}/congregacao/${congregacaoId}`);
   },
 
   atualizarCatalogoMestre: async (
@@ -84,5 +88,23 @@ export const publicacaoService = {
 
   deletarCatalogoMestre: async (id: number): Promise<void> => {
     await api.delete(`/publicacoes/catalogo-mestre/${id}`);
+  },
+
+  obterEstatisticas: async (
+    congregacaoId: number,
+    inicio: string,
+    fim: string,
+  ): Promise<EstatisticasPublicacao> => {
+    const response = await api.get<EstatisticasPublicacao>(
+      `/publicacoes/congregacao/${congregacaoId}/estatisticas`,
+      {
+        params: {
+          inicio,
+          fim,
+        },
+      },
+    );
+
+    return response.data;
   },
 };

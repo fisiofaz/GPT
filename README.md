@@ -60,7 +60,7 @@ Sistema web completo de alta performance desenvolvido para otimizar e automatiza
 ### 1. Clonar o repositório
 
 ```bash
-git clone [https://github.com/seu-usuario/gpt-sistema.git](https://github.com/seu-usuario/gpt-sistema.git)
+git clone [https://github.com/fisiofaz/GPT](https://github.com/fisiofaz/GPT)
 cd gpt-sistema
 ```
 

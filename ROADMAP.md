@@ -137,3 +137,248 @@ Documento oficial de acompanhamento das fases e engenharia do projeto GPT - Vers
 ---
 
 🚀 **Versão 1.0 oficialmente concluída e pronta para produção!**
+
+---
+
+# 🚀 Roadmap de Desenvolvimento — GPT v2.0
+
+## 📌 Fase 10: Evolução e Hardening do Backend — v2.0 (Concluído)
+
+- [x] **Task 10.1: Externalização de configurações sensíveis**
+  - [x] Remoção de credenciais e segredos do código versionado.
+  - [x] Configuração de variáveis de ambiente.
+  - [x] Criação do `.env.example`.
+  - [x] Ajustes no `application.properties` para utilização de valores externos.
+
+- [x] **Task 10.2: Consolidação da arquitetura de Usuário, Pessoa e Publicador**
+  - [x] Implementação do relacionamento `Usuario → Pessoa → Publicador`.
+  - [x] Associação única entre `Usuario` e `Pessoa`.
+  - [x] Associação única entre `Pessoa` e `Publicador`.
+  - [x] Sincronização dos dados pessoais na atualização do usuário.
+  - [x] Validação da situação ativa do publicador.
+  - [x] Regras de acesso por congregação e perfil.
+
+- [x] **Task 10.3: Refinamento das regras de autorização**
+  - [x] Restrição de operações por congregação.
+  - [x] Proteção contra autoexclusão.
+  - [x] Proteção contra autoinativação.
+  - [x] Restrição de alteração das próprias permissões.
+  - [x] Restrição de atribuição de `ROLE_ADMIN_GERAL`.
+  - [x] Consolidação da role `ROLE_SUPERINTENDENTE_SERVICO`.
+  - [x] Remoção da role legada de publicador.
+
+- [x] **Task 10.4: Consolidação do módulo de Congregações**
+  - [x] CRUD de congregações.
+  - [x] Validações de acesso.
+  - [x] Regras de escopo por congregação.
+  - [x] Testes de integração do módulo.
+
+- [x] **Task 10.5: Evolução do domínio de Territórios**
+  - [x] Exclusão segura de territórios.
+  - [x] Formalização do GeoJSON.
+  - [x] Correção dos relacionamentos com histórico.
+  - [x] Remoção do status legado `DESIGNADO`.
+  - [x] Utilização do usuário autenticado através do `SecurityContext`.
+
+- [x] **Task 10.6: Nova arquitetura de estoque por congregação**
+  - [x] Separação entre catálogo global de publicações e estoque da congregação.
+  - [x] Criação/consolidação da entidade `PublicacaoEstoque`.
+  - [x] Relacionamento `Publicacao → PublicacaoEstoque → Congregacao`.
+  - [x] Restrição única por publicação e congregação.
+  - [x] Controle de quantidade por congregação.
+  - [x] Controle de estoque mínimo por congregação.
+  - [x] Identificação de estoque baixo.
+
+- [x] **Task 10.7: Centralização das movimentações de estoque**
+  - [x] Implementação de `MovimentacaoService`.
+  - [x] Movimentações de `ENTRADA`.
+  - [x] Movimentações de `SAIDA`.
+  - [x] Movimentações de `AJUSTE`.
+  - [x] Registro da quantidade anterior e posterior.
+  - [x] Validação para impedir estoque negativo.
+  - [x] Histórico de movimentações por publicação e congregação.
+
+- [x] **Task 10.8: Integração do módulo de Pedidos com o estoque**
+  - [x] Remoção da alteração direta do estoque pelo `PedidoService`.
+  - [x] Utilização do `MovimentacaoService` para registrar saídas.
+  - [x] Utilização do `MovimentacaoService` para registrar entradas.
+  - [x] Atendimento de pedidos de publicadores com baixa de estoque.
+  - [x] Recebimento de pedidos Betel com entrada no estoque.
+  - [x] Prevenção de movimentações duplicadas.
+
+- [x] **Task 10.9: Testes de integração do domínio**
+  - [x] Testes de integração de Usuário/Pessoa/Publicador.
+  - [x] Testes de integração de Congregação.
+  - [x] Testes de integração de Territórios.
+  - [x] Testes de integração de Estoque.
+  - [x] Testes de integração de Movimentações.
+  - [x] Testes de integração de Pedidos.
+  - [x] Execução completa da suíte de testes.
+  
+  - [x] **Task 10.10: Auditoria da estrutura do frontend**
+  - [x] Revisar estrutura de pastas.
+  - [x] Identificar responsabilidades duplicadas.
+  - [x] Identificar componentes excessivamente grandes.
+  - [x] Identificar regras de negócio diretamente dentro das telas.
+  - [x] Identificar código legado da v1.0.
+
+- [x] **Task 10.11: Revisão do gerenciamento de autenticação**
+  - [x] Revisar `AuthContext`.
+  - [x] Revisar `AuthProvider`.
+  - [x] Revisar `useAuth`.
+  - [x] Revisar persistência do JWT.
+  - [x] Revisar tratamento de expiração do token.
+  - [x] Revisar logout.
+  - [x] Revisar recuperação do usuário autenticado.
+
+- [x] **Task 10.12: Revisão do cliente HTTP**
+  - [x] Revisar configuração do Axios.
+  - [x] Revisar interceptor de autenticação.
+  - [x] Revisar tratamento global de erros.
+  - [x] Padronizar respostas e erros da API.
+  - [x] Eliminar chamadas HTTP duplicadas ou inconsistentes.
+
+- [x] **Task 10.13: Revisão das rotas**
+  - [x] Revisar `RotaPrivada`.
+  - [x] Revisar proteção por autenticação.
+  - [x] Revisar proteção por perfil.
+  - [x] Revisar escopo por congregação.
+  - [x] Centralizar regras de navegação.
+
+- [x] **Task 10.14: Arquitetura de Layout**
+  - [x] Criar/ajustar `AppLayout`.
+  - [x] Centralizar `Header`.
+  - [x] Centralizar `Sidebar`.
+  - [x] Implementar navegação responsiva.
+  - [x] Implementar menu mobile/hamburger.
+  - [x] Centralizar configuração de navegação.
+  - [x] Remover navegação duplicada das páginas.
+
+- [x] **Task 10.15: Padronização visual**
+  - [x] Padronizar componentes de interface.
+  - [x] Padronizar botões.
+  - [x] Padronizar modais.
+  - [x] Padronizar tabelas.
+  - [x] Padronizar formulários.
+  - [x] Padronizar estados de loading.
+  - [x] Padronizar estados vazios.
+  - [x] Padronizar mensagens de erro.
+  - [x] Revisar responsividade.
+  - [x] Revisar acessibilidade.
+
+- [x] **Task 10.16: Revisão dos módulos existentes**
+  - [x] Territórios.
+  - [x] Publicadores.
+  - [x] Publicações.
+  - [x] Movimentações.
+  - [x] Pedidos.
+  - [x] Usuários.
+  - [x] Congregações.
+  - [x] Administração.
+
+- [x] **Task 10.17: Revisão do contrato Backend ↔ Frontend**
+  - [x] Revisar `DashboardStatsDTO`.
+  - [x] Revisar endpoint `/dashboard/estatisticas/{congregacaoId}`.
+  - [x] Revisar autorização por congregação.
+  - [x] Impedir acesso de uma congregação aos dados de outra.
+  - [x] Validar existência da congregação informada.
+
+[x] **Task 11.1: Revisão das métricas**
+- [x] Territórios disponíveis.
+- [x] Territórios em andamento.
+- [x] Territórios trabalhados no ano de serviço.
+- [x] Estoque total da congregação.
+- [x] Pedidos.
+- [x] Congregações ativas para usuários com escopo administrativo.
+
+- [x] **Task 11.2: Histórico de consumo**
+  - [x] Revisar origem dos dados de consumo.
+  - [x] Utilizar movimentações de estoque como fonte oficial.
+  - [x] Considerar movimentações `SAIDA`.
+  - [x] Consolidar consumo mensal.
+  - [x] Preparar consulta agrupada para reduzir quantidade de queries.
+
+- [x] **Task 11.3: Pedido Regular**
+  - [x] Modelagem do fluxo.
+  - [x] Criação do pedido.
+  - [x] Itens do pedido.
+  - [x] Validação de disponibilidade.
+  - [x] Atendimento.
+  - [x] Baixa de estoque através de `MovimentacaoService`.
+
+- [x] **Task 11.4: Pedido Especial**
+  - [x] Solicitação individual por publicador.
+  - [x] Vinculação à publicação.
+  - [x] Controle de status.
+  - [x] Atendimento.
+  - [x] Integração com estoque.
+
+- [x] **Task 11.5: Pedido de Campanha**
+  - [x] Criação de campanhas.
+  - [x] Vinculação de publicações.
+  - [x] Controle de participantes.
+  - [x] Consolidação das quantidades.
+  - [x] Fluxo de atendimento.
+  - [x] Integração com estoque.
+
+- [x] **Task 11.6: Unificação do domínio de pedidos**
+  - [x] Padronizar estados.
+  - [x] Padronizar validações.
+  - [x] Centralizar movimentações.
+  - [x] Evitar alterações diretas no estoque.
+  - [x] Registrar auditoria das operações.
+
+- [x] **Task 11.7: Componentização do Dashboard**
+  - [x] `DashboardHeader`.
+  - [x] `WelcomeBanner`.
+  - [x] `MetricCard`.
+  - [x] `GovernanceSection`.
+  - [x] `QuickAccessCard`.
+  - [x] `ConsumptionChart`.
+  - [x] Componentes de loading.
+  - [x] Componentes de erro.
+
+- [x] **Task 11.8: Deploy**
+  - [x] Deploy do backend.
+  - [x] Deploy do frontend.
+  - [x] Configuração do banco PostgreSQL.
+  - [x] Configuração de domínio.
+  - [x] HTTPS.
+  - [x] Validação do ambiente publicado.
+
+---
+
+## 🎯 Marco da Versão 2.0
+
+A versão **2.0** será considerada concluída após:
+
+- [x] Backend consolidado e aprovado no Pull Request.
+- [x] Arquitetura frontend revisada.
+- [x] Layout e navegação centralizados.
+- [x] Dashboard 2.0 concluído.
+- [x] Fluxos de pedidos regular, especial e campanha implementados.
+- [x] Estoque e movimentações totalmente centralizados.
+- [x] Testes automatizados cobrindo os fluxos críticos.
+- [x] Auditoria e observabilidade revisadas.
+- [x] Frontend e backend preparados para produção.
+- [x] Deploy validado em ambiente de produção.
+
+---
+
+### 📊 Estado atual do projeto
+
+**Versão 1.0:** ✅ Concluída
+
+**Backend v2.0:** ✅ Em consolidação / Pull Request
+
+**Frontend v2.0:** ✅ Em consolidação / Pull Request
+
+**Dashboard 2.0:** ✅ Em consolidação / Pull Request
+
+**Pedidos avançados:** ✅ Em consolidação / Pull Request
+
+**Preparação para produção:** ✅ Em consolidação / Pull Request
+
+---
+
+🚀 **Próximo passo oficial: concluir a revisão e aprovação do Pull Request do backend v2.0 e, em seguida, iniciar a auditoria completa do frontend.**

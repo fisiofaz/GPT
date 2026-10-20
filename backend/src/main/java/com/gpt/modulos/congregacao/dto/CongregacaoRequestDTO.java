@@ -1,11 +1,15 @@
 package com.gpt.modulos.congregacao.dto;
 
 
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.math.BigDecimal;
 
 @Getter
 @Setter
@@ -33,4 +37,24 @@ public class CongregacaoRequestDTO {
     	    message = "O estado deve ser uma UF válida"
     )
     private String estado;
+
+    @DecimalMin(
+        value = "-90.0",
+        message = "A latitude deve estar entre -90 e 90"
+    )
+    @DecimalMax(
+        value = "90.0",
+        message = "A latitude deve estar entre -90 e 90"
+    )
+    private BigDecimal latitude;
+
+    @DecimalMin(
+        value = "-180.0",
+        message = "A longitude deve estar entre -180 e 180"
+    )
+    @DecimalMax(
+        value = "180.0",
+        message = "A longitude deve estar entre -180 e 180"
+    )
+    private BigDecimal longitude;
 }

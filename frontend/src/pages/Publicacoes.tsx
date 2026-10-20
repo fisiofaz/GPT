@@ -1,30 +1,35 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/useAuth";
 import {
-  BookOpen,
-  Search,
-  ArrowLeft,
-  Plus,
-  History,
   AlertTriangle,
-  Loader2,
-  Package,
-  BookMarked,
+  BookOpen,
+  History,
+  Plus,
+  Settings2,
 } from "lucide-react";
+
+import { useCongregacao } from "../context/useCongregacao";
+import { usePublicacoes } from "../hooks/usePublicacoes";
+
+import { PageHeader } from "../components/ui/PageHeader";
+import { FilterBar } from "../components/ui/FilterBar";
+import { SearchInput } from "../components/ui/SearchInput";
+import { Button } from "../components/ui/Button";
+import { LoadingState } from "../components/ui/LoadingState";
+import { EmptyState } from "../components/ui/EmptyState";
+
+import { CardPublicacao } from "../components/publicacoes/CardPublicacao";
+import { ModalPublicacaoForm } from "../components/publicacoes/ModalPublicacaoForm";
+import { ModalMovimentar } from "../components/publicacoes/ModalMovimentar";
+import { ModalHistorico } from "../components/publicacoes/ModalHistorico";
+import { ModalConfirmacaoExclusao } from "../components/publicacoes/ModalConfirmacaoExclusao";
+
 import type {
   Publicacao,
   FormatoPublicacao,
   IdiomaPublicacao,
   TipoMovimentacao,
 } from "../types/publicacao";
-
-import { usePublicacoes } from "../hooks/usePublicacoes";
-import { CardPublicacao } from "../components/publicacoes/CardPublicacao";
-import { ModalPublicacaoForm } from "../components/publicacoes/ModalPublicacaoForm";
-import { ModalMovimentar } from "../components/publicacoes/ModalMovimentar";
-import { ModalHistorico } from "../components/publicacoes/ModalHistorico";
-import { ModalConfirmacaoExclusao } from "../components/publicacoes/ModalConfirmacaoExclusao";
 
 const IDIOMAS_DISPONIVEIS: { valor: IdiomaPublicacao; rotulo: string }[] = [
   { valor: "PORTUGUES", rotulo: "Português" },
@@ -50,9 +55,19 @@ const FORMATOS_DISPONIVEIS: { valor: FormatoPublicacao; rotulo: string }[] = [
   { valor: "DIGITAL_MIDIA", rotulo: "Áudio / Mídia Digital" },
 ];
 
-export const Publicacoes: React.FC = () => {
+const CATEGORIAS = [
+  "TODOS",
+  "BIBLIA",
+  "LIVRO",
+  "BROCHURA",
+  "REVISTA",
+  "FOLHETO",
+  "TRATADO",
+];
+
+export const Publicacoes = () => {
   const navigate = useNavigate();
-  const { usuario } = useAuth();
+  const { congregacaoSelecionadaId } = useCongregacao();
 
   const {
     publicacoes,
@@ -65,7 +80,7 @@ export const Publicacoes: React.FC = () => {
     excluirPublicacao,
     movimentarEstoque,
     carregarHistorico,
-  } = usePublicacoes(usuario?.congregacaoId);
+  } = usePublicacoes(congregacaoSelecionadaId);
 
   // Filtros
   const [busca, setBusca] = useState("");
@@ -75,6 +90,7 @@ export const Publicacoes: React.FC = () => {
   // Modais
   const [modalFormAberto, setModalFormAberto] = useState(false);
   const [itemEmEdicao, setItemEmEdicao] = useState<Publicacao | null>(null);
+  const [processandoExclusao, setProcessandoExclusao] = useState(false);
 
   const [modalMovimentarAberto, setModalMovimentarAberto] = useState(false);
   const [publicacaoParaMovimento, setPublicacaoParaMovimento] =
@@ -85,187 +101,221 @@ export const Publicacoes: React.FC = () => {
   const [publicacaoParaExcluir, setPublicacaoParaExcluir] =
     useState<Publicacao | null>(null);
 
-  const getRotuloIdioma = (idm?: string) => {
-    const item = IDIOMAS_DISPONIVEIS.find((i) => i.valor === idm);
-    return item ? item.rotulo : idm || "Português";
-  };
+  const getRotuloIdioma = (idioma?: string) =>
+    IDIOMAS_DISPONIVEIS.find((item) => item.valor === idioma)?.rotulo ??
+    idioma ??
+    "Não informado";
 
-  const getRotuloFormato = (fmt?: string) => {
-    const item = FORMATOS_DISPONIVEIS.find((f) => f.valor === fmt);
-    return item ? item.rotulo : fmt || "Normal";
-  };
+  const getRotuloFormato = (formato?: string) =>
+    FORMATOS_DISPONIVEIS.find((item) => item.valor === formato)?.rotulo ??
+    formato ??
+    "Não informado";
 
-  const publicacoesFiltradas = publicacoes.filter((p) => {
-    const matchBusca =
-      p.titulo.toLowerCase().includes(busca.toLowerCase()) ||
-      p.codigo.toLowerCase().includes(busca.toLowerCase());
-    const matchCat =
-      filtroCategoria === "TODOS" || p.categoria === filtroCategoria;
-    const matchEstoque = !somenteEstoqueBaixo || p.alertaEstoqueBaixo;
-    return matchBusca && matchCat && matchEstoque;
+  const publicacoesFiltradas = publicacoes.filter((publicacao) => {
+    const termo = busca.trim().toLowerCase();
+    const correspondeBusca =
+      publicacao.titulo.toLowerCase().includes(termo) ||
+      publicacao.codigo.toLowerCase().includes(termo);
+    const correspondeCategoria =
+      filtroCategoria === "TODOS" || publicacao.categoria === filtroCategoria;
+    const correspondeEstoque =
+      !somenteEstoqueBaixo || publicacao.alertaEstoqueBaixo;
+    return correspondeBusca && correspondeCategoria && correspondeEstoque;
   });
 
-  const totalEmAlerta = publicacoes.filter((p) => p.alertaEstoqueBaixo).length;
+  const totalEmAlerta = publicacoes.filter(
+    (publicacao) => publicacao.alertaEstoqueBaixo,
+  ).length;
+
+  const abrirNovaPublicacao = () => {
+    setItemEmEdicao(null);
+    setModalFormAberto(true);
+  };
+
+  const abrirEdicao = (publicacao: Publicacao) => {
+    setItemEmEdicao(publicacao);
+    setModalFormAberto(true);
+  };
+
+  const abrirMovimentacao = (
+    publicacao: Publicacao,
+    tipo: TipoMovimentacao,
+  ) => {
+    setPublicacaoParaMovimento(publicacao);
+    setTipoMovimento(tipo);
+    setModalMovimentarAberto(true);
+  };
+
+  const abrirHistorico = () => {
+    setModalHistoricoAberto(true);
+    void carregarHistorico();
+  };
+
+  const limparFiltros = () => {
+    setBusca("");
+    setFiltroCategoria("TODOS");
+    setSomenteEstoqueBaixo(false);
+  };
+
+  const possuiFiltrosAtivos =
+    busca.trim() !== "" || filtroCategoria !== "TODOS" || somenteEstoqueBaixo;
 
   return (
-    <div className="min-h-screen bg-[#0b0f19] text-slate-100 font-sans pb-16">
-      {/* Header Responsivo */}
-      <header className="sticky top-0 z-40 backdrop-blur-xl bg-[#0b0f19]/80 border-b border-slate-800 print:hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          {/* Lado Esquerdo: Botão Voltar e Títulos */}
-          <div className="flex items-center gap-3 min-w-0">
-            <button
-              onClick={() => navigate("/dashboard")}
-              className="p-2 sm:p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 transition-all shrink-0 cursor-pointer"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <div className="min-w-0">
-              <h1 className="text-base sm:text-xl font-bold text-white flex items-center gap-2 truncate">
-                <BookOpen className="w-5 h-5 text-indigo-400 shrink-0" />
-                <span className="truncate">Estoque de Publicações</span>
-              </h1>
-              <p className="text-xs text-slate-400 truncate">
-                {publicacoes[0]?.congregacaoNome
-                  ? `Congregação: ${publicacoes[0].congregacaoNome}`
-                  : "Controle de balcão e remessas"}
+    <div className="min-h-screen bg-slate-50 px-4 py-6 text-slate-900 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl">
+        <PageHeader
+          titulo="Estoque de Publicações"
+          subtitulo={
+            publicacoes[0]?.congregacaoNome ??
+            "Controle de publicações, estoque e movimentações."
+          }
+          icon={BookOpen}
+          actions={
+            <>
+              <Button variant="secondary" onClick={() => navigate("/catalogo")}>
+                <Settings2 size={16} aria-hidden="true" /> Catálogo geral
+              </Button>
+
+              <Button variant="secondary" onClick={abrirHistorico}>
+                <History size={16} aria-hidden="true" /> Histórico
+              </Button>
+
+              <Button onClick={abrirNovaPublicacao}>
+                <Plus size={16} aria-hidden="true" /> Nova publicação
+              </Button>
+            </>
+          }
+        >
+          <p className="text-sm text-slate-500">
+            Consulte os títulos disponíveis e acompanhe as entradas e saídas do
+            estoque.
+          </p>
+        </PageHeader>
+
+        {totalEmAlerta > 0 && (
+          <div className="mb-5 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
+            <AlertTriangle
+              size={20}
+              className="mt-0.5 shrink-0 text-amber-700"
+              aria-hidden="true"
+            />
+            <div>
+              <p className="text-sm font-semibold text-amber-900">
+                Atenção ao estoque
+              </p>
+              <p className="mt-1 text-sm text-amber-800">
+                {totalEmAlerta}
+                {totalEmAlerta === 1
+                  ? "publicação precisa"
+                  : "publicações precisam"}
+                de atenção por estoque baixo ou zerado.
               </p>
             </div>
           </div>
+        )}
 
-          {/* Lado Direito: Ações do Topo */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 shrink-0 w-full sm:w-auto justify-start sm:justify-end">
-            <button
-              onClick={() => navigate("/catalogo")}
-              className="py-2.5 px-3.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl border border-slate-700 flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer"
+        <FilterBar>
+          <div className="w-full min-w-0 flex-1 lg:min-w-64">
+            <label
+              htmlFor="busca-publicacoes"
+              className="mb-1.5 block text-sm font-medium text-slate-700"
             >
-              <BookMarked className="w-4 h-4 text-indigo-400" />
-              <span>Catálogo Geral</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setModalHistoricoAberto(true);
-                carregarHistorico();
-              }}
-              className="py-2.5 px-3.5 bg-slate-800 hover:bg-slate-700 text-indigo-300 text-xs font-semibold rounded-xl border border-slate-700 shadow-lg flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer"
-            >
-              <History className="w-4 h-4 text-indigo-400" />
-              <span>Histórico</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setItemEmEdicao(null);
-                setModalFormAberto(true);
-              }}
-              className="py-2.5 px-3.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl shadow-lg shadow-indigo-600/30 flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Novo Item</span>
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* Conteúdo Principal */}
-      <main className="max-w-7xl mx-auto px-6 pt-8 space-y-6 print:hidden">
-        {/* Filtros */}
-        <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
-          <div className="relative w-full md:w-96">
-            <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Buscar por código ou título..."
+              Pesquisar publicações
+            </label>
+            <SearchInput
+              id="busca-publicacoes"
               value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-950/60 border border-slate-800 rounded-xl text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+              onChange={(event) => setBusca(event.target.value)}
+              onClear={() => setBusca("")}
+              placeholder="Buscar por código ou título..."
+              aria-label="Buscar publicação por código ou título"
             />
           </div>
 
-          <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto">
-            {[
-              "TODOS",
-              "BIBLIA",
-              "LIVRO",
-              "BROCHURA",
-              "REVISTA",
-              "FOLHETO",
-              "TRATADO",
-            ].map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setFiltroCategoria(cat)}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                  filtroCategoria === cat
-                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
-                    : "bg-slate-800/80 text-slate-400 hover:text-slate-200 border border-slate-700/50"
-                }`}
-              >
-                {cat === "TODOS" ? "Todos" : cat}
-              </button>
-            ))}
-
-            <button
-              onClick={() => setSomenteEstoqueBaixo(!somenteEstoqueBaixo)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all cursor-pointer ${
-                somenteEstoqueBaixo
-                  ? "bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-md"
-                  : "bg-slate-800/80 text-slate-400 hover:text-rose-400 border border-slate-700/50"
-              }`}
+          <div className="w-full lg:w-56">
+            <label
+              htmlFor="filtro-categoria"
+              className="mb-1.5 block text-sm font-medium text-slate-700"
             >
-              <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
-              <span>Abaixo do Mínimo ({totalEmAlerta})</span>
-            </button>
+              Categoria
+            </label>
+            <select
+              id="filtro-categoria"
+              value={filtroCategoria}
+              onChange={(event) => setFiltroCategoria(event.target.value)}
+              className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+            >
+              {CATEGORIAS.map((categoria) => (
+                <option key={categoria} value={categoria}>
+                  {categoria === "TODOS" ? "Todas as categorias" : categoria}
+                </option>
+              ))}
+            </select>
           </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant={somenteEstoqueBaixo ? "primary" : "secondary"}
+              aria-pressed={somenteEstoqueBaixo}
+              onClick={() => setSomenteEstoqueBaixo((atual) => !atual)}
+            >
+              <AlertTriangle size={16} aria-hidden="true" /> Estoque baixo (
+              {totalEmAlerta})
+            </Button>
+            {possuiFiltrosAtivos && (
+              <Button variant="ghost" onClick={limparFiltros}>
+                Limpar filtros
+              </Button>
+            )}
+          </div>
+        </FilterBar>
+
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm text-slate-600">
+            {carregando
+              ? "Carregando publicações..."
+              : `${publicacoesFiltradas.length} ${publicacoesFiltradas.length === 1 ? "publicação encontrada" : "publicações encontradas"}`}
+          </p>
         </div>
 
-        {/* Grid de Cards */}
         {carregando ? (
-          <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-3">
-            <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
-            <p className="text-sm">Carregando estoque de publicações...</p>
-          </div>
+          <LoadingState />
         ) : publicacoesFiltradas.length === 0 ? (
-          <div className="py-16 text-center bg-slate-900/40 rounded-3xl border border-slate-800/80 p-8 space-y-3">
-            <Package className="w-12 h-12 text-slate-600 mx-auto" />
-            <h3 className="text-lg font-bold text-white">
-              Nenhum item encontrado no estoque
-            </h3>
-            <p className="text-xs text-slate-500">
-              Cadastre um novo item ou altere os filtros.
-            </p>
-          </div>
+          <EmptyState
+            title={
+              possuiFiltrosAtivos
+                ? "Nenhuma publicação encontrada"
+                : "Nenhuma publicação cadastrada"
+            }
+            description={
+              possuiFiltrosAtivos
+                ? "Tente alterar os termos da pesquisa ou remover os filtros aplicados."
+                : "Cadastre uma publicação para começar a controlar o estoque."
+            }
+          />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {publicacoesFiltradas.map((item) => (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {publicacoesFiltradas.map((publicacao) => (
               <CardPublicacao
-                key={item.id}
-                item={item}
-                onMovimentar={(pub, tipo) => {
-                  setPublicacaoParaMovimento(pub);
-                  setTipoMovimento(tipo);
-                  setModalMovimentarAberto(true);
-                }}
-                onEditar={(pub) => {
-                  setItemEmEdicao(pub);
-                  setModalFormAberto(true);
-                }}
-                onExcluir={(pub) => setPublicacaoParaExcluir(pub)}
+                key={publicacao.id}
+                item={publicacao}
+                onMovimentar={abrirMovimentacao}
+                onEditar={abrirEdicao}
+                onExcluir={setPublicacaoParaExcluir}
                 rotuloFormato={getRotuloFormato}
                 rotuloIdioma={getRotuloIdioma}
               />
             ))}
           </div>
         )}
-      </main>
+      </div>
 
       {/* Modais */}
       <ModalPublicacaoForm
         aberto={modalFormAberto}
         itemEmEdicao={itemEmEdicao}
         catalogoMestre={catalogoMestre}
-        congregacaoId={usuario?.congregacaoId || 0}
+        congregacaoId={congregacaoSelecionadaId ?? 0}
         formatos={FORMATOS_DISPONIVEIS}
         idiomas={IDIOMAS_DISPONIVEIS}
         onFechar={() => {
@@ -294,18 +344,34 @@ export const Publicacoes: React.FC = () => {
         onFechar={() => setModalHistoricoAberto(false)}
       />
 
-      <ModalConfirmacaoExclusao
-        publicacao={publicacaoParaExcluir}
-        onFechar={() => setPublicacaoParaExcluir(null)}
-        onConfirmar={() => {
-          if (publicacaoParaExcluir) {
-            excluirPublicacao(
-              publicacaoParaExcluir.id,
-              publicacaoParaExcluir.titulo,
-            );
-          }
-        }}
-      />
+    <ModalConfirmacaoExclusao
+      publicacao={publicacaoParaExcluir}
+      processando={processandoExclusao}
+      onFechar={() => {
+        if (!processandoExclusao) {
+          setPublicacaoParaExcluir(null);
+        }
+      }}
+      onConfirmar={async () => {
+        if (!publicacaoParaExcluir || processandoExclusao) return;
+
+        setProcessandoExclusao(true);
+
+        try {
+          await excluirPublicacao(
+            publicacaoParaExcluir.id,
+            publicacaoParaExcluir.titulo,
+          );
+
+          setPublicacaoParaExcluir(null);
+        } catch {
+          // O hook já apresenta a mensagem de erro.
+          // Mantém o modal aberto para permitir nova tentativa.
+        } finally {
+          setProcessandoExclusao(false);
+        }
+      }}
+    />
     </div>
   );
 };

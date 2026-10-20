@@ -1,97 +1,204 @@
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
+
 import { pedidoService } from "../services/pedidoService";
 import { publicacaoService } from "../services/publicacaoService";
 import { publicadorService } from "../services/publicadorService";
+
 import type {
   PedidoPublicador,
-  PedidoPublicadorRequest,
+  PedidoPublicadorCatalogoRequest,
   PedidoBetel,
   PedidoBetelCriarRequest,
   ConferirPedidoBetelRequest,
 } from "../types/pedido";
+
 import type { Publicacao, CatalogoMestreItem } from "../types/publicacao";
+
 import type { Publicador } from "../types/publicador";
+
+type ErroApi = {
+  message?: string;
+  response?: {
+    data?: {
+      message?: string;
+      error?: string;
+      detail?: string;
+    };
+  };
+};
+
+function obterMensagemErro(erro: unknown, mensagemPadrao: string): string {
+  if (typeof erro === "object" && erro !== null) {
+    const apiError = erro as ErroApi;
+
+    const mensagem =
+      apiError.response?.data?.message ??
+      apiError.response?.data?.detail ??
+      apiError.response?.data?.error ??
+      apiError.message;
+
+    if (mensagem?.trim()) {
+      return mensagem;
+    }
+  }
+
+  return mensagemPadrao;
+}
 
 export function usePedidos(congregacaoId?: number | null) {
   const [pedidosPublicadores, setPedidosPublicadores] = useState<
     PedidoPublicador[]
   >([]);
+
   const [pedidosBetel, setPedidosBetel] = useState<PedidoBetel[]>([]);
+
   const [publicacoes, setPublicacoes] = useState<Publicacao[]>([]);
-  const [catalogoMestre, setCatalogoMestre] = useState<CatalogoMestreItem[]>([]);
+
+  const [catalogoMestre, setCatalogoMestre] = useState<CatalogoMestreItem[]>(
+    [],
+  );
+
   const [publicadores, setPublicadores] = useState<Publicador[]>([]);
-  const [carregando, setCarregando] = useState<boolean>(Boolean(congregacaoId));
+
+  const [carregando, setCarregando] = useState(Boolean(congregacaoId));
+
+  const limparDados = useCallback(() => {
+    setPedidosPublicadores([]);
+    setPedidosBetel([]);
+    setPublicacoes([]);
+    setCatalogoMestre([]);
+    setPublicadores([]);
+  }, []);
 
   const recarregar = useCallback(async () => {
-    if (!congregacaoId) return;
+    if (!congregacaoId) {
+      limparDados();
+      setCarregando(false);
+      return;
+    }
+
+    setCarregando(true);
+
     try {
       const id = Number(congregacaoId);
-      const [pubsEspeciais, betelData, pubEstoque, catalogoGeral, pessoas] =
-        await Promise.all([
-          pedidoService.listarPedidosPublicadores(id),
-          pedidoService.listarPedidosBetel(id),
-          publicacaoService.listarPorCongregacao(id),
-          publicacaoService.listarCatalogoMestre().catch(() => []),
-          publicadorService.listarPorCongregacao(id),
-        ]);
-      setPedidosPublicadores(pubsEspeciais);
-      setPedidosBetel(betelData);
-      setPublicacoes(pubEstoque);
-      setCatalogoMestre(catalogoGeral);
-      setPublicadores(pessoas);
-    } catch {
-      toast.error("Erro ao sincronizar pedidos.");
+
+      const [
+        pedidosPublicadoresData,
+        pedidosBetelData,
+        publicacoesData,
+        catalogoData,
+        publicadoresData,
+      ] = await Promise.all([
+        pedidoService.listarPedidosPublicadores(id),
+        pedidoService.listarPedidosBetel(id),
+        publicacaoService.listarPorCongregacao(id),
+        publicacaoService.listarCatalogoMestre(),
+        publicadorService.listarPorCongregacao(id),
+      ]);
+
+      setPedidosPublicadores(pedidosPublicadoresData);
+      setPedidosBetel(pedidosBetelData);
+      setPublicacoes(publicacoesData);
+      setCatalogoMestre(catalogoData);
+      setPublicadores(
+        Array.isArray(publicadoresData)
+          ? publicadoresData
+          : publicadoresData.content,
+      );
+    } catch (erro: unknown) {
+      toast.error(
+        obterMensagemErro(
+          erro,
+          "Não foi possível carregar os dados dos pedidos.",
+        ),
+      );
+      throw erro;
     } finally {
       setCarregando(false);
     }
-  }, [congregacaoId]);
+  }, [congregacaoId, limparDados]);
 
   useEffect(() => {
     let ativo = true;
-    if (!congregacaoId) return;
 
-    const carregarInicial = async () => {
+    if (!congregacaoId) {
+      return () => {
+        ativo = false;
+      };
+    }
+
+    const carregar = async () => {
+      setCarregando(true);
+      
       try {
         const id = Number(congregacaoId);
-        const [pubsEspeciais, betelData, pubEstoque, catalogoGeral, pessoas] =
-          await Promise.all([
-            pedidoService.listarPedidosPublicadores(id),
-            pedidoService.listarPedidosBetel(id),
-            publicacaoService.listarPorCongregacao(id),
-            publicacaoService.listarCatalogoMestre().catch(() => []),
-            publicadorService.listarPorCongregacao(id),
-          ]);
+
+        const [
+          pedidosPublicadoresData,
+          pedidosBetelData,
+          publicacoesData,
+          catalogoData,
+          publicadoresData,
+        ] = await Promise.all([
+          pedidoService.listarPedidosPublicadores(id),
+          pedidoService.listarPedidosBetel(id),
+          publicacaoService.listarPorCongregacao(id),
+          publicacaoService.listarCatalogoMestre(),
+          publicadorService.listarPorCongregacao(id),
+        ]);
+
+        if (!ativo) return;
+
+        setPedidosPublicadores(pedidosPublicadoresData);
+        setPedidosBetel(pedidosBetelData);
+        setPublicacoes(publicacoesData);
+        setCatalogoMestre(catalogoData);
+        setPublicadores(
+          Array.isArray(publicadoresData)
+            ? publicadoresData
+            : publicadoresData.content,
+        );
+      } catch (erro: unknown) {
         if (ativo) {
-          setPedidosPublicadores(pubsEspeciais);
-          setPedidosBetel(betelData);
-          setPublicacoes(pubEstoque);
-          setCatalogoMestre(catalogoGeral);
-          setPublicadores(pessoas);
+          toast.error(
+            obterMensagemErro(
+              erro,
+              "Não foi possível carregar os dados dos pedidos.",
+            ),
+          );
         }
-      } catch {
-        if (ativo) toast.error("Erro ao carregar dados de pedidos.");
       } finally {
-        if (ativo) setCarregando(false);
+        if (ativo) {
+          setCarregando(false);
+        }
       }
     };
 
-    carregarInicial();
+    carregar();
+
     return () => {
       ativo = false;
     };
-  }, [congregacaoId]);
+  }, [congregacaoId, limparDados]);
 
-  const criarPedidoPublicador = async (dto: PedidoPublicadorRequest) => {
+  const criarPedidoPublicador = async (
+    dto: PedidoPublicadorCatalogoRequest,
+  ) => {
     try {
       await pedidoService.criarPedidoPublicador(dto);
+
       toast.success("Pedido do publicador registrado!");
+
       await recarregar();
-    } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : "Falha ao registrar pedido.";
-      toast.error(msg);
-      throw err;
+    } catch (erro: unknown) {
+      toast.error(
+        obterMensagemErro(
+          erro,
+          "Falha ao registrar o pedido do publicador.",
+        ),
+      );
+      throw erro;
     }
   };
 
@@ -102,17 +209,18 @@ export function usePedidos(congregacaoId?: number | null) {
     try {
       if (id) {
         await pedidoService.atualizarPedidoBetel(id, dto);
-        toast.success("Pedido para Betel atualizado com sucesso!");
+        toast.success("Pedido de Betel atualizado com sucesso!");
       } else {
         await pedidoService.criarPedidoBetel(dto);
-        toast.success("Pedido para Betel criado com sucesso!");
+        toast.success("Pedido de Betel criado com sucesso!");
       }
+
       await recarregar();
-    } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : "Falha ao salvar pedido Betel.";
-      toast.error(msg);
-      throw err;
+    } catch (erro: unknown) {
+      toast.error(
+        obterMensagemErro(erro, "Falha ao salvar o pedido de Betel."),
+      );
+      throw erro;
     }
   };
 
@@ -121,8 +229,10 @@ export function usePedidos(congregacaoId?: number | null) {
       await pedidoService.excluirPedidoBetel(id);
       toast.success("Pedido de Betel excluído com sucesso.");
       await recarregar();
-    } catch {
-      toast.error("Falha ao excluir pedido de Betel.");
+    } catch (erro: unknown) {
+      toast.error(
+        obterMensagemErro(erro, "Falha ao excluir o pedido de Betel."),
+      );
     }
   };
 
@@ -131,8 +241,10 @@ export function usePedidos(congregacaoId?: number | null) {
       await pedidoService.atenderPedidoPublicador(id);
       toast.success("Pedido marcado como atendido/entregue!");
       await recarregar();
-    } catch {
-      toast.error("Falha ao atualizar pedido do publicador.");
+    } catch (erro: unknown) {
+      toast.error(
+        obterMensagemErro(erro, "Falha ao atender o pedido do publicador."),
+      );
     }
   };
 
@@ -141,18 +253,22 @@ export function usePedidos(congregacaoId?: number | null) {
       await pedidoService.cancelarPedidoPublicador(id);
       toast.success("Pedido cancelado.");
       await recarregar();
-    } catch {
-      toast.error("Falha ao cancelar pedido.");
+    } catch (erro: unknown) {
+      toast.error(
+        obterMensagemErro(erro, "Falha ao cancelar o pedido do publicador."),
+      );
     }
   };
 
   const marcarComoEnviado = async (id: number) => {
     try {
       await pedidoService.marcarComoEnviado(id);
-      toast.success("Status alterado para ENVIADO.");
+      toast.success("Pedido marcado como enviado.");
       await recarregar();
-    } catch {
-      toast.error("Falha ao marcar como enviado.");
+    } catch (erro: unknown) {
+      toast.error(
+        obterMensagemErro(erro, "Falha ao marcar o pedido como enviado."),
+      );
     }
   };
 
@@ -162,15 +278,14 @@ export function usePedidos(congregacaoId?: number | null) {
   ) => {
     try {
       await pedidoService.registrarRecebimento(id, dto);
-      toast.success(
-        "Remessa conferida! Entrada no estoque realizada automaticamente.",
-      );
       await recarregar();
-    } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : "Falha ao registrar recebimento.";
-      toast.error(msg);
-      throw err;
+
+      toast.success(
+        "Conferência registrada. O estoque foi atualizado conforme as quantidades recebidas.",
+      );
+    } catch (erro: unknown) {
+      toast.error(obterMensagemErro(erro, "Falha ao registrar o recebimento."));
+      throw erro;
     }
   };
 

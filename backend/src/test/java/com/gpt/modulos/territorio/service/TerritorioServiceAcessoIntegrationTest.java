@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
@@ -282,7 +283,8 @@ public class TerritorioServiceAcessoIntegrationTest {
         org.junit.jupiter.api.Assertions.assertThrows(
                 org.springframework.security.access.AccessDeniedException.class,
                 () -> territorioService.listarPorCongregacao(
-                        outraCongregacaoId
+                        outraCongregacaoId,
+                        PageRequest.of(0, 10)
                 )
         );
     }
@@ -349,9 +351,14 @@ public class TerritorioServiceAcessoIntegrationTest {
 
         final Long congregacaoId = congregacao.getId();
 
-        var territorios =
-                territorioService.listarPorCongregacao(congregacaoId);
+        var pagina =
+                territorioService.listarPorCongregacao(
+                        congregacaoId,
+                        PageRequest.of(0, 10)
+                );
 
+        var territorios = pagina.getContent();
+        
         assertThat(territorios)
                 .hasSize(2);
 

@@ -1,13 +1,14 @@
-import React from "react";
+import { UserCheck, X } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { UserCheck, X, Loader2 } from "lucide-react";
+
 import {
   designacaoSchema,
   type DesignacaoFormData,
 } from "../../schemas/territorioSchema";
 import type { Territorio, DesignacaoRequest } from "../../types/territorio";
 import type { Publicador } from "../../types/publicador";
+import { Button } from "../ui/Button";
 
 interface ModalDesignarProps {
   aberto: boolean;
@@ -17,13 +18,13 @@ interface ModalDesignarProps {
   onConfirmar: (territorioId: number, dto: DesignacaoRequest) => Promise<void>;
 }
 
-export const ModalDesignar: React.FC<ModalDesignarProps> = ({
+export function ModalDesignar({
   aberto,
   territorio,
   publicadores,
   onFechar,
   onConfirmar,
-}) => {
+}: ModalDesignarProps) {
   const {
     register,
     handleSubmit,
@@ -37,97 +38,144 @@ export const ModalDesignar: React.FC<ModalDesignarProps> = ({
     },
   });
 
-  if (!aberto || !territorio) return null;
+  if (!aberto || !territorio) {
+    return null;
+  }
 
   const onSubmit = async (data: DesignacaoFormData) => {
     await onConfirmar(territorio.id, {
       publicadorId: Number(data.publicadorId),
       observacoes: data.observacoes || undefined,
     });
+
     reset();
     onFechar();
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-          <div className="flex items-center gap-2">
-            <UserCheck className="w-5 h-5 text-indigo-400" />
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4"
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget && !isSubmitting) {
+          onFechar();
+        }
+      }}
+    >
+      <div
+        className="w-full max-w-lg rounded-xl border border-slate-200 bg-white"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="designar-territorio-title"
+      >
+        <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
+          <div className="flex items-start gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700">
+              <UserCheck size={18} aria-hidden="true" />
+            </div>
+
             <div>
-              <h2 className="text-base font-bold text-white">
-                Designar Território
+              <h2
+                id="designar-territorio-title"
+                className="text-base font-semibold text-slate-900"
+              >
+                Designar território
               </h2>
-              <p className="text-xs text-slate-400">
-                Nº {territorio.numero} - {territorio.nome}
+
+              <p className="mt-1 text-sm text-slate-500">
+                Nº {territorio.numero} — {territorio.nome}
               </p>
             </div>
           </div>
+
           <button
+            type="button"
             onClick={onFechar}
-            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 cursor-pointer"
+            disabled={isSubmitting}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
+            aria-label="Fechar"
           >
-            <X className="w-5 h-5" />
+            <X size={18} aria-hidden="true" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-              Selecione o Publicador
-            </label>
-            <select
-              {...register("publicadorId")}
-              className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
-            >
-              <option value="">Selecione um publicador...</option>
-              {publicadores.map((pub) => (
-                <option key={pub.id} value={pub.id}>
-                  {pub.nome} ({pub.telefone || "Sem telefone"})
-                </option>
-              ))}
-            </select>
-            {errors.publicadorId && (
-              <p className="text-[10px] text-rose-400 mt-1">
-                {errors.publicadorId.message}
-              </p>
-            )}
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <div className="space-y-4 px-5 py-5">
+            <div>
+              <label
+                htmlFor="designacao-publicador"
+                className="mb-1.5 block text-sm font-medium text-slate-700"
+              >
+                Publicador
+              </label>
+
+              <select
+                id="designacao-publicador"
+                {...register("publicadorId")}
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition-colors focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+                aria-invalid={Boolean(errors.publicadorId)}
+                aria-describedby={
+                  errors.publicadorId
+                    ? "designacao-publicador-error"
+                    : undefined
+                }
+              >
+                <option value="">Selecione um publicador...</option>
+
+                {publicadores.map((pub) => (
+                  <option key={pub.id} value={pub.id}>
+                    {pub.nome} ({pub.telefone || "Sem telefone"})
+                  </option>
+                ))}
+              </select>
+
+              {errors.publicadorId && (
+                <p
+                  id="designacao-publicador-error"
+                  className="mt-1.5 text-sm text-rose-600"
+                >
+                  {errors.publicadorId.message}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label
+                htmlFor="designacao-observacoes"
+                className="mb-1.5 block text-sm font-medium text-slate-700"
+              >
+                Observações
+                <span className="ml-1 font-normal text-slate-400">
+                  (opcional)
+                </span>
+              </label>
+
+              <input
+                id="designacao-observacoes"
+                type="text"
+                placeholder="Ex.: Campanha especial, saída aos sábados..."
+                {...register("observacoes")}
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+              />
+            </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-              Observações (Opcional)
-            </label>
-            <input
-              type="text"
-              placeholder="Ex: Campanha especial, saída aos sábados, etc."
-              {...register("observacoes")}
-              className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
-            />
-          </div>
-
-          <div className="pt-3 flex gap-2">
-            <button
+          <div className="flex flex-col-reverse gap-2 border-t border-slate-100 px-5 py-4 sm:flex-row sm:justify-end">
+            <Button
               type="button"
+              variant="secondary"
               onClick={onFechar}
-              className="w-1/2 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl cursor-pointer"
+              disabled={isSubmitting}
             >
               Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-1/2 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl shadow-lg flex items-center justify-center gap-2 cursor-pointer"
-            >
-              {isSubmitting ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                "Confirmar Designação"
-              )}
-            </button>
+            </Button>
+
+            <Button type="submit" variant="primary" loading={isSubmitting}>
+              Confirmar designação
+            </Button>
           </div>
         </form>
       </div>
     </div>
   );
-};
+}

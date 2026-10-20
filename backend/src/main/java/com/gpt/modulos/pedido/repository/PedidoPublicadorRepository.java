@@ -20,13 +20,13 @@ public interface PedidoPublicadorRepository extends JpaRepository<PedidoPublicad
 
     List<PedidoPublicador> findByPedidoBetelId(Long pedidoBetelId);
 
+    boolean existsByPublicadorId(Long publicadorId);
+    
     @Query("SELECT p FROM PedidoPublicador p WHERE p.congregacao.id = :congregacaoId AND p.status = 'PENDENTE'")
     List<PedidoPublicador> buscarPendentesParaConsolidacao(@Param("congregacaoId") Long congregacaoId);
 
-    // Métricas para o Dashboard
     long countByCongregacaoId(Long congregacaoId);
 
-    // Correção: soma diretamente o campo quantidade da própria entidade PedidoPublicador
     @Query("SELECT COALESCE(SUM(p.quantidade), 0) FROM PedidoPublicador p WHERE p.congregacao.id = :congregacaoId AND p.dataSolicitacao BETWEEN :inicio AND :fim")
     long sumItensEntreguesNoPeriodo(
             @Param("congregacaoId") Long congregacaoId,

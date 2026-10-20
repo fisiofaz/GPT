@@ -5,7 +5,6 @@ import com.gpt.modulos.movimentacao.dto.MovimentacaoEstoqueDTO;
 import com.gpt.modulos.movimentacao.dto.MovimentacaoResponseDTO;
 import com.gpt.modulos.movimentacao.service.MovimentacaoService;
 import com.gpt.modulos.usuario.model.Usuario;
-import com.gpt.modulos.usuario.repository.UsuarioRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -21,7 +20,6 @@ import java.util.List;
 public class MovimentacaoController {
 
     private final MovimentacaoService movimentacaoService;
-    private final UsuarioRepository usuarioRepository;
 
     @PostMapping("/publicacao/{publicacaoId}/congregacao/{congregacaoId}")
     @PreAuthorize("""
@@ -122,18 +120,13 @@ public class MovimentacaoController {
     private Usuario obterUsuarioAutenticado(
             Authentication authentication
     ) {
-
         if (authentication == null
-                || authentication.getName() == null) {
+                || !(authentication.getPrincipal() instanceof Usuario usuario)) {
             throw new IllegalArgumentException(
                     "Usuário autenticado não encontrado."
             );
         }
 
-        return usuarioRepository
-                .findByEmail(authentication.getName())
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Usuário autenticado não encontrado."
-                ));
+        return usuario;
     }
 }

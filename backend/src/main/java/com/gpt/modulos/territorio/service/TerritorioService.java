@@ -7,21 +7,29 @@ import com.gpt.modulos.congregacao.model.Congregacao;
 import com.gpt.modulos.congregacao.repository.CongregacaoRepository;
 import com.gpt.modulos.publicador.model.Publicador;
 import com.gpt.modulos.publicador.repository.PublicadorRepository;
+import com.gpt.modulos.territorio.dto.EstatisticasTerritorioResponseDTO;
 import com.gpt.modulos.territorio.dto.GeoJsonPolygonDTO;
 import com.gpt.modulos.territorio.dto.HistoricoTerritorioResponseDTO;
 import com.gpt.modulos.territorio.dto.MovimentacaoTerritorioDTO;
 import com.gpt.modulos.territorio.dto.TerritorioRequestDTO;
 import com.gpt.modulos.territorio.dto.TerritorioResponseDTO;
+import com.gpt.modulos.territorio.dto.TerritorioAtualizacaoDTO;
 import com.gpt.modulos.territorio.enums.StatusTerritorio;
 import com.gpt.modulos.territorio.model.HistoricoTerritorio;
 import com.gpt.modulos.territorio.model.Territorio;
 import com.gpt.modulos.territorio.repository.HistoricoTerritorioRepository;
 import com.gpt.modulos.territorio.repository.TerritorioRepository;
+import com.gpt.shared.dto.PageResponse;
+
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -101,6 +109,45 @@ public class TerritorioService {
     }
     
     @Transactional
+    public TerritorioResponseDTO atualizar(
+            Long territorioId,
+            TerritorioAtualizacaoDTO request
+    ) {
+        Territorio territorio =
+                buscarTerritorioComAcessoPermitido(territorioId);
+
+        String numero = request.getNumero().trim();
+
+        boolean numeroAlterado =
+                !numero.equalsIgnoreCase(territorio.getNumero());
+
+        if (numeroAlterado
+                && territorioRepository.existsByNumeroAndCongregacaoId(
+                        numero,
+                        territorio.getCongregacao().getId()
+                )) {
+
+            throw new IllegalArgumentException(
+                    "Já existe um território com o número "
+                            + numero
+                            + " nesta congregação"
+            );
+        }
+
+        territorio.setNumero(numero);
+        territorio.setNome(request.getNome().trim());
+        territorio.setDescricao(
+                request.getDescricao() != null
+                        ? request.getDescricao().trim()
+                        : null
+        );
+
+        return converterParaResponseDTO(
+                territorioRepository.save(territorio)
+        );
+    }
+    
+    @Transactional
     public void deletar(Long territorioId) {
 
         Territorio territorio =
@@ -145,16 +192,23 @@ public class TerritorioService {
     }
 
     @Transactional(readOnly = true)
-    public List<TerritorioResponseDTO> listarPorCongregacao(Long congregacaoId) {
+    public PageResponse<TerritorioResponseDTO> listarPorCongregacao(
+            Long congregacaoId,
+            Pageable pageable
+    ) {
 
-    	Long congregacaoIdPermitida =
+        Long congregacaoIdPermitida =
                 getCongregacaoIdObrigatoria(congregacaoId);
-    	
-        return territorioRepository
-        		.findByCongregacaoId(congregacaoIdPermitida)
-        		.stream()
-                .map(this::converterParaResponseDTO)
-                .collect(Collectors.toList());
+
+        Page<Territorio> pagina =
+                territorioRepository.findByCongregacaoId(
+                        congregacaoIdPermitida,
+                        pageable
+                );
+
+        return PageResponse.from(
+                pagina.map(this::converterParaResponseDTO)
+        );
     }
 
     @Transactional
@@ -270,16 +324,23 @@ public class TerritorioService {
     }
 
     @Transactional(readOnly = true)
-    public List<HistoricoTerritorioResponseDTO> listarHistoricoGeral(Long congregacaoId) {
-    	
-    	Long congregacaoIdPermitida =
+    public PageResponse<HistoricoTerritorioResponseDTO> listarHistoricoGeral(
+            Long congregacaoId,
+            Pageable pageable
+    ) {
+
+        Long congregacaoIdPermitida =
                 getCongregacaoIdObrigatoria(congregacaoId);
-    	
-        return historicoRepository
-        		.buscarHistoricoGeralPorCongregacao(congregacaoIdPermitida)
-        		.stream()
-                .map(this::converterParaHistoricoDTO)
-                .collect(Collectors.toList());
+
+        Page<HistoricoTerritorio> pagina =
+                historicoRepository.buscarHistoricoGeralPorCongregacao(
+                        congregacaoIdPermitida,
+                        pageable
+                );
+
+        return PageResponse.from(
+                pagina.map(this::converterParaHistoricoDTO)
+        );
     }
     
     private Territorio buscarTerritorioComAcessoPermitido(Long territorioId) {
@@ -421,4 +482,79 @@ public class TerritorioService {
                 .observacoes(h.getObservacoes())
                 .build();
     }
+    
+
+	@Transactional(readOnly = true)
+	public EstatisticasTerritorioResponseDTO obterEstatisticas(
+	        Long congregacaoId,
+	        LocalDate inicio,
+	        LocalDate fim
+	) {
+	    Long congregacaoIdPermitida =
+	            getCongregacaoIdObrigatoria(congregacaoId);
+	
+	    if (inicio == null || fim == null) {
+	        throw new IllegalArgumentException(
+	                "As datas de início e fim são obrigatórias."
+	        );
+	    }
+	
+	    if (inicio.isAfter(fim)) {
+	        throw new IllegalArgumentException(
+	                "A data inicial não pode ser posterior à data final."
+	        );
+	    }
+	
+	    LocalDateTime inicioPeriodo = inicio.atStartOfDay();
+	    LocalDateTime fimPeriodoExclusivo =
+	            fim.plusDays(1).atStartOfDay();
+	
+	    long total = territorioRepository.countByCongregacaoId(
+	            congregacaoIdPermitida
+	    );
+	
+	    long disponiveis =
+	            territorioRepository.countByCongregacaoIdAndStatus(
+	                    congregacaoIdPermitida,
+	                    StatusTerritorio.DISPONIVEL
+	            );
+	
+	    long emTrabalho =
+	            territorioRepository.countByCongregacaoIdAndStatus(
+	                    congregacaoIdPermitida,
+	                    StatusTerritorio.EM_TRABALHO
+	            );
+	
+	    long cadastradosNoPeriodo =
+	            territorioRepository
+	                    .countByCongregacaoIdAndCriadoEmGreaterThanEqualAndCriadoEmLessThan(
+	                            congregacaoIdPermitida,
+	                            inicioPeriodo,
+	                            fimPeriodoExclusivo
+	                    );
+	
+	    long retiradas =
+	            historicoRepository.countRetiradasNoPeriodo(
+	                    congregacaoIdPermitida,
+	                    inicioPeriodo,
+	                    fimPeriodoExclusivo
+	            );
+	
+	    long devolucoes =
+	            historicoRepository.countDevolucoesNoPeriodo(
+	                    congregacaoIdPermitida,
+	                    inicioPeriodo,
+	                    fimPeriodoExclusivo
+	            );
+	
+	    return EstatisticasTerritorioResponseDTO.builder()
+	            .totalTerritorios(total)
+	            .territoriosDisponiveis(disponiveis)
+	            .territoriosEmTrabalho(emTrabalho)
+	            .territoriosCadastradosNoPeriodo(cadastradosNoPeriodo)
+	            .retiradasNoPeriodo(retiradas)
+	            .devolucoesNoPeriodo(devolucoes)
+	            .build();
+	}
+
 }

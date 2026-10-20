@@ -1,6 +1,7 @@
 package com.gpt.modulos.pedido.model;
 
 import com.gpt.modulos.pedido.enums.OrigemItemPedido;
+import com.gpt.modulos.publicacao.model.CatalogoMestre;
 import com.gpt.modulos.publicacao.model.Publicacao;
 
 import jakarta.persistence.*;
@@ -24,8 +25,12 @@ public class ItemPedidoBetel {
     private PedidoBetel pedidoBetel;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "publicacao_id", nullable = false)
+    @JoinColumn(name = "publicacao_id")
     private Publicacao publicacao;
+    
+    @ManyToOne(fetch = FetchType.LAZY) 
+    @JoinColumn(name = "catalogo_mestre_id") 
+    private CatalogoMestre catalogoMestre;
 
     @Column(name = "quantidade_solicitada", nullable = false)
     private Integer quantidadeSolicitada;
@@ -38,4 +43,15 @@ public class ItemPedidoBetel {
     @Column(nullable = false, length = 30)
     @Builder.Default
     private OrigemItemPedido origem = OrigemItemPedido.ESTOQUE;
+    
+    @PrePersist
+    @PreUpdate
+    private void validarReferenciaPublicacao() {
+        if (publicacao == null && catalogoMestre == null) {
+            throw new IllegalStateException(
+                "O item do Pedido Betel deve referenciar "
+                + "uma publicação operacional ou um item do Catálogo Mestre."
+            );
+        }
+    }
 }

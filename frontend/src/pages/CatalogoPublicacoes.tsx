@@ -1,19 +1,30 @@
-import React, { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  BookMarked,
-  Search,
   ArrowLeft,
-  Plus,
-  Loader2,
-  X,
+  BookMarked,
   Globe,
-  Tag,
-  Boxes,
   Pencil,
+  Plus,
+  Tag,
   Trash2,
+  X,
 } from "lucide-react";
+import { toast } from "sonner";
+
 import { publicacaoService } from "../services/publicacaoService";
+
+import { PageHeader } from "../components/ui/PageHeader"; 
+import { Button } from "../components/ui/Button"; 
+import { Badge } from "../components/ui/Badge"; 
+import { Card } from "../components/ui/Card"; 
+import { LoadingState } from "../components/ui/LoadingState"; 
+import { EmptyState } from "../components/ui/EmptyState"; 
+import { ErrorState } from "../components/ui/ErrorState"; 
+import { ConfirmModal } from "../components/ui/ConfirmModal"; 
+import { FilterBar } from "../components/ui/FilterBar"; 
+import { SearchInput } from "../components/ui/SearchInput";
+
 import type {
   CatalogoMestreItem,
   CategoriaPublicacao,
@@ -42,51 +53,76 @@ const FORMATOS: { valor: FormatoPublicacao; rotulo: string }[] = [
   { valor: "DIGITAL_MIDIA", rotulo: "Áudio / Mídia Digital" },
 ];
 
+const CATEGORIAS: { valor: CategoriaPublicacao; rotulo: string; }[] = [ 
+  { valor: "BIBLIA", rotulo: "Bíblia" }, 
+  { valor: "LIVRO", rotulo: "Livro" }, 
+  { valor: "BROCHURA", rotulo: "Brochura" }, 
+  { valor: "REVISTA", rotulo: "Revista" }, 
+  { valor: "FOLHETO", rotulo: "Folheto" }, 
+  { valor: "TRATADO", rotulo: "Tratado" }, 
+  { valor: "CARTAO", rotulo: "Cartão" }, 
+  { valor: "CONVITE", rotulo: "Convite" }, 
+  { valor: "OUTRO", rotulo: "Outro" }, 
+];
+
+type FiltroCategoria = "TODOS" | CategoriaPublicacao;
+
+type FormularioCatalogo = {
+  codigo: string;
+  titulo: string;
+  categoria: CategoriaPublicacao;
+  formato: FormatoPublicacao;
+  idioma: IdiomaPublicacao;
+  descricao: string;
+};
+
+const FORMULARIO_INICIAL: FormularioCatalogo = {
+  codigo: "",
+  titulo: "",
+  categoria: "LIVRO",
+  formato: "NORMAL",
+  idioma: "PORTUGUES",
+  descricao: "",
+};
+
+
 export const CatalogoPublicacoes: React.FC = () => {
   const navigate = useNavigate();
+
   const [itens, setItens] = useState<CatalogoMestreItem[]>([]);
   const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
+  const [atualizacao, setAtualizacao] = useState(0);
+
   const [busca, setBusca] = useState("");
   const [filtroCategoria, setFiltroCategoria] = useState<string>("TODOS");
 
-  // Modais
   const [modalAberto, setModalAberto] = useState(false);
   const [itemEmEdicao, setItemEmEdicao] = useState<CatalogoMestreItem | null>(
     null,
   );
+  const [itemParaExcluir, setItemParaExcluir] =
+    useState<CatalogoMestreItem | null>(null);
+
+  const [formulario, setFormulario] = useState<FormularioCatalogo>(FORMULARIO_INICIAL);
   const [processando, setProcessando] = useState(false);
-
-  // Form States
-  const [codigo, setCodigo] = useState("");
-  const [titulo, setTitulo] = useState("");
-  const [categoria, setCategoria] = useState<CategoriaPublicacao>("LIVRO");
-  const [formato, setFormato] = useState<FormatoPublicacao>("NORMAL");
-  const [idioma, setIdioma] = useState<IdiomaPublicacao>("PORTUGUES");
-  const [descricao, setDescricao] = useState("");
-
-  const carregarCatalogo = async () => {
-    try {
-      const dados = await publicacaoService.listarCatalogoMestre();
-      setItens(dados);
-    } catch {
-      setItens([]);
-    } finally {
-      setCarregando(false);
-    }
-  };
 
   useEffect(() => {
     let ativo = true;
 
-    const carregar = async () => {
+    const buscarCatalogo = async () => {
+      setCarregando(true);
+      setErro(null);
       try {
         const dados = await publicacaoService.listarCatalogoMestre();
         if (ativo) {
           setItens(dados);
         }
-      } catch {
+      } catch (err) {
+        console.error("[Catálogo] Erro ao carregar modelos:", err);
         if (ativo) {
           setItens([]);
+          toast.error("Erro ao carregar o catálogo de publicações.");
         }
       } finally {
         if (ativo) {
@@ -95,363 +131,589 @@ export const CatalogoPublicacoes: React.FC = () => {
       }
     };
 
-    carregar();
+    void buscarCatalogo();
 
     return () => {
       ativo = false;
     };
-  }, []);
+  }, [atualizacao]);
+
+  const itensFiltrados = useMemo(() => {
+    const termo = busca.trim().toLocaleLowerCase();
+    
+    return itens.filter((item) => {
+      const correspondeBusca =
+        item.codigo.toLocaleLowerCase().includes(termo) ||
+        item.titulo.toLocaleLowerCase().includes(termo);
+      
+        const correspondeCategoria =
+        filtroCategoria === "TODOS" || item.categoria === filtroCategoria;
+      
+        return correspondeBusca && correspondeCategoria;
+    });
+  }, [itens, busca, filtroCategoria]);
+
+  const atualizarCatalogo = () => {
+    setAtualizacao((valor) => valor + 1);
+  };
 
   const abrirModalNovo = () => {
     setItemEmEdicao(null);
-    setCodigo("");
-    setTitulo("");
-    setCategoria("LIVRO");
-    setFormato("NORMAL");
-    setIdioma("PORTUGUES");
-    setDescricao("");
+    setFormulario({ ...FORMULARIO_INICIAL });
     setModalAberto(true);
   };
 
   const abrirModalEditar = (item: CatalogoMestreItem) => {
     setItemEmEdicao(item);
-    setCodigo(item.codigo);
-    setTitulo(item.titulo);
-    setCategoria(item.categoria);
-    setFormato(item.formato);
-    setIdioma(item.idioma);
-    setDescricao(item.descricao || "");
+    setFormulario({
+      codigo: item.codigo,
+      titulo: item.titulo,
+      categoria: item.categoria,
+      formato: item.formato,
+      idioma: item.idioma,
+      descricao: item.descricao ?? "",
+    });
     setModalAberto(true);
   };
 
-  const handleSalvar = async (e: React.FormEvent) => {
+  const fecharModal = () => { 
+    if (processando) return; 
+    setModalAberto(false); 
+    setItemEmEdicao(null); 
+    setFormulario({ ...FORMULARIO_INICIAL }); 
+  };
+
+  const handleSalvar = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (processando) return;
+
+    const codigoNormalizado = formulario.codigo.trim().toLowerCase();
+    const tituloNormalizado = formulario.titulo.trim();
+
+    if (!codigoNormalizado || !tituloNormalizado) {
+      toast.error("Preencha o código e o título da publicação.");
+      return;
+    }
+
     setProcessando(true);
+    
     try {
+      const dto = {
+        codigo: codigoNormalizado,
+        titulo: tituloNormalizado,
+        categoria: formulario.categoria,
+        formato: formulario.formato,
+        idioma: formulario.idioma,
+        descricao: formulario.descricao.trim() || undefined,
+      };
+
       if (itemEmEdicao) {
-        // Atualizar
-        await publicacaoService.atualizarCatalogoMestre(itemEmEdicao.id, {
-          codigo: codigo.trim().toLowerCase(),
-          titulo: titulo.trim(),
-          categoria,
-          formato,
-          idioma,
-          descricao: descricao.trim() || undefined,
-        });
+        await publicacaoService.atualizarCatalogoMestre(itemEmEdicao.id, dto);
+
+        toast.success("Modelo atualizado com sucesso!");
       } else {
-        // Criar Novo
-        await publicacaoService.salvarNoCatalogoMestre({
-          codigo: codigo.trim().toLowerCase(),
-          titulo: titulo.trim(),
-          categoria,
-          formato,
-          idioma,
-          descricao: descricao.trim() || undefined,
-        });
+        await publicacaoService.salvarNoCatalogoMestre(dto);
+        toast.success("Modelo adicionado com sucesso!");
       }
 
       setModalAberto(false);
       setItemEmEdicao(null);
-      await carregarCatalogo();
-    } catch (err: unknown) {
-      const msg =
-        err instanceof Error
-          ? err.message
-          : "Erro ao salvar modelo no catálogo.";
-      alert(msg);
+      formulario.codigo.trim().toLowerCase();
+    } catch (error: unknown) {
+      console.error("[Catálogo] Erro ao salvar modelo:", error);
+
+      toast.error( error instanceof Error ? error.message : "Erro ao salvar modelo no catálogo.", );
     } finally {
       setProcessando(false);
     }
   };
 
-  const handleExcluir = async (item: CatalogoMestreItem) => {
-    const confirmou = window.confirm(
-      `Tem certeza que deseja excluir o modelo "${item.titulo}" (${item.codigo}) do Catálogo Geral?`,
-    );
-    if (!confirmou) return;
+  const handleExcluir = async () => {
+    if (!itemParaExcluir || processando) return;
+
+    setProcessando(true);
 
     try {
-      await publicacaoService.deletarCatalogoMestre(item.id);
-      await carregarCatalogo();
-    } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : "Erro ao excluir modelo.";
-      alert(msg);
+      await publicacaoService.deletarCatalogoMestre(itemParaExcluir.id);
+
+      toast.success("Modelo removido do catálogo com sucesso!");
+      setItemParaExcluir(null); 
+      atualizarCatalogo();
+    } catch (error: unknown) {
+      console.error("[Catálogo] Erro ao excluir modelo:", error);
+
+      toast.error( error instanceof Error ? error.message : "Erro ao excluir modelo do catálogo.", );
+    } finally {
+      setProcessando(false);
     }
   };
 
-  const itensFiltrados = itens.filter((i) => {
-    const matchBusca =
-      i.titulo.toLowerCase().includes(busca.toLowerCase()) ||
-      i.codigo.toLowerCase().includes(busca.toLowerCase());
-    const matchCat =
-      filtroCategoria === "TODOS" || i.categoria === filtroCategoria;
-    return matchBusca && matchCat;
-  });
+  const atualizarCampo = <K extends keyof FormularioCatalogo>( 
+    campo: K, 
+    valor: FormularioCatalogo[K], 
+  ) => { 
+    setFormulario((atual) => ({ 
+      ...atual, 
+      [campo]: valor, }
+    )); 
+  };
+
+  const nomeCategoria = (valor: CategoriaPublicacao) =>
+    CATEGORIAS.find((categoria) => categoria.valor === valor)?.rotulo ?? valor;
+  
+  const nomeFormato = (valor: FormatoPublicacao) =>
+    FORMATOS.find((formato) => formato.valor === valor)?.rotulo ?? valor;
+  
+  const nomeIdioma = (valor: IdiomaPublicacao) =>
+    IDIOMAS.find((idioma) => idioma.valor === valor)?.rotulo ?? valor;
+  
+  const tituloConfirmacao = "Excluir modelo do catálogo";
+  
+  const mensagemConfirmacao = itemParaExcluir
+    ? `Deseja realmente excluir "${itemParaExcluir.titulo}" (${itemParaExcluir.codigo}) do Catálogo Geral? Esta ação não poderá ser desfeita.`
+    : "";
 
   return (
-    <div className="min-h-screen bg-[#0b0f19] text-slate-100 font-sans pb-16">
-      {/* Header Responsivo */}
-      <header className="sticky top-0 z-40 backdrop-blur-xl bg-[#0b0f19]/80 border-b border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:h-20 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-3 min-w-0">
-            <button
+    <div className="space-y-6">
+      <PageHeader
+        titulo="Catálogo Geral de Publicações"
+        subtitulo="Gerencie os modelos mestres utilizados no cadastro de publicações."
+        icon={BookMarked}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant="secondary"
               onClick={() => navigate("/publicacoes")}
-              className="p-2 sm:p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 transition-all shrink-0 cursor-pointer"
             >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <div className="min-w-0">
-              <h1 className="text-base sm:text-xl font-bold text-white flex items-center gap-2 truncate">
-                <BookMarked className="w-5 h-5 text-indigo-400 shrink-0" />
-                <span className="truncate">Catálogo Geral de Publicações</span>
-              </h1>
-              <p className="text-xs text-slate-400 truncate">
-                Modelos mestres pré-definidos para autopreenchimento
-              </p>
-            </div>
-          </div>
+              <ArrowLeft size={16} /> Voltar ao estoque
+            </Button>
 
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 shrink-0 w-full sm:w-auto justify-start sm:justify-end">
-            <button
-              onClick={() => navigate("/publicacoes")}
-              className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl border border-slate-700 flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer"
-            >
-              <Boxes className="w-4 h-4 text-indigo-400" />
-              <span>Ver Estoque da Congregação</span>
-            </button>
-
-            <button
+            <Button
+              type="button"
               onClick={abrirModalNovo}
-              className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl shadow-lg shadow-indigo-600/30 flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer"
+              disabled={processando}
             >
-              <Plus className="w-4 h-4" />
-              <span>Novo Modelo</span>
-            </button>
+              <Plus size={16} /> Novo modelo
+            </Button>
           </div>
+        }
+      />
+
+      <Card className="overflow-hidden p-0">
+        <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-slate-900">
+              Modelos cadastrados
+            </h2>
+            <p className="mt-1 text-xs text-slate-500">
+              {itens.length}{" "}
+              {itens.length === 1
+                ? "modelo no catálogo"
+                : "modelos no catálogo"}
+            </p>
+          </div>
+
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={atualizarCatalogo}
+            disabled={carregando || processando}
+          >
+            Atualizar catálogo
+          </Button>
         </div>
-      </header>
 
-      {/* Main */}
-      <main className="max-w-7xl mx-auto px-6 pt-8 space-y-6">
-        {/* Filtros */}
-        <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
-          <div className="relative w-full md:w-96">
-            <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Buscar por código ou título..."
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-950/60 border border-slate-800 rounded-xl text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
-            />
-          </div>
-
-          <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto">
-            {[
-              "TODOS",
-              "BIBLIA",
-              "LIVRO",
-              "BROCHURA",
-              "REVISTA",
-              "FOLHETO",
-              "TRATADO",
-            ].map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setFiltroCategoria(cat)}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                  filtroCategoria === cat
-                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
-                    : "bg-slate-800/80 text-slate-400 hover:text-slate-200 border border-slate-700/50"
-                }`}
+        <div className="p-5">
+          <FilterBar className="mb-0">
+            <div className="w-full lg:max-w-md lg:flex-1">
+              <label
+                htmlFor="busca-catalogo"
+                className="mb-1.5 block text-xs font-medium text-slate-700"
               >
-                {cat === "TODOS" ? "Todos" : cat}
-              </button>
-            ))}
-          </div>
-        </div>
+                Pesquisar publicação
+              </label>
 
-        {/* Tabela do Catálogo */}
-        {carregando ? (
-          <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-3">
-            <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
-            <p className="text-sm">Carregando catálogo mestre...</p>
-          </div>
-        ) : (
-          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-            <table className="w-full text-left text-xs text-slate-300">
-              <thead className="bg-slate-950 text-slate-400 font-semibold border-b border-slate-800 uppercase tracking-wider">
-                <tr>
-                  <th className="py-3.5 px-4">Código</th>
-                  <th className="py-3.5 px-4">Título da Publicação</th>
-                  <th className="py-3.5 px-4">Categoria</th>
-                  <th className="py-3.5 px-4">Formato</th>
-                  <th className="py-3.5 px-4">Idioma</th>
-                  <th className="py-3.5 px-4">Descrição / Notas</th>
-                  <th className="py-3.5 px-4 text-center">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/60 bg-slate-900/40">
-                {itensFiltrados.map((item) => (
-                  <tr
-                    key={item.id}
-                    className="hover:bg-slate-800/30 transition-colors"
-                  >
-                    <td className="py-3 px-4 font-mono font-bold text-indigo-400">
-                      {item.codigo}
-                    </td>
-                    <td className="py-3 px-4 font-medium text-white">
-                      {item.titulo}
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700 uppercase">
-                        {item.categoria}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-slate-300">{item.formato}</td>
-                    <td className="py-3 px-4 text-slate-300">
-                      <div className="flex items-center gap-1.5">
-                        <Globe className="w-3.5 h-3.5 text-slate-500" />
-                        <span>{item.idioma}</span>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 text-slate-400 italic">
-                      {item.descricao || "-"}
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      <div className="flex items-center justify-center gap-1.5">
-                        <button
-                          onClick={() => abrirModalEditar(item)}
-                          className="p-1.5 text-slate-400 hover:text-indigo-300 hover:bg-slate-800 rounded-lg transition-all cursor-pointer"
-                          title="Editar modelo"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleExcluir(item)}
-                          className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-all cursor-pointer"
-                          title="Excluir do catálogo"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+              <SearchInput
+                id="busca-catalogo"
+                value={busca}
+                onChange={(event) => setBusca(event.target.value)}
+                onClear={() => setBusca("")}
+                placeholder="Buscar por código ou título..."
+                aria-label="Buscar por código ou título"
+              />
+            </div>
+
+            <div className="w-full lg:w-auto">
+              <label
+                htmlFor="filtro-categoria"
+                className="mb-1.5 block text-xs font-medium text-slate-700"
+              >
+                Categoria
+              </label>
+
+              <select
+                id="filtro-categoria"
+                value={filtroCategoria}
+                onChange={(event) =>
+                  setFiltroCategoria(event.target.value as FiltroCategoria)
+                }
+                className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200 lg:min-w-48"
+              >
+                <option value="TODOS">Todas as categorias</option>
+
+                {CATEGORIAS.map((categoria) => (
+                  <option key={categoria.valor} value={categoria.valor}>
+                    {categoria.rotulo}
+                  </option>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </main>
+              </select>
+            </div>
 
-      {/* Modal: Novo / Editar Modelo */}
-      {modalAberto && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
-                <Tag className="w-4 h-4 text-indigo-400" />
-                {itemEmEdicao
-                  ? `Editar Modelo: ${itemEmEdicao.codigo}`
-                  : "Cadastrar Item no Catálogo Mestre"}
-              </h2>
-              <button
-                onClick={() => setModalAberto(false)}
-                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 cursor-pointer"
+            {(busca || filtroCategoria !== "TODOS") && (
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  setBusca("");
+                  setFiltroCategoria("TODOS");
+                }}
               >
-                <X className="w-5 h-5" />
+                Limpar filtros
+              </Button>
+            )}
+          </FilterBar>
+
+          {carregando && (
+            <div className="py-10">
+              <LoadingState />
+            </div>
+          )}
+
+          {!carregando && erro && (
+            <div className="py-10">
+              <ErrorState message={erro} onRetry={atualizarCatalogo} />
+            </div>
+          )}
+
+          {!carregando && !erro && itens.length === 0 && (
+            <div className="py-10">
+              <EmptyState
+                title="Nenhum modelo cadastrado"
+                description="O catálogo mestre ainda não possui publicações. Cadastre um modelo para facilitar os próximos registros."
+                action={
+                  <Button type="button" onClick={abrirModalNovo}>
+                    <Plus size={16} /> Cadastrar modelo
+                  </Button>
+                }
+              />
+            </div>
+          )}
+
+          {!carregando &&
+            !erro &&
+            itens.length > 0 &&
+            itensFiltrados.length === 0 && (
+              <div className="py-10">
+                <EmptyState
+                  title="Nenhum resultado encontrado"
+                  description="Não há modelos que correspondam à pesquisa e à categoria selecionada."
+                  action={
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => {
+                        setBusca("");
+                        setFiltroCategoria("TODOS");
+                      }}
+                    >
+                      Limpar filtros
+                    </Button>
+                  }
+                />
+              </div>
+            )}
+
+          {!carregando && !erro && itensFiltrados.length > 0 && (
+            <div className="overflow-x-auto rounded-lg border border-slate-200">
+              <table className="min-w-full text-sm">
+                <thead className="border-b border-slate-200 bg-slate-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                      Código
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                      Publicação
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                      Categoria
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                      Formato
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                      Idioma
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                      Descrição
+                    </th>
+                    <th className="px-4 py-3 text-right font-semibold text-slate-700">
+                      Ações
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {itensFiltrados.map((item) => (
+                    <tr
+                      key={item.id}
+                      className="transition-colors hover:bg-slate-50"
+                    >
+                      <td className="whitespace-nowrap px-4 py-3 font-mono text-xs font-semibold text-slate-700">
+                        {item.codigo}
+                      </td>
+                      <td className="min-w-52 px-4 py-3">
+                        <div className="flex items-start gap-2">
+                          <BookMarked
+                            size={16}
+                            className="mt-0.5 shrink-0 text-slate-400"
+                          />
+                          <span className="font-medium text-slate-900">
+                            {item.titulo}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3">
+                        <Badge variant="info">
+                          {nomeCategoria(item.categoria)}
+                        </Badge>
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 text-slate-600">
+                        {nomeFormato(item.formato)}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3">
+                        <span className="inline-flex items-center gap-1.5 text-slate-600">
+                          <Globe size={14} className="text-slate-400" />
+                          {nomeIdioma(item.idioma)}
+                        </span>
+                      </td>
+                      <td className="min-w-48 max-w-xs px-4 py-3 text-slate-500">
+                        <span className="line-clamp-2">
+                          {item.descricao || "—"}
+                        </span>
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            type="button"
+                            disabled={processando}
+                            onClick={() => abrirModalEditar(item)}
+                            title="Editar modelo"
+                            aria-label={`Editar modelo ${item.titulo}`}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <Pencil size={16} />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={processando}
+                            onClick={() => setItemParaExcluir(item)}
+                            title="Excluir modelo"
+                            aria-label={`Excluir modelo ${item.titulo}`}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-200 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {!carregando && !erro && itens.length > 0 && (
+            <p className="mt-3 text-xs text-slate-500">
+              Exibindo {itensFiltrados.length} de {itens.length} modelos.
+            </p>
+          )}
+        </div>
+      </Card>
+
+      {modalAberto && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/50 p-4"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) fecharModal();
+          }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="titulo-modal-catalogo"
+            className="my-auto w-full max-w-2xl rounded-2xl border border-slate-200 bg-white shadow-xl"
+          >
+            <div className="flex items-center justify-between gap-4 border-b border-slate-200 px-5 py-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
+                  <Tag size={19} />
+                </div>
+
+                <div>
+                  <h2
+                    id="titulo-modal-catalogo"
+                    className="text-base font-semibold text-slate-900"
+                  >
+                    {itemEmEdicao ? "Editar modelo" : "Novo modelo"}
+                  </h2>
+
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    Catálogo mestre de publicações
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={fecharModal}
+                disabled={processando}
+                aria-label="Fechar formulário"
+                className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50"
+              >
+                <span aria-hidden="true">
+                  <X className="w-5 h-5" />
+                </span>
               </button>
             </div>
 
-            <form onSubmit={handleSalvar} className="space-y-3">
-              <div className="grid grid-cols-3 gap-3">
+            <form onSubmit={handleSalvar} className="space-y-5 p-5">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                    Código Oficial
+                  <label
+                    htmlFor="codigo-publicacao"
+                    className="mb-1.5 block text-sm font-medium text-slate-700"
+                  >
+                    Código Oficial *
                   </label>
+
                   <input
+                    id="codigo-publicacao"
                     type="text"
                     required
+                    maxLength={100}
+                    autoComplete="off"
                     placeholder="Ex: lff-grande"
-                    value={codigo}
-                    onChange={(e) => setCodigo(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
+                    value={formulario.codigo}
+                    onChange={(event) =>
+                      atualizarCampo("codigo", event.target.value)
+                    }
+                    disabled={processando}
+                    className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 font-mono text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200 disabled:bg-slate-50"
                   />
                 </div>
 
-                <div className="col-span-2">
-                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                    Categoria
+                <div className="sm:col-span-2">
+                  <label
+                    htmlFor="categoria-publicacao"
+                    className="mb-1.5 block text-sm font-medium text-slate-700"
+                  >
+                    Categoria *
                   </label>
                   <select
-                    value={categoria}
-                    onChange={(e) =>
-                      setCategoria(e.target.value as CategoriaPublicacao)
+                    id="categoria-publicacao"
+                    required
+                    value={formulario.categoria}
+                    onChange={(event) =>
+                      atualizarCampo(
+                        "categoria",
+                        event.target.value as CategoriaPublicacao,
+                      )
                     }
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
+                    disabled={processando}
+                    className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200 disabled:bg-slate-50"
                   >
-                    <option value="BIBLIA">Bíblia</option>
-                    <option value="LIVRO">Livro</option>
-                    <option value="BROCHURA">Brochura</option>
-                    <option value="REVISTA">Revista</option>
-                    <option value="FOLHETO">Folheto</option>
-                    <option value="TRATADO">Tratado</option>
-                    <option value="CARTAO">Cartão</option>
-                    <option value="CONVITE">Convite</option>
-                    <option value="OUTRO">Outro</option>
+                    {CATEGORIAS.map((categoria) => (
+                      <option key={categoria.valor} value={categoria.valor}>
+                        {categoria.rotulo}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                  Título Oficial
+                <label
+                  htmlFor="titulo-publicacao"
+                  className="mb-1.5 block text-sm font-medium text-slate-700"
+                >
+                  Título Oficial *
                 </label>
                 <input
+                  id="titulo-publicacao"
                   type="text"
                   required
+                  maxLength={255}
                   placeholder="Ex: Seja Feliz para Sempre! (Edição Letra Grande)"
-                  value={titulo}
-                  onChange={(e) => setTitulo(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
+                  value={formulario.titulo}
+                  onChange={(event) =>
+                    atualizarCampo("titulo", event.target.value)
+                  }
+                  disabled={processando}
+                  className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200 disabled:bg-slate-50"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                    Formato / Tamanho
+                  <label
+                    htmlFor="formato-publicacao"
+                    className="mb-1.5 block text-sm font-medium text-slate-700"
+                  >
+                    Formato / Tamanho *
                   </label>
                   <select
-                    value={formato}
-                    onChange={(e) =>
-                      setFormato(e.target.value as FormatoPublicacao)
+                    id="formato-publicacao"
+                    value={formulario.formato}
+                    onChange={(event) =>
+                      atualizarCampo(
+                        "formato",
+                        event.target.value as FormatoPublicacao,
+                      )
                     }
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
+                    disabled={processando}
+                    className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200 disabled:bg-slate-50"
                   >
-                    {FORMATOS.map((f) => (
-                      <option key={f.valor} value={f.valor}>
-                        {f.rotulo}
+                    {FORMATOS.map((formato) => (
+                      <option key={formato.valor} value={formato.valor}>
+                        {formato.rotulo}
                       </option>
                     ))}
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                  <label
+                    htmlFor="idioma-publicacao"
+                    className="mb-1.5 block text-sm font-medium text-slate-700"
+                  >
                     Idioma
                   </label>
                   <select
-                    value={idioma}
-                    onChange={(e) =>
-                      setIdioma(e.target.value as IdiomaPublicacao)
+                    id="idioma-publicacao"
+                    value={formulario.idioma}
+                    onChange={(event) =>
+                      atualizarCampo(
+                        "idioma",
+                        event.target.value as IdiomaPublicacao,
+                      )
                     }
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
+                    disabled={processando}
+                    className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200 disabled:bg-slate-50"
                   >
-                    {IDIOMAS.map((i) => (
-                      <option key={i.valor} value={i.valor}>
-                        {i.rotulo}
+                    {IDIOMAS.map((idioma) => (
+                      <option key={idioma.valor} value={idioma.valor}>
+                        {idioma.rotulo}
                       </option>
                     ))}
                   </select>
@@ -459,44 +721,61 @@ export const CatalogoPublicacoes: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                <label
+                  htmlFor="descricao-publicacao"
+                  className="mb-1.5 block text-sm font-medium text-slate-700"
+                >
                   Descrição / Notas
                 </label>
-                <input
-                  type="text"
+                <textarea
+                  id="descricao-publicacao"
+                  rows={3}
+                  maxLength={1000}
                   placeholder="Ex: Utilizado para estudos com pessoas com deficiência visual"
-                  value={descricao}
-                  onChange={(e) => setDescricao(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
+                  value={formulario.descricao}
+                  onChange={(event) =>
+                    atualizarCampo("descricao", event.target.value)
+                  }
+                  disabled={processando}
+                  className="w-full resize-y rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200 disabled:bg-slate-50"
                 />
               </div>
 
-              <div className="pt-3 flex gap-2">
+              <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
                 <button
                   type="button"
-                  onClick={() => setModalAberto(false)}
-                  className="w-1/2 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl cursor-pointer"
+
+                  disabled={processando}
+                  onClick={fecharModal}
                 >
                   Cancelar
                 </button>
-                <button
-                  type="submit"
-                  disabled={processando}
-                  className="w-1/2 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl shadow-lg flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  {processando ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : itemEmEdicao ? (
-                    "Salvar Alterações"
-                  ) : (
-                    "Salvar no Catálogo"
-                  )}
+
+                <button type="submit" disabled={processando}>
+                  {processando
+                    ? "Salvando..."
+                    : itemEmEdicao
+                      ? "Salvar alterações"
+                      : "Salvar no catálogo"}
                 </button>
               </div>
             </form>
-          </div>
+          </section>
         </div>
       )}
+
+      <ConfirmModal 
+        aberto={itemParaExcluir !== null} 
+        titulo={tituloConfirmacao} 
+        mensagem={mensagemConfirmacao} 
+        confirmLabel="Excluir modelo" 
+        cancelLabel="Cancelar" 
+        variant="danger" 
+        loading={processando} 
+        onConfirmar={() => void handleExcluir()} onCancelar={() => { 
+          if (!processando) setItemParaExcluir(null); 
+        }} 
+      />
     </div>
   );
 };

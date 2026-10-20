@@ -1,6 +1,7 @@
 package com.gpt.modulos.publicacao.controller;
 
 import com.gpt.modulos.publicacao.dto.*;
+import com.gpt.modulos.publicacao.dto.EstatisticasPublicacaoResponseDTO;
 import com.gpt.modulos.publicacao.model.CatalogoMestre;
 import com.gpt.modulos.publicacao.repository.CatalogoMestreRepository;
 import com.gpt.modulos.publicacao.service.PublicacaoService;
@@ -13,8 +14,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
+import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/publicacoes") 
@@ -103,10 +106,32 @@ public class PublicacaoController {
         return ResponseEntity.ok(publicacaoService.atualizar(id, dto));
     }
 
-    @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO', 'ROLE_SERVO_PUBLICACOES')")
-    public ResponseEntity<Void> deletar(@PathVariable Long id) {
-        publicacaoService.deletar(id);
-        return ResponseEntity.noContent().build();
-    }
+
+	@DeleteMapping("/{id}/congregacao/{congregacaoId}")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO', 'ROLE_SERVO_PUBLICACOES')")
+	public ResponseEntity<Void> deletar(
+	        @PathVariable Long id,
+	        @PathVariable Long congregacaoId) {
+	
+	    publicacaoService.deletar(id, congregacaoId);
+	    return ResponseEntity.noContent().build();
+	}
+	
+
+	@GetMapping("/congregacao/{congregacaoId}/estatisticas")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO', 'ROLE_SERVO_PUBLICACOES')")
+	public ResponseEntity<EstatisticasPublicacaoResponseDTO> obterEstatisticas(
+	        @PathVariable Long congregacaoId,
+	        @RequestParam LocalDate inicio,
+	        @RequestParam LocalDate fim) {
+	
+	    return ResponseEntity.ok(
+	        publicacaoService.obterEstatisticas(
+	            congregacaoId,
+	            inicio,
+	            fim
+	        )
+	    );
+	}
+
 }

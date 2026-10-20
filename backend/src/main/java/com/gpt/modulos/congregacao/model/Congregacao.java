@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import java.math.BigDecimal;
 
 import java.time.LocalDateTime;
 
@@ -42,5 +43,11 @@ public class Congregacao {
 
     @UpdateTimestamp
     @Column(name = "atualizado_em")
-    private LocalDateTime atualizadoEm;    
+    private LocalDateTime atualizadoEm;   
+    
+    @Column(precision = 9, scale = 6)
+    private BigDecimal latitude;
+
+    @Column(precision = 9, scale = 6)
+    private BigDecimal longitude;
 }

@@ -1,6 +1,8 @@
-package com.gpt.modulos.publicacao.model;
+package com.gpt.modulos.movimentacao.model;
 
 import com.gpt.modulos.congregacao.model.Congregacao;
+import com.gpt.modulos.publicacao.model.Publicacao;
+
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;

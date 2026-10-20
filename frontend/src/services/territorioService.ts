@@ -1,45 +1,68 @@
-import {api} from "./api";
+import { api } from "./api";
+
 import type {
+  DevolucaoRequest,
+  DesignacaoRequest,
+  EstatisticasTerritorio,
+  HistoricoTerritorio,
   Territorio,
   TerritorioRequest,
-  DesignacaoRequest,
-  DevolucaoRequest,
-  HistoricoTerritorio,
 } from "../types/territorio";
+
+import type { PageResponse } from "../types/pagination";
 
 type GeoJsonPolygon = {
   type: "Polygon";
   coordinates: [number, number][][];
 };
 
+type TerritorioAtualizacaoRequest = {
+  numero: string;
+  nome: string;
+  descricao?: string;
+};
+
 export const territorioService = {
   listarPorCongregacao: async (
     congregacaoId: number,
-  ): Promise<Territorio[]> => {
-    const response = await api.get<Territorio[]>(
+    page = 0,
+    size = 10,
+  ): Promise<PageResponse<Territorio>> => {
+    const response = await api.get<PageResponse<Territorio>>(
       `/territorios/congregacao/${congregacaoId}`,
+      {
+        params: {
+          page,
+          size,
+        },
+      },
     );
+
     return response.data;
   },
 
   buscarPublico: async (id: number): Promise<Territorio> => {
     const response = await api.get<Territorio>(`/territorios/publico/${id}`);
+
     return response.data;
   },
 
   criar: async (dados: TerritorioRequest): Promise<Territorio> => {
     const response = await api.post<Territorio>("/territorios", dados);
+
     return response.data;
   },
+
   cadastrar: async (dados: TerritorioRequest): Promise<Territorio> => {
     return territorioService.criar(dados);
   },
 
   atualizar: async (
     id: number,
-    dados: Partial<TerritorioRequest>,
+    dados: TerritorioAtualizacaoRequest,
   ): Promise<Territorio> => {
     const response = await api.put<Territorio>(`/territorios/${id}`, dados);
+
     return response.data;
   },
 
@@ -55,8 +78,11 @@ export const territorioService = {
       `/territorios/${territorioId}/retirar`,
       dados,
     );
+
     return response.data;
   },
+
+  // Alias de compatibilidade para a nomenclatura usada pela interface.
   designar: async (
     territorioId: number,
     dados: DesignacaoRequest,
@@ -70,12 +96,14 @@ export const territorioService = {
   ): Promise<Territorio> => {
     const observacoes =
       typeof dadosOuObs === "string" ? dadosOuObs : dadosOuObs?.observacoes;
+
     const response = await api.post<Territorio>(
       `/territorios/${territorioId}/devolver`,
       {
         observacoes,
       },
     );
+
     return response.data;
   },
 
@@ -84,22 +112,54 @@ export const territorioService = {
     poligonoGeoJson: GeoJsonPolygon,
   ): Promise<Territorio> => {
     const response = await api.patch<Territorio>(`/territorios/${id}/mapa`, {
+      // Manter esta propriedade exatamente como está no contrato atual.
       poligonoGeojson: poligonoGeoJson,
     });
+
     return response.data;
   },
 
   listarHistoricoGeral: async (
     congregacaoId: number,
-  ): Promise<HistoricoTerritorio[]> => {
-    const response = await api.get<HistoricoTerritorio[]>(
+    page = 0,
+    size = 10,
+  ): Promise<PageResponse<HistoricoTerritorio>> => {
+    const response = await api.get<PageResponse<HistoricoTerritorio>>(
       `/territorios/congregacao/${congregacaoId}/historico`,
+      {
+        params: {
+          page,
+          size,
+        },
+      },
     );
+
     return response.data;
   },
+
   obterRelatorioS13: async (
     congregacaoId: number,
-  ): Promise<HistoricoTerritorio[]> => {
-    return territorioService.listarHistoricoGeral(congregacaoId);
+    page = 0,
+    size = 10,
+  ): Promise<PageResponse<HistoricoTerritorio>> => {
+    return territorioService.listarHistoricoGeral(congregacaoId, page, size);
+  },
+
+  obterEstatisticas: async (
+    congregacaoId: number,
+    inicio: string,
+    fim: string,
+  ): Promise<EstatisticasTerritorio> => {
+    const response = await api.get<EstatisticasTerritorio>(
+      `/territorios/congregacao/${congregacaoId}/estatisticas`,
+      {
+        params: {
+          inicio,
+          fim,
+        },
+      },
+    );
+
+    return response.data;
   },
 };

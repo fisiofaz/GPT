@@ -37,9 +37,17 @@ export interface PedidoPublicadorRequest {
   observacoes?: string;
 }
 
+export interface PedidoPublicadorCatalogoRequest {
+  publicadorId: number;
+  catalogoMestreId: number;
+  congregacaoId: number;
+  quantidade: number;
+  observacoes?: string;
+}
 export interface ItemPedidoBetel {
   id: number;
-  publicacaoId: number;
+  publicacaoId: number | null;
+  catalogoMestreId: number | null;
   publicacaoCodigo: string;
   publicacaoTitulo: string;
   quantidadeSolicitada: number;
@@ -63,7 +71,8 @@ export interface PedidoBetel {
 }
 
 export interface ItemPedidoBetelRequest {
-  publicacaoId: number;
+  publicacaoId?: number;
+  catalogoMestreId?: number;
   quantidadeSolicitada: number;
   origem: OrigemItemPedido;
 }
