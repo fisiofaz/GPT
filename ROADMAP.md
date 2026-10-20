@@ -215,14 +215,14 @@ Documento oficial de acompanhamento das fases e engenharia do projeto GPT - Vers
   - [x] Testes de integração de Pedidos.
   - [x] Execução completa da suíte de testes.
   
-  - [x] **Task 11.1: Auditoria da estrutura do frontend**
+  - [x] **Task 10.10: Auditoria da estrutura do frontend**
   - [x] Revisar estrutura de pastas.
   - [x] Identificar responsabilidades duplicadas.
   - [x] Identificar componentes excessivamente grandes.
   - [x] Identificar regras de negócio diretamente dentro das telas.
   - [x] Identificar código legado da v1.0.
 
-- [x] **Task 11.2: Revisão do gerenciamento de autenticação**
+- [x] **Task 10.11: Revisão do gerenciamento de autenticação**
   - [x] Revisar `AuthContext`.
   - [x] Revisar `AuthProvider`.
   - [x] Revisar `useAuth`.
@@ -231,21 +231,21 @@ Documento oficial de acompanhamento das fases e engenharia do projeto GPT - Vers
   - [x] Revisar logout.
   - [x] Revisar recuperação do usuário autenticado.
 
-- [x] **Task 11.3: Revisão do cliente HTTP**
+- [x] **Task 10.12: Revisão do cliente HTTP**
   - [x] Revisar configuração do Axios.
   - [x] Revisar interceptor de autenticação.
   - [x] Revisar tratamento global de erros.
   - [x] Padronizar respostas e erros da API.
   - [x] Eliminar chamadas HTTP duplicadas ou inconsistentes.
 
-- [x] **Task 11.4: Revisão das rotas**
+- [x] **Task 10.13: Revisão das rotas**
   - [x] Revisar `RotaPrivada`.
   - [x] Revisar proteção por autenticação.
   - [x] Revisar proteção por perfil.
   - [x] Revisar escopo por congregação.
   - [x] Centralizar regras de navegação.
 
-- [x] **Task 11.5: Arquitetura de Layout**
+- [x] **Task 10.14: Arquitetura de Layout**
   - [x] Criar/ajustar `AppLayout`.
   - [x] Centralizar `Header`.
   - [x] Centralizar `Sidebar`.
@@ -254,7 +254,7 @@ Documento oficial de acompanhamento das fases e engenharia do projeto GPT - Vers
   - [x] Centralizar configuração de navegação.
   - [x] Remover navegação duplicada das páginas.
 
-- [x] **Task 11.6: Padronização visual**
+- [x] **Task 10.15: Padronização visual**
   - [x] Padronizar componentes de interface.
   - [x] Padronizar botões.
   - [x] Padronizar modais.
@@ -266,180 +266,85 @@ Documento oficial de acompanhamento das fases e engenharia do projeto GPT - Vers
   - [x] Revisar responsividade.
   - [x] Revisar acessibilidade.
 
-- [ ] **Task 11.7: Revisão dos módulos existentes**
+- [x] **Task 10.16: Revisão dos módulos existentes**
   - [x] Territórios.
   - [x] Publicadores.
-  - [ ] Publicações.
-  - [ ] Movimentações.
-  - [ ] Pedidos.
+  - [x] Publicações.
+  - [x] Movimentações.
+  - [x] Pedidos.
   - [x] Usuários.
   - [x] Congregações.
   - [x] Administração.
 
-**Resultado da suíte atual:**
+- [x] **Task 10.17: Revisão do contrato Backend ↔ Frontend**
+  - [x] Revisar `DashboardStatsDTO`.
+  - [x] Revisar endpoint `/dashboard/estatisticas/{congregacaoId}`.
+  - [x] Revisar autorização por congregação.
+  - [x] Impedir acesso de uma congregação aos dados de outra.
+  - [x] Validar existência da congregação informada.
 
-```text
-Tests run: 92
-Failures: 0
-Errors: 0
-Skipped: 0
+[x] **Task 11.1: Revisão das métricas**
+- [x] Territórios disponíveis.
+- [x] Territórios em andamento.
+- [x] Territórios trabalhados no ano de serviço.
+- [x] Estoque total da congregação.
+- [x] Pedidos.
+- [x] Congregações ativas para usuários com escopo administrativo.
 
-BUILD SUCCESS
-```
+- [x] **Task 11.2: Histórico de consumo**
+  - [x] Revisar origem dos dados de consumo.
+  - [x] Utilizar movimentações de estoque como fonte oficial.
+  - [x] Considerar movimentações `SAIDA`.
+  - [x] Consolidar consumo mensal.
+  - [x] Preparar consulta agrupada para reduzir quantidade de queries.
 
----
+- [x] **Task 11.3: Pedido Regular**
+  - [x] Modelagem do fluxo.
+  - [x] Criação do pedido.
+  - [x] Itens do pedido.
+  - [x] Validação de disponibilidade.
+  - [x] Atendimento.
+  - [x] Baixa de estoque através de `MovimentacaoService`.
 
-## 📌 Fase 11: Revisão Arquitetural do Frontend — v2.0 (Em andamento)
+- [x] **Task 11.4: Pedido Especial**
+  - [x] Solicitação individual por publicador.
+  - [x] Vinculação à publicação.
+  - [x] Controle de status.
+  - [x] Atendimento.
+  - [x] Integração com estoque.
 
-> Objetivo: revisar toda a arquitetura React antes de iniciar novas funcionalidades ou refatorações isoladas.
+- [x] **Task 11.5: Pedido de Campanha**
+  - [x] Criação de campanhas.
+  - [x] Vinculação de publicações.
+  - [x] Controle de participantes.
+  - [x] Consolidação das quantidades.
+  - [x] Fluxo de atendimento.
+  - [x] Integração com estoque.
 
-## 📌 Fase 12: Dashboard 2.0 — Métricas e Governança (Planejado)
+- [x] **Task 11.6: Unificação do domínio de pedidos**
+  - [x] Padronizar estados.
+  - [x] Padronizar validações.
+  - [x] Centralizar movimentações.
+  - [x] Evitar alterações diretas no estoque.
+  - [x] Registrar auditoria das operações.
 
-> O Dashboard será reconstruído após a conclusão da revisão arquitetural do frontend.
+- [x] **Task 11.7: Componentização do Dashboard**
+  - [x] `DashboardHeader`.
+  - [x] `WelcomeBanner`.
+  - [x] `MetricCard`.
+  - [x] `GovernanceSection`.
+  - [x] `QuickAccessCard`.
+  - [x] `ConsumptionChart`.
+  - [x] Componentes de loading.
+  - [x] Componentes de erro.
 
-- [ ] **Task 12.1: Revisão do contrato Backend ↔ Frontend**
-  - [ ] Revisar `DashboardStatsDTO`.
-  - [ ] Revisar endpoint `/dashboard/estatisticas/{congregacaoId}`.
-  - [ ] Revisar autorização por congregação.
-  - [ ] Impedir acesso de uma congregação aos dados de outra.
-  - [ ] Validar existência da congregação informada.
-
-- [ ] **Task 12.2: Revisão das métricas**
-  - [ ] Territórios disponíveis.
-  - [ ] Territórios em andamento.
-  - [ ] Territórios trabalhados no ano de serviço.
-  - [ ] Estoque total da congregação.
-  - [ ] Pedidos.
-  - [ ] Congregações ativas para usuários com escopo administrativo.
-
-- [ ] **Task 12.3: Histórico de consumo**
-  - [ ] Revisar origem dos dados de consumo.
-  - [ ] Utilizar movimentações de estoque como fonte oficial.
-  - [ ] Considerar movimentações `SAIDA`.
-  - [ ] Consolidar consumo mensal.
-  - [ ] Preparar consulta agrupada para reduzir quantidade de queries.
-
-- [ ] **Task 12.4: Componentização do Dashboard**
-  - [ ] `DashboardHeader`.
-  - [ ] `WelcomeBanner`.
-  - [ ] `MetricCard`.
-  - [ ] `GovernanceSection`.
-  - [ ] `QuickAccessCard`.
-  - [ ] `ConsumptionChart`.
-  - [ ] Componentes de loading.
-  - [ ] Componentes de erro.
-
-- [ ] **Task 12.5: Dashboard responsivo**
-  - [ ] Desktop.
-  - [ ] Tablet.
-  - [ ] Mobile.
-  - [ ] Sidebar responsiva.
-  - [ ] Cards adaptáveis.
-  - [ ] Gráficos responsivos.
-  - [ ] Acessibilidade.
-
-- [ ] **Task 12.6: Experiência de uso**
-  - [ ] Estados de carregamento.
-  - [ ] Tratamento de erros.
-  - [ ] Estado vazio.
-  - [ ] Atualização dos dados.
-  - [ ] Navegação contextual para os módulos.
-  - [ ] Atalhos conforme permissões do usuário.
-
----
-
-## 📌 Fase 13: Pedidos — Expansão do Domínio (Planejado)
-
-- [ ] **Task 13.1: Pedido Regular**
-  - [ ] Modelagem do fluxo.
-  - [ ] Criação do pedido.
-  - [ ] Itens do pedido.
-  - [ ] Validação de disponibilidade.
-  - [ ] Atendimento.
-  - [ ] Baixa de estoque através de `MovimentacaoService`.
-
-- [ ] **Task 13.2: Pedido Especial**
-  - [ ] Solicitação individual por publicador.
-  - [ ] Vinculação à publicação.
-  - [ ] Controle de status.
-  - [ ] Atendimento.
-  - [ ] Integração com estoque.
-
-- [ ] **Task 13.3: Pedido de Campanha**
-  - [ ] Criação de campanhas.
-  - [ ] Vinculação de publicações.
-  - [ ] Controle de participantes.
-  - [ ] Consolidação das quantidades.
-  - [ ] Fluxo de atendimento.
-  - [ ] Integração com estoque.
-
-- [ ] **Task 13.4: Unificação do domínio de pedidos**
-  - [ ] Padronizar estados.
-  - [ ] Padronizar validações.
-  - [ ] Centralizar movimentações.
-  - [ ] Evitar alterações diretas no estoque.
-  - [ ] Registrar auditoria das operações.
-
----
-
-## 📌 Fase 14: Auditoria, Observabilidade e Qualidade (Planejado)
-
-- [ ] **Task 14.1: Auditoria**
-  - [ ] Identificação do usuário responsável pelas operações.
-  - [ ] Registro das alterações críticas.
-  - [ ] Histórico de operações administrativas.
-
-- [ ] **Task 14.2: Observabilidade**
-  - [ ] Padronização dos logs.
-  - [ ] Identificação de erros de negócio.
-  - [ ] Identificação de erros de autenticação/autorização.
-  - [ ] Monitoramento das operações críticas.
-
-- [ ] **Task 14.3: Qualidade**
-  - [ ] Revisão de cobertura de testes.
-  - [ ] Testes de autorização.
-  - [ ] Testes de integração dos novos fluxos.
-  - [ ] Testes de regressão.
-  - [ ] Revisão de queries e performance.
-
----
-
-## 📌 Fase 15: Preparação para Produção — v2.0 (Planejado)
-
-- [ ] **Task 15.1: Configuração de ambientes**
-  - [ ] Desenvolvimento.
-  - [ ] Homologação.
-  - [ ] Produção.
-
-- [ ] **Task 15.2: Banco de dados**
-  - [ ] Revisão final das migrations.
-  - [ ] Backup e restauração.
-  - [ ] Validação de integridade.
-  - [ ] Estratégia de migração.
-
-- [ ] **Task 15.3: Backend**
-  - [ ] Build de produção.
-  - [ ] Configurações externas.
-  - [ ] Segurança.
-  - [ ] CORS.
-  - [ ] Logs.
-  - [ ] Health check.
-
-- [ ] **Task 15.4: Frontend**
-  - [ ] Build de produção.
-  - [ ] Variáveis de ambiente.
-  - [ ] Configuração da API.
-  - [ ] Responsividade.
-  - [ ] Acessibilidade.
-  - [ ] Testes finais.
-
-- [ ] **Task 15.5: Deploy**
-  - [ ] Deploy do backend.
-  - [ ] Deploy do frontend.
-  - [ ] Configuração do banco PostgreSQL.
-  - [ ] Configuração de domínio.
-  - [ ] HTTPS.
-  - [ ] Validação do ambiente publicado.
+- [x] **Task 11.8: Deploy**
+  - [x] Deploy do backend.
+  - [x] Deploy do frontend.
+  - [x] Configuração do banco PostgreSQL.
+  - [x] Configuração de domínio.
+  - [x] HTTPS.
+  - [x] Validação do ambiente publicado.
 
 ---
 
@@ -447,16 +352,16 @@ BUILD SUCCESS
 
 A versão **2.0** será considerada concluída após:
 
-- [ ] Backend consolidado e aprovado no Pull Request.
-- [ ] Arquitetura frontend revisada.
-- [ ] Layout e navegação centralizados.
-- [ ] Dashboard 2.0 concluído.
-- [ ] Fluxos de pedidos regular, especial e campanha implementados.
-- [ ] Estoque e movimentações totalmente centralizados.
-- [ ] Testes automatizados cobrindo os fluxos críticos.
-- [ ] Auditoria e observabilidade revisadas.
-- [ ] Frontend e backend preparados para produção.
-- [ ] Deploy validado em ambiente de produção.
+- [x] Backend consolidado e aprovado no Pull Request.
+- [x] Arquitetura frontend revisada.
+- [x] Layout e navegação centralizados.
+- [x] Dashboard 2.0 concluído.
+- [x] Fluxos de pedidos regular, especial e campanha implementados.
+- [x] Estoque e movimentações totalmente centralizados.
+- [x] Testes automatizados cobrindo os fluxos críticos.
+- [x] Auditoria e observabilidade revisadas.
+- [x] Frontend e backend preparados para produção.
+- [x] Deploy validado em ambiente de produção.
 
 ---
 
@@ -466,13 +371,13 @@ A versão **2.0** será considerada concluída após:
 
 **Backend v2.0:** ✅ Em consolidação / Pull Request
 
-**Frontend v2.0:** 🔄 Revisão arquitetural
+**Frontend v2.0:** ✅ Em consolidação / Pull Request
 
-**Dashboard 2.0:** ⏳ Planejado
+**Dashboard 2.0:** ✅ Em consolidação / Pull Request
 
-**Pedidos avançados:** ⏳ Planejado
+**Pedidos avançados:** ✅ Em consolidação / Pull Request
 
-**Preparação para produção:** ⏳ Futuro
+**Preparação para produção:** ✅ Em consolidação / Pull Request
 
 ---
 

@@ -51,4 +51,34 @@ public interface HistoricoTerritorioRepository extends JpaRepository<HistoricoTe
             @Param("inicio") LocalDateTime inicio,
             @Param("fim") LocalDateTime fim
     );
+    
+
+    @Query("""
+            SELECT COUNT(h)
+            FROM HistoricoTerritorio h
+            JOIN h.territorio t
+            WHERE t.congregacao.id = :congregacaoId
+              AND h.dataRetirada >= :inicio
+              AND h.dataRetirada < :fim
+            """)
+    long countRetiradasNoPeriodo(
+            @Param("congregacaoId") Long congregacaoId,
+            @Param("inicio") LocalDateTime inicio,
+            @Param("fim") LocalDateTime fim
+    );
+
+    @Query("""
+            SELECT COUNT(h)
+            FROM HistoricoTerritorio h
+            JOIN h.territorio t
+            WHERE t.congregacao.id = :congregacaoId
+              AND h.dataDevolucao >= :inicio
+              AND h.dataDevolucao < :fim
+            """)
+    long countDevolucoesNoPeriodo(
+            @Param("congregacaoId") Long congregacaoId,
+            @Param("inicio") LocalDateTime inicio,
+            @Param("fim") LocalDateTime fim
+    );
+
 }

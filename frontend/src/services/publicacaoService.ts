@@ -5,6 +5,7 @@ import type {
   MovimentacaoEstoqueRequest,
   MovimentacaoResponse,
   CatalogoMestreItem,
+  EstatisticasPublicacao,
 } from "../types/publicacao";
 
 export const publicacaoService = {
@@ -70,14 +71,8 @@ export const publicacaoService = {
     return response.data;
   },
 
-  
-  deletar: async (
-    id: number,
-    congregacaoId: number,
-  ): Promise<void> => {
-    await api.delete(
-      `/publicacoes/${id}/congregacao/${congregacaoId}`,
-    );
+  deletar: async (id: number, congregacaoId: number): Promise<void> => {
+    await api.delete(`/publicacoes/${id}/congregacao/${congregacaoId}`);
   },
 
   atualizarCatalogoMestre: async (
@@ -93,5 +88,23 @@ export const publicacaoService = {
 
   deletarCatalogoMestre: async (id: number): Promise<void> => {
     await api.delete(`/publicacoes/catalogo-mestre/${id}`);
+  },
+
+  obterEstatisticas: async (
+    congregacaoId: number,
+    inicio: string,
+    fim: string,
+  ): Promise<EstatisticasPublicacao> => {
+    const response = await api.get<EstatisticasPublicacao>(
+      `/publicacoes/congregacao/${congregacaoId}/estatisticas`,
+      {
+        params: {
+          inicio,
+          fim,
+        },
+      },
+    );
+
+    return response.data;
   },
 };

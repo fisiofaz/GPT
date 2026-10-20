@@ -7,7 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,4 +31,10 @@ public interface TerritorioRepository extends JpaRepository<Territorio, Long> {
     long countByCongregacaoId(Long congregacaoId);
 
     long countByCongregacaoIdAndStatus(Long congregacaoId, StatusTerritorio status);
+    
+    long countByCongregacaoIdAndCriadoEmGreaterThanEqualAndCriadoEmLessThan(
+    	    Long congregacaoId,
+    	    LocalDateTime inicio,
+    	    LocalDateTime fim
+    );
 }

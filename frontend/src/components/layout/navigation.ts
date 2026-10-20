@@ -7,6 +7,7 @@ import {
   Users,
   UserCog,
   History,
+  Package,
 } from "lucide-react";
 
 export interface NavigationItem {
@@ -41,9 +42,31 @@ export const navigationGroups: NavigationGroup[] = [
         icon: Map,
       },
       {
+        label: "Estatísticas de Territórios",
+        path: "/estatisticas-territorios",
+        icon: Package,
+        allowedRoles: [
+          "ROLE_ADMIN_GERAL",
+          "ROLE_SUPERINTENDENTE_SERVICO",
+          "ROLE_ANCIAO",
+          "ROLE_SERVO_TERRITORIO",
+        ],
+      },
+      {
         label: "Publicações",
         path: "/publicacoes",
         icon: BookOpen,
+      },
+      {
+        label: "Estatísticas de Publicações",
+        path: "/estatisticas-publicacoes",
+        icon: Package,
+        allowedRoles: [
+          "ROLE_ADMIN_GERAL",
+          "ROLE_SUPERINTENDENTE_SERVICO",
+          "ROLE_ANCIAO",
+          "ROLE_SERVO_PUBLICACOES",
+        ],
       },
       {
         label: "Pedidos",

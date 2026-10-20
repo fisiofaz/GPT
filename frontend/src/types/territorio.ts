@@ -57,5 +57,14 @@ export interface HistoricoTerritorio {
   observacoes?: string;
 }
 
+export type EstatisticasTerritorio = {
+  totalTerritorios: number;
+  territoriosDisponiveis: number;
+  territoriosEmTrabalho: number;
+  territoriosCadastradosNoPeriodo: number;
+  retiradasNoPeriodo: number;
+  devolucoesNoPeriodo: number;
+};
+
 // Alias de compatibilidade com o relatório S-13.
 export type RelatorioS13Item = HistoricoTerritorio;

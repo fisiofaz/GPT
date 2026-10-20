@@ -7,6 +7,7 @@ import com.gpt.modulos.territorio.dto.TerritorioRequestDTO;
 import com.gpt.modulos.territorio.dto.TerritorioResponseDTO;
 import com.gpt.modulos.territorio.dto.TerritorioAtualizacaoDTO;
 import com.gpt.modulos.territorio.service.TerritorioService;
+import com.gpt.modulos.territorio.dto.EstatisticasTerritorioResponseDTO;
 import com.gpt.shared.dto.PageResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -45,7 +46,7 @@ public class TerritorioController {
     }
     
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO',)")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO')")
     public ResponseEntity<Void> deletar(@PathVariable Long id) {
         territorioService.deletar(id);
         return ResponseEntity.noContent().build();
@@ -123,4 +124,22 @@ public class TerritorioController {
     public ResponseEntity<TerritorioResponseDTO> buscarPublicoPorId(@PathVariable Long id) {
         return ResponseEntity.ok(territorioService.buscarPorId(id));
     }
+    
+
+    @GetMapping("/congregacao/{congregacaoId}/estatisticas")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN_GERAL', 'ROLE_SUPERINTENDENTE_SERVICO', 'ROLE_ANCIAO', 'ROLE_SERVO_TERRITORIO')")
+    public ResponseEntity<EstatisticasTerritorioResponseDTO> obterEstatisticas(
+            @PathVariable Long congregacaoId,
+            @RequestParam LocalDate inicio,
+            @RequestParam LocalDate fim
+    ) {
+        return ResponseEntity.ok(
+                territorioService.obterEstatisticas(
+                        congregacaoId,
+                        inicio,
+                        fim
+                )
+        );
+    }
+
 }

@@ -89,3 +89,16 @@ export interface MovimentacaoResponse {
   observacoes?: string;
   dataMovimentacao: string;
 }
+
+export interface EstatisticasPublicacao {
+  totalPublicacoes: number;
+  estoquesAtivos: number;
+  estoquesBaixos: number;
+  estoquesZerados: number;
+  totalExemplares: number;
+  entradasNoPeriodo: number;
+  saidasNoPeriodo: number;
+  ajustesNoPeriodo: number;
+  exemplaresEntradosNoPeriodo: number;
+  exemplaresSaidosNoPeriodo: number;
+}

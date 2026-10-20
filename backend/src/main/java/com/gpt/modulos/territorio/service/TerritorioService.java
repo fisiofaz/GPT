@@ -7,6 +7,7 @@ import com.gpt.modulos.congregacao.model.Congregacao;
 import com.gpt.modulos.congregacao.repository.CongregacaoRepository;
 import com.gpt.modulos.publicador.model.Publicador;
 import com.gpt.modulos.publicador.repository.PublicadorRepository;
+import com.gpt.modulos.territorio.dto.EstatisticasTerritorioResponseDTO;
 import com.gpt.modulos.territorio.dto.GeoJsonPolygonDTO;
 import com.gpt.modulos.territorio.dto.HistoricoTerritorioResponseDTO;
 import com.gpt.modulos.territorio.dto.MovimentacaoTerritorioDTO;
@@ -28,6 +29,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -480,4 +482,79 @@ public class TerritorioService {
                 .observacoes(h.getObservacoes())
                 .build();
     }
+    
+
+	@Transactional(readOnly = true)
+	public EstatisticasTerritorioResponseDTO obterEstatisticas(
+	        Long congregacaoId,
+	        LocalDate inicio,
+	        LocalDate fim
+	) {
+	    Long congregacaoIdPermitida =
+	            getCongregacaoIdObrigatoria(congregacaoId);
+	
+	    if (inicio == null || fim == null) {
+	        throw new IllegalArgumentException(
+	                "As datas de início e fim são obrigatórias."
+	        );
+	    }
+	
+	    if (inicio.isAfter(fim)) {
+	        throw new IllegalArgumentException(
+	                "A data inicial não pode ser posterior à data final."
+	        );
+	    }
+	
+	    LocalDateTime inicioPeriodo = inicio.atStartOfDay();
+	    LocalDateTime fimPeriodoExclusivo =
+	            fim.plusDays(1).atStartOfDay();
+	
+	    long total = territorioRepository.countByCongregacaoId(
+	            congregacaoIdPermitida
+	    );
+	
+	    long disponiveis =
+	            territorioRepository.countByCongregacaoIdAndStatus(
+	                    congregacaoIdPermitida,
+	                    StatusTerritorio.DISPONIVEL
+	            );
+	
+	    long emTrabalho =
+	            territorioRepository.countByCongregacaoIdAndStatus(
+	                    congregacaoIdPermitida,
+	                    StatusTerritorio.EM_TRABALHO
+	            );
+	
+	    long cadastradosNoPeriodo =
+	            territorioRepository
+	                    .countByCongregacaoIdAndCriadoEmGreaterThanEqualAndCriadoEmLessThan(
+	                            congregacaoIdPermitida,
+	                            inicioPeriodo,
+	                            fimPeriodoExclusivo
+	                    );
+	
+	    long retiradas =
+	            historicoRepository.countRetiradasNoPeriodo(
+	                    congregacaoIdPermitida,
+	                    inicioPeriodo,
+	                    fimPeriodoExclusivo
+	            );
+	
+	    long devolucoes =
+	            historicoRepository.countDevolucoesNoPeriodo(
+	                    congregacaoIdPermitida,
+	                    inicioPeriodo,
+	                    fimPeriodoExclusivo
+	            );
+	
+	    return EstatisticasTerritorioResponseDTO.builder()
+	            .totalTerritorios(total)
+	            .territoriosDisponiveis(disponiveis)
+	            .territoriosEmTrabalho(emTrabalho)
+	            .territoriosCadastradosNoPeriodo(cadastradosNoPeriodo)
+	            .retiradasNoPeriodo(retiradas)
+	            .devolucoesNoPeriodo(devolucoes)
+	            .build();
+	}
+
 }

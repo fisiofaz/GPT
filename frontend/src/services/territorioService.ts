@@ -3,6 +3,7 @@ import { api } from "./api";
 import type {
   DevolucaoRequest,
   DesignacaoRequest,
+  EstatisticasTerritorio,
   HistoricoTerritorio,
   Territorio,
   TerritorioRequest,
@@ -142,5 +143,23 @@ export const territorioService = {
     size = 10,
   ): Promise<PageResponse<HistoricoTerritorio>> => {
     return territorioService.listarHistoricoGeral(congregacaoId, page, size);
+  },
+
+  obterEstatisticas: async (
+    congregacaoId: number,
+    inicio: string,
+    fim: string,
+  ): Promise<EstatisticasTerritorio> => {
+    const response = await api.get<EstatisticasTerritorio>(
+      `/territorios/congregacao/${congregacaoId}/estatisticas`,
+      {
+        params: {
+          inicio,
+          fim,
+        },
+      },
+    );
+
+    return response.data;
   },
 };

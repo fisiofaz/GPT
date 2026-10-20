@@ -19,7 +19,8 @@ import { CartaoPublico } from "./pages/CartaoPublico";
 import { Publicacoes } from "./pages/Publicacoes";
 import { CatalogoPublicacoes } from "./pages/CatalogoPublicacoes";
 import { Pedidos } from "./pages/Pedidos";
-
+import { EstatisticasTerritorios } from "./pages/EstatisticasTerritorios";
+import { EstatisticasPublicacoes } from "./pages/EstatisticasPublicacoes";
 import HistoricoPublicadores from "./pages/HistoricoPublicadores";
 
 import AdminCongregacoesPage from "./pages/AdminCongregacoesPage";
@@ -88,7 +89,39 @@ export const App: React.FC = () => {
 
               <Route path="/territorios" element={<Territorios />} />
 
+              <Route
+                path="/estatisticas-territorios"
+                element={
+                  <RotaPrivada
+                    allowedRoles={[
+                      "ROLE_ADMIN_GERAL",
+                      "ROLE_SUPERINTENDENTE_SERVICO",
+                      "ROLE_ANCIAO",
+                      "ROLE_SERVO_TERRITORIO",
+                    ]}
+                  >
+                    <EstatisticasTerritorios />
+                  </RotaPrivada>
+                }
+              />
+
               <Route path="/publicacoes" element={<Publicacoes />} />
+
+              <Route
+                path="/estatisticas-publicacoes"
+                element={
+                  <RotaPrivada
+                    allowedRoles={[
+                      "ROLE_ADMIN_GERAL",
+                      "ROLE_SUPERINTENDENTE_SERVICO",
+                      "ROLE_ANCIAO",
+                      "ROLE_SERVO_PUBLICACOES",
+                    ]}
+                  >
+                    <EstatisticasPublicacoes />
+                  </RotaPrivada>
+                }
+              />
 
               <Route path="/pedidos" element={<Pedidos />} />
 
