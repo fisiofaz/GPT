@@ -18,7 +18,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
+import org.springframework.beans.factory.annotation.Value;
+import java.util.stream.Collectors;
 import java.util.Arrays;
 import java.util.List;
 
@@ -29,6 +30,9 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
+    
+    @Value("${app.cors.allowed-origins:http://localhost:5173}")
+    private String allowedOrigins;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -64,26 +68,26 @@ public class SecurityConfig {
                 .build();
     }
 
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration config = new CorsConfiguration();
-        
-        // Permite a origem do Frontend Vite
-        config.setAllowedOrigins(List.of("http://localhost:5173"));
-        
-        // Métodos HTTP permitidos
-        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-        
-        // Headers permitidos
-        config.setAllowedHeaders(List.of("*"));
-        
-        // Permite envio do cabeçalho de autenticação (Authorization)
-        config.setAllowCredentials(true);
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", config);
-        return source;
-    }
+	@Bean
+	public CorsConfigurationSource corsConfigurationSource() {
+	    CorsConfiguration config = new CorsConfiguration();
+	
+	    List<String> origins = Arrays.stream(allowedOrigins.split(","))
+	            .map(String::trim)
+	            .filter(origin -> !origin.isEmpty())
+	            .collect(Collectors.toList());
+	
+	    config.setAllowedOrigins(origins);
+	    config.setAllowedMethods(
+	            Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
+	    );
+	    config.setAllowedHeaders(List.of("*"));
+	    config.setAllowCredentials(true);
+	
+	    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+	    source.registerCorsConfiguration("/**", config);
+	    return source;
+	}
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
