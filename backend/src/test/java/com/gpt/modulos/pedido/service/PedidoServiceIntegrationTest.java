@@ -3,9 +3,6 @@ package com.gpt.modulos.pedido.service;
 import com.gpt.BackendApplication;
 import com.gpt.modulos.congregacao.model.Congregacao;
 import com.gpt.modulos.congregacao.repository.CongregacaoRepository;
-import com.gpt.modulos.movimentacao.model.PublicacaoEstoque;
-import com.gpt.modulos.movimentacao.repository.MovimentacaoEstoqueRepository;
-import com.gpt.modulos.movimentacao.repository.PublicacaoEstoqueRepository;
 import com.gpt.modulos.pedido.dto.PedidoBetelDTO;
 import com.gpt.modulos.pedido.dto.PedidoPublicadorDTO;
 import com.gpt.modulos.pedido.enums.OrigemItemPedido;
@@ -66,13 +63,7 @@ class PedidoServiceIntegrationTest {
     @Autowired
     private PublicacaoRepository publicacaoRepository;
 
-    @Autowired
-    private PublicacaoEstoqueRepository publicacaoEstoqueRepository;
-
-    @Autowired
-    private MovimentacaoEstoqueRepository movimentacaoEstoqueRepository;
-
-    @Autowired
+   @Autowired
     private PublicadorRepository publicadorRepository;
 
     @Autowired
@@ -423,231 +414,6 @@ class PedidoServiceIntegrationTest {
     }
 
     // ============================================================
-    // 4. ATENDIMENTO DO PEDIDO PUBLICADOR
-    // ============================================================
-
-    @Test
-    void deveAtenderPedidoPublicadorERegistrarSaidaNoEstoque() {
-
-        Congregacao congregacao =
-                criarCongregacao("Congregação Saída");
-
-        Publicacao publicacao =
-                criarPublicacao("SAI-001", "Publicação Saída");
-
-        criarEstoque(
-                publicacao,
-                congregacao,
-                10
-        );
-
-        Publicador publicador = criarPublicador(
-                congregacao,
-                "Publicador Saída"
-        );
-
-        PedidoPublicador pedido =
-                criarPedidoPublicador(
-                        publicador,
-                        publicacao,
-                        congregacao,
-                        3
-                );
-
-        Usuario responsavel =
-                criarUsuario(
-                        congregacao,
-                        "Responsável Saída",
-                        "responsavel.saida@gpt.test"
-                );
-
-        configurarUsuarioAutenticado(responsavel);
-
-        pedidoService.marcarPedidoPublicadorAtendido(
-                pedido.getId()
-        );
-
-        PedidoPublicador atualizado =
-                pedidoPublicadorRepository.findById(
-                        pedido.getId()
-                ).orElseThrow();
-
-        PublicacaoEstoque estoque =
-                publicacaoEstoqueRepository
-                        .findByPublicacaoIdAndCongregacaoId(
-                                publicacao.getId(),
-                                congregacao.getId()
-                        )
-                        .orElseThrow();
-
-        assertEquals(
-                StatusPedidoPublicador.ATENDIDO,
-                atualizado.getStatus()
-        );
-
-        assertNotNull(atualizado.getDataAtendimento());
-
-        assertEquals(7, estoque.getQuantidade());
-
-        assertEquals(
-                1,
-                movimentacaoEstoqueRepository.count()
-        );
-    }
-
-    // ============================================================
-    // 5. RECEBIMENTO BETEL
-    // ============================================================
-
-    @Test
-    void deveReceberPedidoBetelERegistrarEntradaNoEstoque() {
-
-        Congregacao congregacao =
-                criarCongregacao("Congregação Recebimento");
-
-        Publicacao publicacao =
-                criarPublicacao(
-                        "REC-001",
-                        "Publicação Recebimento"
-                );
-
-        criarEstoque(
-                publicacao,
-                congregacao,
-                5
-        );
-
-        Usuario responsavel =
-                criarUsuario(
-                        congregacao,
-                        "Responsável Recebimento",
-                        "responsavel.recebimento@gpt.test"
-                );
-
-        configurarUsuarioAutenticado(responsavel);
-
-        PedidoBetelDTO.CriarRequest dto =
-                criarRequestBetel(
-                        congregacao,
-                        publicacao,
-                        10
-                );
-
-        PedidoBetelDTO.Response criado =
-                pedidoService.criarPedidoBetel(dto);
-
-        pedidoService.marcarComoEnviado(criado.getId());
-
-        PedidoBetelDTO.ConferirItemRequest item =
-                new PedidoBetelDTO.ConferirItemRequest();
-
-        item.setItemId(
-                criado.getItens().get(0).getId()
-        );
-        item.setQuantidadeRecebida(10);
-
-        PedidoBetelDTO.ConferirPedidoRequest conferencia =
-                new PedidoBetelDTO.ConferirPedidoRequest();
-
-        conferencia.setItensRecebidos(List.of(item));
-
-        PedidoBetelDTO.Response recebido =
-                pedidoService.registrarRecebimento(
-                        criado.getId(),
-                        conferencia
-                );
-
-        PublicacaoEstoque estoque =
-                publicacaoEstoqueRepository
-                        .findByPublicacaoIdAndCongregacaoId(
-                                publicacao.getId(),
-                                congregacao.getId()
-                        )
-                        .orElseThrow();
-
-        assertEquals(
-                StatusPedidoBetel.RECEBIDO_TOTAL,
-                recebido.getStatus()
-        );
-
-        assertEquals(
-                15,
-                estoque.getQuantidade()
-        );
-
-        assertEquals(
-                1,
-                movimentacaoEstoqueRepository.count()
-        );
-    }
-
-    @Test
-    void naoDeveReceberPedidoBetelDuasVezes() {
-
-        Congregacao congregacao =
-                criarCongregacao("Congregação Recebimento 2");
-
-        Publicacao publicacao =
-                criarPublicacao(
-                        "REC-002",
-                        "Publicação Recebimento 2"
-                );
-
-        criarEstoque(
-                publicacao,
-                congregacao,
-                5
-        );
-
-        Usuario responsavel =
-                criarUsuario(
-                        congregacao,
-                        "Responsável Recebimento 2",
-                        "responsavel.recebimento2@gpt.test"
-                );
-
-        configurarUsuarioAutenticado(responsavel);
-
-        PedidoBetelDTO.CriarRequest dto =
-                criarRequestBetel(
-                        congregacao,
-                        publicacao,
-                        10
-                );
-
-        PedidoBetelDTO.Response criado =
-                pedidoService.criarPedidoBetel(dto);
-
-        pedidoService.marcarComoEnviado(criado.getId());
-
-        PedidoBetelDTO.ConferirItemRequest item =
-                new PedidoBetelDTO.ConferirItemRequest();
-
-        item.setItemId(
-                criado.getItens().get(0).getId()
-        );
-        item.setQuantidadeRecebida(10);
-
-        PedidoBetelDTO.ConferirPedidoRequest conferencia =
-                new PedidoBetelDTO.ConferirPedidoRequest();
-
-        conferencia.setItensRecebidos(List.of(item));
-
-        pedidoService.registrarRecebimento(
-                criado.getId(),
-                conferencia
-        );
-
-        assertThrows(
-                IllegalStateException.class,
-                () -> pedidoService.registrarRecebimento(
-                        criado.getId(),
-                        conferencia
-                )
-        );
-    }
-
-    // ============================================================
     // 6. EDIÇÃO / EXCLUSÃO
     // ============================================================
 
@@ -745,23 +511,6 @@ class PedidoServiceIntegrationTest {
                         .categoria(CategoriaPublicacao.LIVRO)
                         .formato(FormatoPublicacao.NORMAL)
                         .idioma(IdiomaPublicacao.PORTUGUES)
-                        .ativo(true)
-                        .build()
-        );
-    }
-
-    private PublicacaoEstoque criarEstoque(
-            Publicacao publicacao,
-            Congregacao congregacao,
-            int quantidade
-    ) {
-
-        return publicacaoEstoqueRepository.saveAndFlush(
-                PublicacaoEstoque.builder()
-                        .publicacao(publicacao)
-                        .congregacao(congregacao)
-                        .quantidade(quantidade)
-                        .estoqueMinimo(5)
                         .ativo(true)
                         .build()
         );

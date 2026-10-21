@@ -22,7 +22,7 @@ import { Pedidos } from "./pages/Pedidos";
 import { EstatisticasTerritorios } from "./pages/EstatisticasTerritorios";
 import { EstatisticasPublicacoes } from "./pages/EstatisticasPublicacoes";
 import HistoricoPublicadores from "./pages/HistoricoPublicadores";
-
+import { DiagnosticoApi } from "./pages/DiagnosticoApi";
 import AdminCongregacoesPage from "./pages/AdminCongregacoesPage";
 import UsuariosCongregacaoPage from "./pages/UsuariosCongregacaoPage";
 import UsuarioFormPage from "./components/usuario/UsuarioFormPage";
@@ -156,6 +156,15 @@ export const App: React.FC = () => {
                 }
               />
             </Route>
+
+            <Route
+              path="/diagnostico-api"
+              element={
+                <RotaPrivada allowedRoles={["ROLE_ADMIN_GERAL"]}>
+                  <DiagnosticoApi />
+                </RotaPrivada>
+              }
+            />
 
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
