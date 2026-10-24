@@ -30,7 +30,19 @@ public class AuthService {
             throw new BadCredentialsException("Usuário inativo no sistema");
         }
 
-        if (!passwordEncoder.matches(request.getSenha(), usuario.getSenha())) {
+        boolean senhaConfere =
+                passwordEncoder.matches(request.getSenha(), usuario.getSenha());
+
+        System.out.println(
+                "[DIAGNOSTICO LOGIN] Usuario encontrado: " + usuario.getId()
+                + " | Ativo: " + usuario.getAtivo()
+                + " | Hash BCrypt reconhecido: "
+                + passwordEncoder.upgradeEncoding(usuario.getSenha())
+                        + " (upgrade necessário, não indica senha correta)"
+                + " | Senha confere: " + senhaConfere
+        );
+
+        if (!senhaConfere) {
             throw new BadCredentialsException("E-mail ou senha inválidos");
         }
 
