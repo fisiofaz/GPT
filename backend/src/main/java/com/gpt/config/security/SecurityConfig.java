@@ -67,19 +67,19 @@ public class SecurityConfig {
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
-
+    
 	@Bean
 	public CorsConfigurationSource corsConfigurationSource() {
 	    CorsConfiguration config = new CorsConfiguration();
-	
-	    List<String> origins = Arrays.stream(allowedOrigins.split(","))
-	            .map(String::trim)
-	            .filter(origin -> !origin.isEmpty())
-	            .collect(Collectors.toList());
-	
-	    config.setAllowedOrigins(origins);
+	    
+	    // Libera explicitamente a Vercel e o ambiente local de desenvolvimento
+	    config.setAllowedOrigins(Arrays.asList(
+	        "https://sitema-gpt.vercel.app",
+	        "http://localhost:5173"
+	    ));
+	    
 	    config.setAllowedMethods(
-	            Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
+	        Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
 	    );
 	    config.setAllowedHeaders(List.of("*"));
 	    config.setAllowCredentials(true);
